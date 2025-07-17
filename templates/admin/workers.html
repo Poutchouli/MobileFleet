@@ -1,0 +1,251 @@
+<!-- templates/admin/workers.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Workers - Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen flex">
+        <!-- Sidebar -->
+        <div class="bg-gray-800 text-white w-64 space-y-6 py-7 px-2">
+            <a href="#" class="text-white text-2xl font-extrabold px-4">FleetAdmin</a>
+            <nav>
+                <a href="{{ url_for('admin_dashboard') }}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Dashboard</a>
+                <a href="{{ url_for('admin_phones') }}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Phones</a>
+                <a href="{{ url_for('admin_sims') }}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">SIM Cards</a>
+                <a href="{{ url_for('admin_workers') }}" class="block py-2.5 px-4 rounded transition duration-200 bg-gray-700">Workers</a>
+                <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Users</a>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 p-10">
+            <div class="flex justify-between items-center mb-8">
+                <h1 class="text-3xl font-bold">Manage Workers</h1>
+                <div>
+                    <span>Welcome, {{ session.username }}</span>
+                    <a href="{{ url_for('logout') }}" class="ml-4 text-indigo-600 hover:text-indigo-900">Logout</a>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold">Active Workers</h2>
+                    <button id="add-worker-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">
+                        Add New Worker
+                    </button>
+                </div>
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Worker ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Full Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sector</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="workers-table-body" class="bg-white divide-y divide-gray-200">
+                        <!-- JS will populate this -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Worker Modal -->
+    <div id="worker-modal" class="fixed z-10 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <form id="worker-form">
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Add New Worker</h3>
+                        <input type="hidden" id="worker-db-id" name="id">
+                        <div class="mt-4 grid grid-cols-1 gap-y-4 sm:grid-cols-2 sm:gap-x-4">
+                            <div>
+                                <label for="worker_id" class="block text-sm font-medium text-gray-700">Worker ID*</label>
+                                <input type="text" name="worker_id" id="worker_id" required class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label for="full_name" class="block text-sm font-medium text-gray-700">Full Name*</label>
+                                <input type="text" name="full_name" id="full_name" required class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label for="secteur_id" class="block text-sm font-medium text-gray-700">Sector*</label>
+                                <select id="secteur_id" name="secteur_id" required class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                    <!-- Options will be populated by JS -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 sm:ml-3 sm:w-auto sm:text-sm">
+                            Save
+                        </button>
+                        <button type="button" id="cancel-btn" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div id="toast" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg hidden"><p id="toast-message"></p></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('worker-modal');
+            const addWorkerBtn = document.getElementById('add-worker-btn');
+            const cancelBtn = document.getElementById('cancel-btn');
+            const workerForm = document.getElementById('worker-form');
+            const modalTitle = document.getElementById('modal-title');
+            const tableBody = document.getElementById('workers-table-body');
+            const secteurSelect = document.getElementById('secteur_id');
+
+            let secteursData = []; // To store secteur data for editing
+
+            function showToast(message, isError = false) {
+                const toast = document.getElementById('toast');
+                const toastMessage = document.getElementById('toast-message');
+                toastMessage.textContent = message;
+                toast.className = `fixed top-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg ${isError ? 'bg-red-500' : 'bg-green-500'}`;
+                toast.classList.remove('hidden');
+                setTimeout(() => toast.classList.add('hidden'), 3000);
+            }
+
+            function openModal() { modal.classList.remove('hidden'); }
+            function closeModal() { modal.classList.add('hidden'); workerForm.reset(); document.getElementById('worker-db-id').value = ''; }
+
+            addWorkerBtn.addEventListener('click', () => {
+                modalTitle.textContent = 'Add New Worker';
+                openModal();
+            });
+            cancelBtn.addEventListener('click', closeModal);
+
+            async function fetchSecteurs() {
+                try {
+                    const response = await fetch('/api/secteurs');
+                    if (!response.ok) throw new Error('Failed to fetch secteurs');
+                    secteursData = await response.json();
+                    secteurSelect.innerHTML = '<option value="">Select a sector</option>';
+                    secteursData.forEach(secteur => {
+                        secteurSelect.innerHTML += `<option value="${secteur.id}">${secteur.secteur_name}</option>`;
+                    });
+                } catch (error) {
+                    showToast(error.message, true);
+                }
+            }
+
+            async function fetchWorkers() {
+                try {
+                    const response = await fetch('/api/workers');
+                    if (!response.ok) throw new Error('Failed to fetch workers');
+                    const workers = await response.json();
+                    renderTable(workers);
+                } catch (error) {
+                    showToast(error.message, true);
+                }
+            }
+
+            function renderTable(workers) {
+                tableBody.innerHTML = '';
+                if (workers.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4">No active workers found.</td></tr>';
+                    return;
+                }
+                workers.forEach(worker => {
+                    const row = `
+                        <tr data-worker='${JSON.stringify(worker)}'>
+                            <td class="px-6 py-4 whitespace-nowrap">${worker.worker_id}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">${worker.full_name}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">${worker.secteur_name}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    ${worker.status}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <button data-id="${worker.id}" class="edit-btn text-indigo-600 hover:text-indigo-900">Edit</button>
+                                <button data-id="${worker.id}" data-name="${worker.full_name}" class="delete-btn text-red-600 hover:text-red-900 ml-4">Set Inactive</button>
+                            </td>
+                        </tr>
+                    `;
+                    tableBody.insertAdjacentHTML('beforeend', row);
+                });
+            }
+
+            workerForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const formData = new FormData(workerForm);
+                const workerData = Object.fromEntries(formData.entries());
+                const workerDbId = workerData.id;
+                
+                const url = workerDbId ? `/api/workers/${workerDbId}` : '/api/workers';
+                const method = workerDbId ? 'PUT' : 'POST';
+
+                try {
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(workerData)
+                    });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.error || 'Failed to save worker.');
+                    showToast(`Worker successfully ${workerDbId ? 'updated' : 'created'}!`);
+                    closeModal();
+                    fetchWorkers();
+                } catch (error) {
+                    showToast(error.message, true);
+                }
+            });
+
+            tableBody.addEventListener('click', async function(e) {
+                const target = e.target;
+                const workerDbId = target.dataset.id;
+
+                if (target.classList.contains('edit-btn')) {
+                    const row = target.closest('tr');
+                    const worker = JSON.parse(row.dataset.worker);
+                    
+                    document.getElementById('worker-db-id').value = worker.id;
+                    document.getElementById('worker_id').value = worker.worker_id;
+                    document.getElementById('full_name').value = worker.full_name;
+                    
+                    // Find the corresponding secteur_id from our stored secteursData
+                    const secteur = secteursData.find(s => s.secteur_name === worker.secteur_name);
+                    if (secteur) {
+                        document.getElementById('secteur_id').value = secteur.id;
+                    }
+                    
+                    modalTitle.textContent = 'Edit Worker';
+                    openModal();
+                }
+
+                if (target.classList.contains('delete-btn')) {
+                    const workerName = target.dataset.name;
+                    if (confirm(`Are you sure you want to set ${workerName} as inactive?`)) {
+                        try {
+                            const response = await fetch(`/api/workers/${workerDbId}`, { method: 'DELETE' });
+                            if (!response.ok) throw new Error('Failed to update worker status.');
+                            showToast('Worker set to inactive.');
+                            fetchWorkers();
+                        } catch (error) {
+                            showToast(error.message, true);
+                        }
+                    }
+                }
+            });
+
+            // Initial load
+            fetchSecteurs();
+            fetchWorkers();
+        });
+    </script>
+</body>
+</html>

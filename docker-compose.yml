@@ -1,0 +1,72 @@
+# docker-compose.yml
+# This file defines and configures the multi-container application services.
+
+version: '3.8'
+
+services:
+  # --- The Flask Web Application Service ---
+  web:
+    # Build the image from the Dockerfile in the current directory.
+    build: .
+    # Name the container for easier identification.
+    container_name: fleet_web
+    # Command to run the application. This will override the CMD in the Dockerfile if needed.
+    # Here, we ensure the database is ready before starting the app.
+    # `sh -c "..."` runs the commands in a shell.
+    # `python init_database.py &&` runs the database initialization script first.
+    # `gunicorn --bind 0.0.0.0:5000 app:app` starts the web server.
+    command: >
+      sh -c "
+        echo 'Waiting for PostgreSQL to be ready...' &&
+        while ! nc -z db 5432; do
+          sleep 1;
+        done;
+        echo 'PostgreSQL is ready.' &&
+        python init_database.py &&
+        gunicorn --bind 0.0.0.0:5000 app:app
+      "
+    # Map port 5000 inside the container to port 5000 on the host machine.
+    ports:
+      - "5000:5000"
+    # Mount the current directory on the host to /app in the container.
+    # This allows for live code reloading during development.
+    volumes:
+      - .:/app
+    # Define environment variables for the web service.
+    environment:
+      # The DATABASE_URL points to the 'db' service.
+      # The user, password, and db name must match the 'db' service's environment variables.
+      - DATABASE_URL=dbname=fleet_db user=postgres password=password host=db
+      # Flask environment settings.
+      - FLASK_ENV=development
+    # This service depends on the 'db' service. Docker Compose will start the 'db'
+    # service before it starts the 'web' service.
+    depends_on:
+      - db
+
+  # --- The PostgreSQL Database Service ---
+  db:
+    # Use the official PostgreSQL image from Docker Hub.
+    image: postgres:14-alpine
+    # Name the container.
+    container_name: fleet_db
+    # Define environment variables for the PostgreSQL container.
+    # These are used by the PostgreSQL image to initialize the database.
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=fleet_db
+    # Mount a volume to persist database data.
+    # 'postgres_data' is a named volume managed by Docker.
+    # This ensures that your data survives container restarts and removals.
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # Map port 5432 in the container to 5433 on the host.
+    # This avoids conflicts if you have another PostgreSQL instance running locally.
+    ports:
+      - "5433:5432"
+
+# --- Named Volumes ---
+# Define the named volume for persistent database storage.
+volumes:
+  postgres_data:
