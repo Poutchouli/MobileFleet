@@ -41,6 +41,9 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
+            # Return JSON error for API endpoints
+            if request.path.startswith('/api/'):
+                return jsonify({'error': 'Authentication required'}), 401
             return redirect(url_for('login', next=request.url))
         return f(*args, **kwargs)
     return decorated_function
@@ -137,17 +140,49 @@ def admin_roles():
     return render_template('admin/roles.html')
 
 # --- API Endpoints for Users and Roles ---
-@app.route('/api/roles', methods=['GET'])
+@app.route('/api/roles', methods=['GET', 'POST'])
 @login_required
 @role_required('Administrator')
-def get_roles():
-    """API endpoint to get all roles."""
+def manage_roles():
+    """API endpoint to get all roles or create a new role."""
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("SELECT id, role_name FROM roles ORDER BY role_name")
-    roles = cursor.fetchall()
-    cursor.close()
-    return jsonify(roles)
+    
+    if request.method == 'GET':
+        cursor.execute("SELECT id, role_name, description FROM roles ORDER BY role_name")
+        roles = cursor.fetchall()
+        cursor.close()
+        return jsonify(roles)
+    
+    elif request.method == 'POST':
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        role_name = data.get('role_name')
+        description = data.get('description')
+        
+        if not role_name:
+            return jsonify({'error': 'Role name is required'}), 400
+        
+        try:
+            cursor.execute("""
+                INSERT INTO roles (role_name, description) 
+                VALUES (%s, %s) 
+                RETURNING id, role_name, description
+            """, (role_name, description))
+            new_role = cursor.fetchone()
+            db.commit()
+            cursor.close()
+            return jsonify(new_role), 201
+        except psycopg2.IntegrityError as e:
+            db.rollback()
+            cursor.close()
+            return jsonify({'error': 'Role name already exists'}), 409
+        except Exception as e:
+            db.rollback()
+            cursor.close()
+            return jsonify({'error': str(e)}), 500
 
 @app.route('/api/users', methods=['GET'])
 @login_required
@@ -271,11 +306,59 @@ def update_user(user_id):
             cursor.close()
             return jsonify({"error": "An unexpected error occurred", "message": str(e)}), 500
 
+@app.route('/api/roles/<int:role_id>', methods=['GET', 'PUT'])
+@login_required
+@role_required('Administrator')
+def handle_role(role_id):
+    """API endpoint to get or update a specific role."""
+    db = get_db()
+    cursor = db.cursor()
+
+    if request.method == 'GET':
+        cursor.execute("SELECT id, role_name, description FROM roles WHERE id = %s", (role_id,))
+        role = cursor.fetchone()
+        cursor.close()
+        if role:
+            return jsonify(role)
+        return jsonify({"error": "Role not found"}), 404
+
+    if request.method == 'PUT':
+        data = request.get_json()
+        if not data or not data.get('role_name'):
+            return jsonify({"error": "Role name is required."}), 400
+        
+        role_name = data['role_name']
+        description = data.get('description', '')
+        
+        try:
+            cursor.execute(
+                "UPDATE roles SET role_name = %s, description = %s WHERE id = %s RETURNING *;",
+                (role_name, description, role_id)
+            )
+            updated_role = cursor.fetchone()
+            if updated_role is None:
+                db.rollback()
+                cursor.close()
+                return jsonify({"error": "Role not found."}), 404
+            
+            db.commit()
+            cursor.close()
+            return jsonify(updated_role)
+        except psycopg2.IntegrityError as e:
+            db.rollback()
+            cursor.close()
+            return jsonify({"error": "A role with this name already exists."}), 409
+        except Exception as e:
+            db.rollback()
+            cursor.close()
+            return jsonify({"error": "An unexpected error occurred", "message": str(e)}), 500
+
 @app.route('/manager/dashboard')
 @login_required
 @role_required('Manager')
 def manager_dashboard():
-    return f"<h1>Manager Dashboard for {session['username']}</h1><a href='/logout'>Logout</a>"
+    """Serves the main dashboard for Managers."""
+    return render_template('manager/dashboard.html')
 
 # --- API Endpoints ---
 

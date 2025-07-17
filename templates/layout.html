@@ -1,0 +1,224 @@
+<!-- templates/layout.html -->
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Link to Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Link to your new custom stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    <title>{% block title %}Fleet Management{% endblock %}</title>
+</head>
+<body class="bg-light-bg">
+    {% block content %}{% endblock %}
+
+    <!-- Toast Notification Container -->
+    <div id="toast" class="toast hidden">
+        <p id="toast-message"></p>
+    </div>
+
+    <!-- Global Scripts can be placed here if needed -->
+</body>
+</html>
+```
+
+### 2. Update Existing Templates
+
+Now, we'll update your existing admin templates to use this new layout and the classes from `custom.css`.
+
+#### In `templates/admin/dashboard.html`
+**Replace the entire file** with this updated version:
+```html
+{% extends "layout.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex">
+    <!-- Sidebar -->
+    <div class="custom-sidebar w-64 space-y-6 py-7 px-2">
+        <a href="#" class="logo px-4">FleetAdmin</a>
+        <nav>
+            <a href="{{ url_for('admin_dashboard') }}" class="block py-2.5 px-4 active">Dashboard</a>
+            <a href="{{ url_for('admin_phones') }}" class="block py-2.5 px-4">Phones</a>
+            <a href="{{ url_for('admin_sims') }}" class="block py-2.5 px-4">SIM Cards</a>
+            <a href="{{ url_for('admin_workers') }}" class="block py-2.5 px-4">Workers</a>
+            <a href="{{ url_for('admin_users') }}" class="block py-2.5 px-4">Users</a>
+            <a href="{{ url_for('admin_roles') }}" class="block py-2.5 px-4">Roles</a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-10">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold">Admin Dashboard</h1>
+            <div>
+                <span>Welcome, {{ session.username }}</span>
+                <a href="{{ url_for('logout') }}" class="btn-link text-red-600 ml-4">Logout</a>
+            </div>
+        </div>
+
+        <div class="custom-card">
+            <div class="card-header">
+                <h2 class="card-title">Phone Inventory Overview</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="custom-table min-w-full">
+                    <thead>
+                        <tr>
+                            <th>Asset Tag</th>
+                            <th>Model</th>
+                            <th>IMEI</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="phones-table-body">
+                        <!-- Rows will be inserted by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        fetch('/api/phones')
+            .then(response => response.json())
+            .then(data => {
+                const tableBody = document.getElementById('phones-table-body');
+                if (!tableBody) return;
+                
+                if (data.error) {
+                    tableBody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-red-500">${data.message}</td></tr>`;
+                    return;
+                }
+
+                let rows = '';
+                data.forEach(phone => {
+                    rows += `
+                        <tr>
+                            <td>${phone.asset_tag}</td>
+                            <td>${phone.manufacturer} ${phone.model}</td>
+                            <td>${phone.imei}</td>
+                            <td>
+                                <span class="status-badge ${phone.status.toLowerCase().replace(' ', '-')}">
+                                    ${phone.status}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                });
+                tableBody.innerHTML = rows;
+            })
+            .catch(error => {
+                console.error('Failed to fetch phones:', error);
+            });
+    });
+</script>
+{% endblock %}
+```
+
+#### In `templates/admin/roles.html`
+As requested, this version is now **read-only**. The ability to add or edit roles has been removed from the UI to match your new requirements. **Replace the entire file** with this simplified version:
+
+```html
+{% extends "layout.html" %}
+{% block title %}Manage Roles{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex">
+    <!-- Sidebar -->
+    <div class="custom-sidebar w-64 space-y-6 py-7 px-2">
+        <a href="#" class="logo px-4">FleetAdmin</a>
+        <nav>
+            <a href="{{ url_for('admin_dashboard') }}" class="block py-2.5 px-4">Dashboard</a>
+            <a href="{{ url_for('admin_phones') }}" class="block py-2.5 px-4">Phones</a>
+            <a href="{{ url_for('admin_sims') }}" class="block py-2.5 px-4">SIM Cards</a>
+            <a href="{{ url_for('admin_workers') }}" class="block py-2.5 px-4">Workers</a>
+            <a href="{{ url_for('admin_users') }}" class="block py-2.5 px-4">Users</a>
+            <a href="{{ url_for('admin_roles') }}" class="block py-2.5 px-4 active">Roles</a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-10">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold">System Roles</h1>
+            <div>
+                <span>Welcome, {{ session.username }}</span>
+                <a href="{{ url_for('logout') }}" class="btn-link text-red-600 ml-4">Logout</a>
+            </div>
+        </div>
+
+        <div class="custom-card">
+            <div class="card-header">
+                <h2 class="card-title">Existing Roles</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="custom-table min-w-full">
+                    <thead>
+                        <tr>
+                            <th>Role Name</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody id="roles-table-body">
+                        <!-- JS will populate this -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tableBody = document.getElementById('roles-table-body');
+
+        async function fetchRoles() {
+            try {
+                const response = await fetch('/api/roles');
+                if (!response.ok) throw new Error('Could not fetch roles.');
+                const roles = await response.json();
+                renderTable(roles);
+            } catch (error) {
+                console.error(error);
+                // You can add a toast notification here if you want
+            }
+        }
+
+        function renderTable(roles) {
+            tableBody.innerHTML = '';
+            if (roles.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="2" class="text-center py-4">No roles found.</td></tr>';
+                return;
+            }
+            roles.forEach(role => {
+                const row = `
+                    <tr>
+                        <td class="font-medium">${role.role_name}</td>
+                        <td>${role.description || ''}</td>
+                    </tr>
+                `;
+                tableBody.insertAdjacentHTML('beforeend', row);
+            });
+        }
+
+        fetchRoles();
+    });
+</script>
+{% endblock %}
+```
+
+### Next Steps & Testing
+
+1.  **Create `layout.html`:** Make sure you create the new `templates/layout.html` file.
+2.  **Add `custom.css`:** Place the `custom.css` file you provided into the `static/css/` directory.
+3.  **Update Templates:** Replace the content of `dashboard.html` and `roles.html` with the code above. You will need to apply similar updates to your other pages (`phones.html`, `sims.html`, etc.) to make them use the new layout and custom classes.
+4.  **Restart Application:** Stop and restart your Docker containers to ensure all changes are loaded.
+5.  **Test:**
+    * Navigate to the admin dashboard. It should now have the new, more polished look from `custom.css`.
+    * Navigate to the "Roles" page. It should also have the new look and should **only display the list of roles**, with no buttons to add or edit th
