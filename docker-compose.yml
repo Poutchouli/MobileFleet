@@ -1,8 +1,6 @@
 # docker-compose.yml
 # This file defines and configures the multi-container application services.
 
-version: '3.8'
-
 services:
   # --- The Flask Web Application Service ---
   web:

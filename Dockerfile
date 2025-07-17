@@ -4,7 +4,7 @@
 # --- Base Image ---
 # Start with an official Python runtime as a parent image.
 # Using a specific version ensures consistency.
-FROM python:3.9-slim-buster
+FROM python:3.11-slim
 
 # --- Environment Variables ---
 # Set environment variables to prevent Python from writing pyc files to disc
@@ -18,7 +18,10 @@ ENV PYTHONUNBUFFERED 1
 WORKDIR /app
 
 # --- Install Dependencies ---
-# First, copy over the requirements file.
+# First, install system dependencies including netcat for database connectivity checks
+RUN apt-get update && apt-get install -y netcat-openbsd && rm -rf /var/lib/apt/lists/*
+
+# Copy over the requirements file.
 COPY requirements.txt .
 
 # Install the Python dependencies specified in requirements.txt.
