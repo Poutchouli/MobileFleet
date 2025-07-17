@@ -1,0 +1,667 @@
+{% extends "base.html" %}
+
+{% block title %}CSV Import Wizard - Fleet Management{% endblock %}
+
+{% block page_title %}CSV Import Wizard{% endblock %}
+
+{% block content %}
+
+                    <!-- Progress Indicator -->
+                    <div class="custom-card mb-6">
+                        <div class="grid grid-cols-4 gap-4 text-center">
+                            <div class="step-indicator active" id="step1-indicator">
+                                <div class="step-number">1</div>
+                                <div class="step-label">Upload File</div>
+                            </div>
+                            <div class="step-indicator" id="step2-indicator">
+                                <div class="step-number">2</div>
+                                <div class="step-label">Preview & Select Table</div>
+                            </div>
+                            <div class="step-indicator" id="step3-indicator">
+                                <div class="step-number">3</div>
+                                <div class="step-label">Map Columns</div>
+                            </div>
+                            <div class="step-indicator" id="step4-indicator">
+                                <div class="step-number">4</div>
+                                <div class="step-label">Import Data</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 1: File Upload -->
+                    <div class="custom-card" id="step1-section">
+                        <div class="mb-4">
+                            <h2 class="text-xl font-semibold flex items-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                </svg>
+                                Step 1: Upload CSV File
+                            </h2>
+                        </div>
+                        <div class="upload-area border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-indigo-500 hover:bg-gray-50 transition-colors" id="upload-area">
+                            <svg class="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            <h3 class="text-lg font-medium mb-2">Select or drag your CSV file here</h3>
+                            <p class="text-gray-500 mb-4">Supported format: CSV (.csv)</p>
+                            <input type="file" id="csv-file-input" class="hidden" accept=".csv">
+                            <button type="button" class="btn btn-primary" onclick="document.getElementById('csv-file-input').click()">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h2a2 2 0 012 2v2H8V5z"></path>
+                                </svg>
+                                Choose File
+                            </button>
+                        </div>
+                        <div class="mt-4 text-center hidden" id="upload-progress">
+                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+                            <p class="mt-2 text-gray-600">Processing file...</p>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Preview and Table Selection -->
+                    <div class="custom-card hidden" id="step2-section">
+                        <div class="mb-4">
+                            <h2 class="text-xl font-semibold flex items-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                                Step 2: Preview Data & Select Target Table
+                            </h2>
+                        </div>
+                        <div class="mb-4">
+                            <div class="w-1/2">
+                                <label for="target-table-select" class="custom-label">Select Target Table:</label>
+                                <select class="custom-input" id="target-table-select">
+                                    <option value="">-- Choose a table --</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <h3 class="text-lg font-medium mb-3">Data Preview (First 5 rows):</h3>
+                        <div class="overflow-x-auto max-h-96">
+                            <table class="custom-table" id="preview-table">
+                                <thead id="preview-headers">
+                                    <!-- Headers will be populated dynamically -->
+                                </thead>
+                                <tbody id="preview-body">
+                                    <!-- Preview data will be populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="flex justify-between mt-6">
+                            <button type="button" class="btn btn-secondary" onclick="resetWizard()">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                                </svg>
+                                Back to Upload
+                            </button>
+                            <button type="button" class="btn btn-primary" id="proceed-to-mapping" disabled>
+                                Proceed to Column Mapping
+                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Column Mapping -->
+                    <div class="custom-card hidden" id="step3-section">
+                        <div class="mb-4">
+                            <h2 class="text-xl font-semibold flex items-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path>
+                                </svg>
+                                Step 3: Map CSV Columns to Database Fields
+                            </h2>
+                        </div>
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                            <div class="flex items-center">
+                                <svg class="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span class="text-blue-700">Map each CSV column to the corresponding database field. Select one column as the merge key for data updates.</span>
+                            </div>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="custom-table">
+                                <thead>
+                                    <tr>
+                                        <th class="text-left">CSV Column</th>
+                                        <th class="text-left">Database Column</th>
+                                        <th class="text-left">Use as Merge Key</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="column-mapping-body">
+                                    <!-- Column mappings will be populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="flex justify-between mt-6">
+                            <button type="button" class="btn btn-secondary" onclick="showStep(2)">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                                </svg>
+                                Back to Preview
+                            </button>
+                            <button type="button" class="btn btn-success" id="run-import-btn">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.5a2.5 2.5 0 011.414.586M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                Run Import
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Step 4: Import Progress and Results -->
+                    <div class="custom-card hidden" id="step4-section">
+                        <div class="mb-4">
+                            <h2 class="text-xl font-semibold flex items-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                                Step 4: Import Progress
+                            </h2>
+                        </div>
+                        <div class="text-center" id="import-progress">
+                            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+                            <p class="mt-4 text-lg text-gray-600">Importing data, please wait...</p>
+                        </div>
+                        
+                        <div class="hidden" id="import-results">
+                            <div class="p-4 rounded-lg mb-4" id="import-result-alert">
+                                <!-- Results will be populated dynamically -->
+                            </div>
+                            
+                            <div class="text-center">
+                                <button type="button" class="btn btn-primary" onclick="resetWizard()">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                    </svg>
+                                    Import Another File
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="fixed top-4 right-4 z-50">
+        <div id="notification-toast" class="hidden bg-white border border-gray-300 rounded-lg shadow-lg p-4 min-w-64">
+            <div class="flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span class="font-medium">Import Wizard</span>
+                <button type="button" class="ml-auto text-gray-400 hover:text-gray-600" onclick="hideToast()">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="mt-1" id="toast-message">
+                <!-- Toast message will be populated dynamically -->
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block scripts %}
+    <script>
+        // Global variables
+        let csvData = '';
+        let csvHeaders = [];
+        let previewData = [];
+        let availableTables = [];
+        let selectedTable = '';
+        let dbColumns = [];
+
+        // Initialize the wizard
+        document.addEventListener('DOMContentLoaded', function() {
+            setupFileUpload();
+            setupEventListeners();
+        });
+
+        function setupFileUpload() {
+            const fileInput = document.getElementById('csv-file-input');
+            const uploadArea = document.getElementById('upload-area');
+
+            // Handle file selection
+            fileInput.addEventListener('change', function(e) {
+                if (e.target.files.length > 0) {
+                    handleFileUpload(e.target.files[0]);
+                }
+            });
+
+            // Handle drag and drop
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadArea.classList.add('border-indigo-500', 'bg-indigo-50');
+            });
+
+            uploadArea.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('border-indigo-500', 'bg-indigo-50');
+            });
+
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('border-indigo-500', 'bg-indigo-50');
+                if (e.dataTransfer.files.length > 0) {
+                    handleFileUpload(e.dataTransfer.files[0]);
+                }
+            });
+        }
+
+        function setupEventListeners() {
+            // Table selection change
+            document.getElementById('target-table-select').addEventListener('change', function() {
+                selectedTable = this.value;
+                document.getElementById('proceed-to-mapping').disabled = !selectedTable;
+                
+                if (selectedTable) {
+                    fetchTableSchema(selectedTable);
+                }
+            });
+
+            // Proceed to mapping button
+            document.getElementById('proceed-to-mapping').addEventListener('click', function() {
+                if (selectedTable && dbColumns.length > 0) {
+                    setupColumnMapping();
+                    showStep(3);
+                }
+            });
+
+            // Run import button
+            document.getElementById('run-import-btn').addEventListener('click', function() {
+                executeImport();
+            });
+        }
+
+        function handleFileUpload(file) {
+            if (!file.name.endsWith('.csv')) {
+                showToast('Please select a CSV file.', 'error');
+                return;
+            }
+
+            showUploadProgress(true);
+            
+            const formData = new FormData();
+            formData.append('file', file);
+
+            fetch('/api/import/preview', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                showUploadProgress(false);
+                
+                if (data.error) {
+                    showToast(data.error, 'error');
+                    return;
+                }
+
+                // Store the original CSV data
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    csvData = e.target.result;
+                    
+                    // Process the preview response
+                    csvHeaders = data.headers;
+                    previewData = data.preview_data;
+                    availableTables = data.tables;
+                    
+                    populatePreviewTable();
+                    populateTableSelect();
+                    showStep(2);
+                };
+                reader.readAsText(file);
+            })
+            .catch(error => {
+                showUploadProgress(false);
+                showToast('Error uploading file: ' + error.message, 'error');
+            });
+        }
+
+        function populatePreviewTable() {
+            const headersRow = document.getElementById('preview-headers');
+            const bodyElement = document.getElementById('preview-body');
+            
+            // Clear existing content
+            headersRow.innerHTML = '';
+            bodyElement.innerHTML = '';
+            
+            // Add headers
+            const headerRow = document.createElement('tr');
+            csvHeaders.forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                th.className = 'text-left';
+                headerRow.appendChild(th);
+            });
+            headersRow.appendChild(headerRow);
+            
+            // Add preview data rows
+            previewData.forEach(row => {
+                const tr = document.createElement('tr');
+                csvHeaders.forEach(header => {
+                    const td = document.createElement('td');
+                    td.textContent = row[header] || '';
+                    tr.appendChild(td);
+                });
+                bodyElement.appendChild(tr);
+            });
+        }
+
+        function populateTableSelect() {
+            const select = document.getElementById('target-table-select');
+            select.innerHTML = '<option value="">-- Choose a table --</option>';
+            
+            availableTables.forEach(table => {
+                const option = document.createElement('option');
+                option.value = table;
+                option.textContent = table;
+                select.appendChild(option);
+            });
+        }
+
+        function fetchTableSchema(tableName) {
+            fetch('/api/import/schema', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({table_name: tableName})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showToast(data.error, 'error');
+                    return;
+                }
+                
+                dbColumns = data.columns;
+            })
+            .catch(error => {
+                showToast('Error fetching table schema: ' + error.message, 'error');
+            });
+        }
+
+        function setupColumnMapping() {
+            const tbody = document.getElementById('column-mapping-body');
+            tbody.innerHTML = '';
+            
+            csvHeaders.forEach((csvHeader, index) => {
+                const tr = document.createElement('tr');
+                
+                // CSV Column
+                const csvTd = document.createElement('td');
+                csvTd.innerHTML = `<span class="font-medium">${csvHeader}</span>`;
+                tr.appendChild(csvTd);
+                
+                // Database Column dropdown
+                const dbTd = document.createElement('td');
+                const select = document.createElement('select');
+                select.className = 'custom-input';
+                select.id = `db-column-${index}`;
+                
+                // Add "Do not import" option
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = 'Do not import';
+                select.appendChild(defaultOption);
+                
+                // Add database columns
+                dbColumns.forEach(dbColumn => {
+                    const option = document.createElement('option');
+                    option.value = dbColumn;
+                    option.textContent = dbColumn;
+                    
+                    // Auto-select if names match
+                    if (csvHeader.toLowerCase() === dbColumn.toLowerCase()) {
+                        option.selected = true;
+                    }
+                    
+                    select.appendChild(option);
+                });
+                
+                dbTd.appendChild(select);
+                tr.appendChild(dbTd);
+                
+                // Merge Key radio button
+                const keyTd = document.createElement('td');
+                const radio = document.createElement('input');
+                radio.type = 'radio';
+                radio.name = 'merge-key';
+                radio.value = csvHeader;
+                radio.className = 'w-4 h-4 text-indigo-600';
+                radio.id = `merge-key-${index}`;
+                
+                // Select first column as default merge key
+                if (index === 0) {
+                    radio.checked = true;
+                }
+                
+                keyTd.appendChild(radio);
+                tr.appendChild(keyTd);
+                
+                tbody.appendChild(tr);
+            });
+        }
+
+        function executeImport() {
+            // Get column mappings
+            const columnMappings = {};
+            let mergeKeyCsv = '';
+            let mergeKeyDb = '';
+            
+            csvHeaders.forEach((csvHeader, index) => {
+                const dbSelect = document.getElementById(`db-column-${index}`);
+                const mergeRadio = document.getElementById(`merge-key-${index}`);
+                
+                if (dbSelect.value) {
+                    columnMappings[csvHeader] = dbSelect.value;
+                }
+                
+                if (mergeRadio.checked) {
+                    mergeKeyCsv = csvHeader;
+                    mergeKeyDb = dbSelect.value;
+                }
+            });
+            
+            // Validation
+            if (Object.keys(columnMappings).length === 0) {
+                showToast('Please map at least one column.', 'error');
+                return;
+            }
+            
+            if (!mergeKeyCsv || !mergeKeyDb) {
+                showToast('Please select a merge key and map it to a database column.', 'error');
+                return;
+            }
+            
+            // Show import progress
+            showStep(4);
+            
+            // Execute import
+            fetch('/api/import/process', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    csv_data: csvData,
+                    target_table: selectedTable,
+                    merge_key_csv: mergeKeyCsv,
+                    merge_key_db: mergeKeyDb,
+                    column_mappings: columnMappings
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                showImportResults(data);
+            })
+            .catch(error => {
+                showImportResults({error: 'Import failed: ' + error.message});
+            });
+        }
+
+        function showImportResults(result) {
+            document.getElementById('import-progress').classList.add('hidden');
+            document.getElementById('import-results').classList.remove('hidden');
+            
+            const alert = document.getElementById('import-result-alert');
+            
+            if (result.error) {
+                alert.className = 'p-4 rounded-lg mb-4 bg-red-50 border border-red-200';
+                alert.innerHTML = `
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                        <span class="font-medium text-red-800">Import Failed:</span>
+                    </div>
+                    <div class="mt-2 text-red-700">${result.error}</div>
+                `;
+            } else {
+                alert.className = 'p-4 rounded-lg mb-4 bg-green-50 border border-green-200';
+                alert.innerHTML = `
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span class="font-medium text-green-800">Import Successful!</span>
+                    </div>
+                    <div class="mt-2 text-green-700">
+                        Inserted: ${result.inserted || 0} records<br>
+                        Updated: ${result.updated || 0} records
+                    </div>
+                `;
+            }
+        }
+
+        function showStep(stepNumber) {
+            // Hide all sections
+            document.querySelectorAll('[id^="step"][id$="-section"]').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Show target section
+            document.getElementById(`step${stepNumber}-section`).classList.remove('hidden');
+            
+            // Update step indicators
+            document.querySelectorAll('.step-indicator').forEach((indicator, index) => {
+                indicator.classList.remove('active', 'completed');
+                if (index + 1 === stepNumber) {
+                    indicator.classList.add('active');
+                } else if (index + 1 < stepNumber) {
+                    indicator.classList.add('completed');
+                }
+            });
+        }
+
+        function resetWizard() {
+            // Reset all variables
+            csvData = '';
+            csvHeaders = [];
+            previewData = [];
+            availableTables = [];
+            selectedTable = '';
+            dbColumns = [];
+            
+            // Reset form elements
+            document.getElementById('csv-file-input').value = '';
+            document.getElementById('target-table-select').value = '';
+            document.getElementById('proceed-to-mapping').disabled = true;
+            
+            // Reset results
+            document.getElementById('import-progress').classList.remove('hidden');
+            document.getElementById('import-results').classList.add('hidden');
+            
+            // Show step 1
+            showStep(1);
+        }
+
+        function showUploadProgress(show) {
+            document.getElementById('upload-progress').classList.toggle('hidden', !show);
+        }
+
+        function showToast(message, type = 'info') {
+            const toastElement = document.getElementById('notification-toast');
+            const toastBody = document.getElementById('toast-message');
+            
+            toastBody.textContent = message;
+            
+            // Set toast color based on type
+            if (type === 'error') {
+                toastElement.className = 'bg-red-50 border border-red-200 rounded-lg shadow-lg p-4 min-w-64';
+                toastBody.className = 'mt-1 text-red-700';
+            } else {
+                toastElement.className = 'bg-blue-50 border border-blue-200 rounded-lg shadow-lg p-4 min-w-64';
+                toastBody.className = 'mt-1 text-blue-700';
+            }
+            
+            toastElement.classList.remove('hidden');
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                hideToast();
+            }, 5000);
+        }
+
+        function hideToast() {
+            document.getElementById('notification-toast').classList.add('hidden');
+        }
+    </script>
+
+    <style>
+        .step-indicator {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #6b7280;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .step-indicator.active .step-number {
+            background-color: #3b82f6;
+        }
+
+        .step-indicator.completed .step-number {
+            background-color: #10b981;
+        }
+
+        .step-label {
+            font-size: 0.9em;
+            color: #6b7280;
+        }
+
+        .step-indicator.active .step-label {
+            color: #3b82f6;
+            font-weight: bold;
+        }
+
+        .step-indicator.completed .step-label {
+            color: #10b981;
+        }
+    </style>
+{% endblock %}

@@ -2,6 +2,8 @@
 # The main backend logic for the Fleet Management application.
 
 import os
+import csv
+import io
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from functools import wraps
@@ -153,6 +155,13 @@ def admin_roles():
 def admin_provision_wizard():
     """Serves the multi-step phone provisioning wizard page."""
     return render_template('admin/provision.html')
+
+@app.route('/admin/import')
+@login_required
+@role_required('Administrator')
+def admin_import_csv():
+    """Serves the CSV data import page."""
+    return render_template('admin/import.html')
 
 @app.route('/support/dashboard')
 @login_required
@@ -473,6 +482,240 @@ def provision_finalize():
         db.rollback()
         cursor.close()
         return jsonify({"error": "An error occurred during finalization.", "details": str(e)}), 500
+
+# --- CSV Import API Endpoint ---
+
+@app.route('/api/admin/import_csv', methods=['POST'])
+@login_required
+@role_required('Administrator')
+def import_csv():
+    """API endpoint to handle CSV file upload and database processing."""
+    
+    # Check if file is present in request
+    if 'csv_file' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+    
+    file = request.files['csv_file']
+    
+    # Check if file has a name
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+    
+    # Get target table name from form data
+    target_table = request.form.get('target_table')
+    
+    # Whitelist of allowed target tables
+    allowed_tables = ['phones', 'sim_cards', 'workers']
+    if target_table not in allowed_tables:
+        return jsonify({"error": "Invalid target table"}), 400
+    
+    try:
+        # Read file content as string
+        file_content = file.stream.read().decode("utf-8")
+        
+        # Parse CSV using DictReader
+        csv_reader = csv.DictReader(io.StringIO(file_content))
+        
+        # Connect to database
+        db = get_db()
+        cursor = db.cursor()
+        
+        # Begin transaction
+        row_count = 0
+        
+        # Process each row
+        for row in csv_reader:
+            # Filter out empty values and prepare data
+            clean_row = {k: v for k, v in row.items() if v is not None and v.strip() != ''}
+            
+            if not clean_row:
+                continue
+                
+            # Build upsert query based on target table
+            if target_table == 'phones':
+                # Primary unique key: asset_tag
+                columns = list(clean_row.keys())
+                placeholders = ', '.join(['%s'] * len(columns))
+                column_names = ', '.join(columns)
+                
+                # Build SET clause for ON CONFLICT DO UPDATE
+                set_clause = ', '.join([f"{col} = EXCLUDED.{col}" for col in columns if col != 'asset_tag'])
+                
+                upsert_query = f"""
+                    INSERT INTO phones ({column_names})
+                    VALUES ({placeholders})
+                    ON CONFLICT (asset_tag) DO UPDATE SET {set_clause}
+                """
+                
+            elif target_table == 'sim_cards':
+                # Primary unique key: iccid
+                columns = list(clean_row.keys())
+                placeholders = ', '.join(['%s'] * len(columns))
+                column_names = ', '.join(columns)
+                
+                # Build SET clause for ON CONFLICT DO UPDATE
+                set_clause = ', '.join([f"{col} = EXCLUDED.{col}" for col in columns if col != 'iccid'])
+                
+                upsert_query = f"""
+                    INSERT INTO sim_cards ({column_names})
+                    VALUES ({placeholders})
+                    ON CONFLICT (iccid) DO UPDATE SET {set_clause}
+                """
+                
+            elif target_table == 'workers':
+                # Primary unique key: worker_id
+                columns = list(clean_row.keys())
+                placeholders = ', '.join(['%s'] * len(columns))
+                column_names = ', '.join(columns)
+                
+                # Build SET clause for ON CONFLICT DO UPDATE
+                set_clause = ', '.join([f"{col} = EXCLUDED.{col}" for col in columns if col != 'worker_id'])
+                
+                upsert_query = f"""
+                    INSERT INTO workers ({column_names})
+                    VALUES ({placeholders})
+                    ON CONFLICT (worker_id) DO UPDATE SET {set_clause}
+                """
+            
+            # Execute upsert statement
+            cursor.execute(upsert_query, list(clean_row.values()))
+            row_count += 1
+        
+        # Commit transaction
+        db.commit()
+        cursor.close()
+        
+        return jsonify({"message": f"Successfully processed {row_count} rows."}), 200
+        
+    except Exception as e:
+        # Rollback transaction on error
+        if 'db' in locals():
+            db.rollback()
+        if 'cursor' in locals():
+            cursor.close()
+        return jsonify({"error": "An error occurred during CSV processing.", "details": str(e)}), 500
+
+# --- API Endpoints for Import Wizard ---
+
+@app.route('/api/import/preview', methods=['POST'])
+@login_required
+@role_required('Administrator')
+def import_preview():
+    """Handles CSV file upload and provides a data preview."""
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file uploaded'}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'Empty filename'}), 400
+
+    try:
+        csv_content = file.stream.read().decode('utf-8')
+        reader = csv.DictReader(io.StringIO(csv_content))
+        headers = reader.fieldnames
+        preview_data = []
+        for i, row in enumerate(reader):
+            if i >= 5:  # Limit to 5 preview rows
+                break
+            preview_data.append(row)
+
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';")
+        tables = [table['table_name'] for table in cursor.fetchall()]
+        cursor.close()
+
+        return jsonify({'headers': headers, 'preview_data': preview_data, 'tables': tables})
+
+    except Exception as e:
+        return jsonify({'error': f"File processing failed: {str(e)}"}), 500
+
+@app.route('/api/import/schema', methods=['POST'])
+@login_required
+@role_required('Administrator')
+def import_schema():
+    """Retrieves the schema for a given database table."""
+    data = request.get_json()
+    if not data or 'table_name' not in data:
+        return jsonify({'error': 'Table name missing'}), 400
+    table_name = data['table_name']
+
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute("""
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = %s AND table_schema = 'public';
+        """, (table_name,))
+        columns = [column['column_name'] for column in cursor.fetchall()]
+        cursor.close()
+
+        return jsonify({'columns': columns})
+
+    except Exception as e:
+        return jsonify({'error': f"Schema retrieval failed: {str(e)}"}), 500
+
+@app.route('/api/import/process', methods=['POST'])
+@login_required
+@role_required('Administrator')
+def import_process():
+    """Processes the CSV data and imports it into the database."""
+    data = request.get_json()
+    if not data or not all(k in data for k in ('csv_data', 'target_table', 'merge_key_csv', 'merge_key_db', 'column_mappings')):
+        return jsonify({'error': 'Missing required data'}), 400
+
+    csv_data = data['csv_data']
+    target_table = data['target_table']
+    merge_key_csv = data['merge_key_csv']
+    merge_key_db = data['merge_key_db']
+    column_mappings = data['column_mappings']
+
+    try:
+        reader = csv.DictReader(io.StringIO(csv_data))
+        db = get_db()
+        cursor = db.cursor()
+        updated_count = 0
+        inserted_count = 0
+
+        for row in reader:
+            columns = []
+            values = []
+            updates = []
+
+            for csv_header, db_column in column_mappings.items():
+                if db_column and row[csv_header]:
+                    columns.append(db_column)
+                    values.append(row[csv_header])
+                    if db_column != merge_key_db:
+                        updates.append(f"{db_column} = EXCLUDED.{db_column}")
+
+            if not columns:  # Skip rows with no valid mappings
+                continue
+
+            placeholders = ', '.join(['%s'] * len(columns))
+            columns_sql = ', '.join(columns)
+            update_sql = ', '.join(updates)
+
+            sql = f"""
+                INSERT INTO {target_table} ({columns_sql})
+                VALUES ({placeholders})
+                ON CONFLICT ({merge_key_db})
+                DO UPDATE SET {update_sql}
+            """
+
+            cursor.execute(sql, values)
+            if cursor.rowcount > 1:
+                updated_count += 1
+            else:
+                inserted_count += 1
+
+        db.commit()
+        cursor.close()
+        return jsonify({'message': 'Data import successful', 'inserted': inserted_count, 'updated': updated_count})
+
+    except Exception as e:
+        db.rollback()
+        return jsonify({'error': f"Data import failed: {str(e)}"}), 500
 
 @app.route('/manager/dashboard')
 @login_required
@@ -910,6 +1153,14 @@ def support_ticket_detail(ticket_id):
     return render_template('support/ticket_detail.html', ticket_id=ticket_id)
 
 
+@app.route('/admin/reports')
+@login_required
+@role_required('Administrator')
+def admin_reports():
+    """Serves the main reporting page for Administrators."""
+    return render_template('admin/reports.html')
+
+
 # --- New API Endpoints for a Single Ticket ---
 
 @app.route('/api/support/ticket/<int:ticket_id>', methods=['GET'])
@@ -1054,6 +1305,54 @@ def add_ticket_update(ticket_id):
         db.rollback()
         cursor.close()
         return jsonify({"error": "An unexpected error occurred", "message": str(e)}), 500
+
+
+# --- API Endpoint for Admin Reports ---
+
+@app.route('/api/reports/assignment_overview', methods=['GET'])
+@login_required
+@role_required('Administrator')
+def get_assignment_overview():
+    """
+    Provides a comprehensive overview of all current assignments, joining
+    workers, phones, SIMs, and phone numbers.
+    """
+    db = get_db()
+    cursor = db.cursor()
+    query = """
+        SELECT 
+            w.full_name AS worker_name,
+            w.worker_id,
+            s.secteur_name,
+            p.asset_tag,
+            p.manufacturer,
+            p.model,
+            sc.iccid,
+            pn.phone_number,
+            a.assignment_date
+        FROM assignments a
+        JOIN workers w ON a.worker_id = w.id
+        JOIN secteurs s ON w.secteur_id = s.id
+        JOIN phones p ON a.phone_id = p.id
+        JOIN sim_cards sc ON a.sim_card_id = sc.id
+        LEFT JOIN phone_numbers pn ON sc.id = pn.sim_card_id
+        WHERE a.return_date IS NULL
+        ORDER BY s.secteur_name, w.full_name;
+    """
+    cursor.execute(query)
+    report_data = cursor.fetchall()
+    cursor.close()
+    
+    # Convert to list of dictionaries and format dates for JSON
+    result = []
+    for row in report_data:
+        row_dict = dict(row)
+        if row_dict.get('assignment_date'):
+            row_dict['assignment_date'] = row_dict['assignment_date'].isoformat()
+        result.append(row_dict)
+            
+    return jsonify(result)
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=True)
