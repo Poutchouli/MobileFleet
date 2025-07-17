@@ -122,6 +122,148 @@ def admin_workers():
     """Serves the page for managing workers."""
     return render_template('admin/workers.html')
 
+@app.route('/admin/users')
+@login_required
+@role_required('Administrator')
+def admin_users():
+    """Serves the page for managing users."""
+    return render_template('admin/users.html')
+
+# --- API Endpoints for Users and Roles ---
+@app.route('/api/roles', methods=['GET'])
+@login_required
+@role_required('Administrator')
+def get_roles():
+    """API endpoint to get all roles."""
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT id, role_name FROM roles ORDER BY role_name")
+    roles = cursor.fetchall()
+    cursor.close()
+    return jsonify(roles)
+
+@app.route('/api/users', methods=['GET'])
+@login_required
+@role_required('Administrator')
+def get_users():
+    """API endpoint to get all users with role information."""
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("""
+        SELECT u.id, u.username, u.full_name, u.email, r.role_name
+        FROM users u
+        JOIN roles r ON u.role_id = r.id
+        ORDER BY u.username
+    """)
+    users = cursor.fetchall()
+    cursor.close()
+    return jsonify(users)
+
+@app.route('/api/users', methods=['POST'])
+@login_required
+@role_required('Administrator')
+def create_user():
+    """API endpoint to create a new user."""
+    from werkzeug.security import generate_password_hash
+    data = request.get_json()
+    
+    if not data or not data.get('username') or not data.get('password') or not data.get('role_id'):
+        return jsonify({"error": "Missing required fields"}), 400
+
+    db = get_db()
+    cursor = db.cursor()
+    try:
+        password_hash = generate_password_hash(data['password'])
+        cursor.execute(
+            "INSERT INTO users (username, password_hash, full_name, email, role_id) VALUES (%s, %s, %s, %s, %s) RETURNING id;",
+            (data['username'], password_hash, data.get('full_name', ''), data.get('email', ''), data['role_id'])
+        )
+        new_user_id = cursor.fetchone()['id']
+        db.commit()
+        
+        # Fetch the full new user data for the response
+        cursor.execute("""
+            SELECT u.id, u.username, u.full_name, u.email, r.role_name
+            FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = %s
+        """, (new_user_id,))
+        new_user = cursor.fetchone()
+        cursor.close()
+        return jsonify(new_user), 201
+    except psycopg2.IntegrityError:
+        db.rollback()
+        return jsonify({"error": "A user with this username may already exist."}), 409
+    except Exception as e:
+        db.rollback()
+        return jsonify({"error": "An unexpected error occurred", "message": str(e)}), 500
+
+@app.route('/api/users/<int:user_id>', methods=['PUT'])
+@login_required
+@role_required('Administrator')
+def update_user(user_id):
+    """API endpoint to update an existing user."""
+    data = request.get_json()
+    db = get_db()
+    cursor = db.cursor()
+    
+    # Build update query dynamically based on provided fields
+    update_fields = []
+    values = []
+    
+    if 'full_name' in data:
+        update_fields.append("full_name = %s")
+        values.append(data['full_name'])
+    if 'email' in data:
+        update_fields.append("email = %s")
+        values.append(data['email'])
+    if 'role_id' in data:
+        update_fields.append("role_id = %s")
+        values.append(data['role_id'])
+    
+    if update_fields:
+        values.append(user_id)
+        cursor.execute(f"UPDATE users SET {', '.join(update_fields)} WHERE id = %s", values)
+        db.commit()
+    
+    cursor.execute("""
+        SELECT u.id, u.username, u.full_name, u.email, r.role_name
+        FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = %s
+    """, (user_id,))
+    updated_user = cursor.fetchone()
+    cursor.close()
+    return jsonify(updated_user)
+    """API endpoint to get all roles or create a new one."""
+    db = get_db()
+    cursor = db.cursor()
+    
+    if request.method == 'GET':
+        cursor.execute("SELECT id, role_name, description FROM roles ORDER BY role_name")
+        roles = cursor.fetchall()
+        cursor.close()
+        return jsonify(roles)
+    
+    if request.method == 'POST':
+        data = request.get_json()
+        if not data or not data.get('role_name'):
+            return jsonify({"error": "Role name is required."}), 400
+        
+        try:
+            cursor.execute(
+                "INSERT INTO roles (role_name, description) VALUES (%s, %s) RETURNING *;",
+                (data['role_name'], data.get('description', ''))
+            )
+            new_role = cursor.fetchone()
+            db.commit()
+            cursor.close()
+            return jsonify(new_role), 201
+        except psycopg2.IntegrityError:
+            db.rollback()
+            cursor.close()
+            return jsonify({"error": "A role with this name already exists."}), 409
+        except Exception as e:
+            db.rollback()
+            cursor.close()
+            return jsonify({"error": "An unexpected error occurred", "message": str(e)}), 500
+
 @app.route('/manager/dashboard')
 @login_required
 @role_required('Manager')
@@ -249,11 +391,13 @@ def handle_sim(item_id):
         cursor.close()
         return jsonify({"message": f"SIM {item['iccid']} has been deactivated."})
 
-# WORKERS & SECTEURS
+# --- RESTful API Endpoints for Workers & Secteurs ---
+
 @app.route('/api/secteurs', methods=['GET'])
 @login_required
 @role_required('Administrator')
 def get_secteurs():
+    """API endpoint to get a list of all secteurs."""
     db = get_db()
     cursor = db.cursor()
     cursor.execute("SELECT id, secteur_name FROM secteurs ORDER BY secteur_name")
@@ -261,50 +405,91 @@ def get_secteurs():
     cursor.close()
     return jsonify(secteurs)
 
-@app.route('/api/workers', methods=['GET', 'POST'])
+@app.route('/api/workers', methods=['GET'])
 @login_required
 @role_required('Administrator')
-def handle_workers():
+def get_workers():
+    """API endpoint to get a list of all active workers with their sector name."""
     db = get_db()
     cursor = db.cursor()
-    if request.method == 'GET':
-        cursor.execute("SELECT w.id, w.worker_id, w.full_name, w.status, s.secteur_name FROM workers w JOIN secteurs s ON w.secteur_id = s.id WHERE w.status = 'Active' ORDER BY w.full_name")
-        items = cursor.fetchall()
-        cursor.close()
-        return jsonify(items)
-    if request.method == 'POST':
-        data = request.get_json()
-        try:
-            cursor.execute("INSERT INTO workers (worker_id, full_name, secteur_id, status) VALUES (%s, %s, %s, 'Active') RETURNING id;", (data['worker_id'], data['full_name'], data['secteur_id']))
-            new_id = cursor.fetchone()['id']
-            db.commit()
-            cursor.execute("SELECT w.id, w.worker_id, w.full_name, w.status, s.secteur_name FROM workers w JOIN secteurs s ON w.secteur_id = s.id WHERE w.id = %s", (new_id,))
-            new_item = cursor.fetchone()
-            cursor.close()
-            return jsonify(new_item), 201
-        except psycopg2.IntegrityError:
-            db.rollback()
-            return jsonify({"error": "A worker with this Worker ID may already exist."}), 409
+    cursor.execute("""
+        SELECT w.id, w.worker_id, w.full_name, w.status, s.secteur_name
+        FROM workers w
+        JOIN secteurs s ON w.secteur_id = s.id
+        WHERE w.status = 'Active'
+        ORDER BY w.full_name
+    """)
+    workers = cursor.fetchall()
+    cursor.close()
+    return jsonify(workers)
 
-@app.route('/api/workers/<int:item_id>', methods=['PUT', 'DELETE'])
+@app.route('/api/workers', methods=['POST'])
 @login_required
 @role_required('Administrator')
-def handle_worker(item_id):
+def create_worker():
+    """API endpoint to create a new worker."""
+    data = request.get_json()
+    if not data or not data.get('worker_id') or not data.get('full_name') or not data.get('secteur_id'):
+        return jsonify({"error": "Missing required fields"}), 400
+
     db = get_db()
     cursor = db.cursor()
-    if request.method == 'PUT':
-        data = request.get_json()
-        cursor.execute("UPDATE workers SET worker_id = %s, full_name = %s, secteur_id = %s WHERE id = %s;", (data['worker_id'], data['full_name'], data['secteur_id'], item_id))
+    try:
+        cursor.execute(
+            "INSERT INTO workers (worker_id, full_name, secteur_id, status) VALUES (%s, %s, %s, 'Active') RETURNING id;",
+            (data['worker_id'], data['full_name'], data['secteur_id'])
+        )
+        new_worker_id = cursor.fetchone()['id']
         db.commit()
-        cursor.execute("SELECT w.id, w.worker_id, w.full_name, w.status, s.secteur_name FROM workers w JOIN secteurs s ON w.secteur_id = s.id WHERE w.id = %s", (item_id,))
-        updated_item = cursor.fetchone()
+        
+        # Fetch the full new worker data for the response
+        cursor.execute("""
+            SELECT w.id, w.worker_id, w.full_name, w.status, s.secteur_name
+            FROM workers w JOIN secteurs s ON w.secteur_id = s.id WHERE w.id = %s
+        """, (new_worker_id,))
+        new_worker = cursor.fetchone()
         cursor.close()
-        return jsonify(updated_item)
-    if request.method == 'DELETE':
-        cursor.execute("UPDATE workers SET status = 'Inactive' WHERE id = %s", (item_id,))
-        db.commit()
-        cursor.close()
-        return jsonify({"message": "Worker has been set to Inactive."})
+        return jsonify(new_worker), 201
+    except psycopg2.IntegrityError:
+        db.rollback()
+        return jsonify({"error": "A worker with this Worker ID may already exist."}), 409
+    except Exception as e:
+        db.rollback()
+        return jsonify({"error": "An unexpected error occurred", "message": str(e)}), 500
+
+@app.route('/api/workers/<int:worker_id>', methods=['PUT'])
+@login_required
+@role_required('Administrator')
+def update_worker(worker_id):
+    """API endpoint to update an existing worker."""
+    data = request.get_json()
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute(
+        "UPDATE workers SET worker_id = %s, full_name = %s, secteur_id = %s WHERE id = %s;",
+        (data['worker_id'], data['full_name'], data['secteur_id'], worker_id)
+    )
+    db.commit()
+    
+    cursor.execute("""
+        SELECT w.id, w.worker_id, w.full_name, w.status, s.secteur_name
+        FROM workers w JOIN secteurs s ON w.secteur_id = s.id WHERE w.id = %s
+    """, (worker_id,))
+    updated_worker = cursor.fetchone()
+    cursor.close()
+    return jsonify(updated_worker)
+
+@app.route('/api/workers/<int:worker_id>', methods=['DELETE'])
+@login_required
+@role_required('Administrator')
+def delete_worker(worker_id):
+    """API endpoint to 'delete' a worker by setting their status to 'Inactive'."""
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("UPDATE workers SET status = 'Inactive' WHERE id = %s", (worker_id,))
+    db.commit()
+    cursor.close()
+    return jsonify({"message": "Worker has been set to Inactive."}), 200
 
 
 if __name__ == "__main__":

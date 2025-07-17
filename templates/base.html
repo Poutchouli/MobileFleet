@@ -1,0 +1,35 @@
+<!-- templates/base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Fleet Management{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen flex">
+        <!-- Sidebar Navigation -->
+        {% include 'components/sidebar.html' %}
+
+        <!-- Main Content -->
+        <div class="flex-1 p-10">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-8">
+                <h1 class="text-3xl font-bold">{% block page_title %}Dashboard{% endblock %}</h1>
+                <div>
+                    <span>Welcome, {{ session.username }}</span>
+                    <a href="{{ url_for('logout') }}" class="ml-4 text-indigo-600 hover:text-indigo-900">Logout</a>
+                </div>
+            </div>
+
+            <!-- Page Content -->
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <!-- Global Scripts -->
+    {% block scripts %}{% endblock %}
+</body>
+</html>
