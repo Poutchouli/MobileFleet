@@ -1,7 +1,7 @@
 <!-- templates/components/nav/manager_nav.html -->
 <nav>
-    <a href="{{ url_for('manager_dashboard') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'manager_dashboard' %}bg-gray-700{% else %}hover:bg-gray-700{% endif %}">Dashboard</a>
-    <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Reports</a>
-    <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Assignments</a>
-    <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Workers</a>
+    <a href="{{ url_for('manager_dashboard') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'manager_dashboard' %}active{% else %}hover:bg-gray-700{% endif %}">Dashboard</a>
+    <a href="{{ url_for('manager_workers') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'manager_workers' %}active{% else %}hover:bg-gray-700{% endif %}">Workers</a>
+    <a href="{{ url_for('manager_assignments') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'manager_assignments' %}active{% else %}hover:bg-gray-700{% endif %}">Assignments</a>
+    <a href="{{ url_for('manager_reports') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'manager_reports' %}active{% else %}hover:bg-gray-700{% endif %}">Reports</a>
 </nav>

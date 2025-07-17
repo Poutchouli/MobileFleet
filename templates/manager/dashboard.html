@@ -1,22 +1,79 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manager Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100">
-    <div class="min-h-screen flex">
-        <!-- Sidebar -->
-        <div class="bg-blue-800 text-white w-64 space-y-6 py-7 px-2">
-            <a href="#" class="text-white text-2xl font-extrabold px-4">FleetManager</a>
-            <nav>
-                <a href="#" class="block py-2.5 px-4 rounded transition duration-200 bg-blue-700">Dashboard</a>
-                <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-blue-700">Create Ticket</a>
-                <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-blue-700">View Reports</a>
-            </nav>
+{% extends "base.html" %}
+
+{% block title %}Manager Dashboard{% endblock %}
+
+{% block page_title %}Manager Dashboard{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+    <!-- Workers Overview -->
+    <div class="custom-card">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Active Workers</p>
+                <p class="text-3xl font-bold text-gray-900">24</p>
+            </div>
+            <div class="p-3 bg-blue-100 rounded-full">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                </svg>
+            </div>
         </div>
+    </div>
+
+    <!-- Assignments Overview -->
+    <div class="custom-card">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Active Assignments</p>
+                <p class="text-3xl font-bold text-gray-900">18</p>
+            </div>
+            <div class="p-3 bg-green-100 rounded-full">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Tasks -->
+    <div class="custom-card">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Pending Tasks</p>
+                <p class="text-3xl font-bold text-gray-900">6</p>
+            </div>
+            <div class="p-3 bg-yellow-100 rounded-full">
+                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="custom-card">
+    <h2 class="text-xl font-semibold mb-4">Recent Activity</h2>
+    <div class="space-y-4">
+        <div class="flex items-center space-x-3">
+            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+            <p class="text-sm text-gray-600">Worker John Doe assigned new device (Asset: PHN-001)</p>
+            <span class="text-xs text-gray-400">2 hours ago</span>
+        </div>
+        <div class="flex items-center space-x-3">
+            <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+            <p class="text-sm text-gray-600">New worker Sarah Smith added to sector Alpha</p>
+            <span class="text-xs text-gray-400">4 hours ago</span>
+        </div>
+        <div class="flex items-center space-x-3">
+            <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
+            <p class="text-sm text-gray-600">Device PHN-015 reported for maintenance</p>
+            <span class="text-xs text-gray-400">1 day ago</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
 
         <!-- Main Content -->
         <div class="flex-1 p-10">

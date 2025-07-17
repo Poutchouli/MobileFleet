@@ -1,7 +1,7 @@
 <!-- templates/components/nav/support_nav.html -->
 <nav>
-    <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Dashboard</a>
-    <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Tickets</a>
-    <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Assignments</a>
-    <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Workers</a>
+    <a href="{{ url_for('support_dashboard') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'support_dashboard' %}active{% else %}hover:bg-gray-700{% endif %}">Dashboard</a>
+    <a href="{{ url_for('support_tickets') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'support_tickets' %}active{% else %}hover:bg-gray-700{% endif %}">Support Tickets</a>
+    <a href="{{ url_for('support_devices') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'support_devices' %}active{% else %}hover:bg-gray-700{% endif %}">Device Status</a>
+    <a href="{{ url_for('support_repairs') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'support_repairs' %}active{% else %}hover:bg-gray-700{% endif %}">Repairs</a>
 </nav>

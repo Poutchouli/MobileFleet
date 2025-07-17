@@ -1,138 +1,110 @@
-<!-- templates/admin/roles.html -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Roles - Admin</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100">
-    <div class="min-h-screen flex">
-        <!-- Sidebar -->
-        <div class="bg-gray-800 text-white w-64 space-y-6 py-7 px-2">
-            <a href="#" class="text-white text-2xl font-extrabold px-4">FleetAdmin</a>
-            <nav>
-                <a href="{{ url_for('admin_dashboard') }}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Dashboard</a>
-                <a href="{{ url_for('admin_phones') }}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Phones</a>
-                <a href="{{ url_for('admin_sims') }}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">SIM Cards</a>
-                <a href="{{ url_for('admin_workers') }}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Workers</a>
-                <a href="{{ url_for('admin_users') }}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Users</a>
-                <a href="{{ url_for('admin_roles') }}" class="block py-2.5 px-4 rounded transition duration-200 bg-gray-700">Roles</a>
-            </nav>
-        </div>
+{% extends "base.html" %}
 
-        <!-- Main Content -->
-        <div class="flex-1 p-10">
-            <div class="flex justify-between items-center mb-8">
-                <h1 class="text-3xl font-bold">Manage System Roles</h1>
-                <div>
-                    <span>Welcome, {{ session.username }}</span>
-                    <a href="{{ url_for('logout') }}" class="ml-4 text-indigo-600 hover:text-indigo-900">Logout</a>
-                </div>
-            </div>
+{% block title %}Manage Roles - Admin{% endblock %}
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Existing Roles List -->
-                <div class="md:col-span-2 bg-white p-6 rounded-lg shadow">
-                    <h2 class="text-xl font-semibold mb-4">Existing Roles</h2>
-                    <ul id="roles-list" class="space-y-3">
-                        <!-- JS will populate this -->
-                    </ul>
-                </div>
+{% block page_title %}Manage System Roles{% endblock %}
 
-                <!-- Add New Role Form -->
-                <div class="bg-white p-6 rounded-lg shadow">
-                    <h2 class="text-xl font-semibold mb-4">Add New Role</h2>
-                    <form id="add-role-form" class="space-y-4">
-                        <div>
-                            <label for="role_name" class="block text-sm font-medium text-gray-700">Role Name*</label>
-                            <input type="text" name="role_name" id="role_name" required class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
-                        </div>
-                        <div>
-                            <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
-                            <textarea name="description" id="description" rows="3" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"></textarea>
-                        </div>
-                        <div>
-                            <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
-                                Create Role
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <!-- Existing Roles List -->
+    <div class="md:col-span-2 custom-card">
+        <h2 class="text-xl font-semibold mb-4">Existing Roles</h2>
+        <ul id="roles-list" class="space-y-3">
+            <!-- JS will populate this -->
+        </ul>
     </div>
-    
-    <div id="toast" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg hidden"><p id="toast-message"></p></div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const rolesList = document.getElementById('roles-list');
-            const addRoleForm = document.getElementById('add-role-form');
+    <!-- Add New Role Form -->
+    <div class="custom-card">
+        <h2 class="text-xl font-semibold mb-4">Add New Role</h2>
+        <form id="add-role-form" class="space-y-4">
+            <div class="form-group">
+                <label for="role_name" class="form-label">Role Name*</label>
+                <input type="text" name="role_name" id="role_name" required class="form-input">
+            </div>
+            <div class="form-group">
+                <label for="description" class="form-label">Description</label>
+                <textarea name="description" id="description" rows="3" class="form-input"></textarea>
+            </div>
+            <div>
+                <button type="submit" class="btn btn-primary w-full">
+                    Create Role
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
-            function showToast(message, isError = false) {
-                const toast = document.getElementById('toast');
-                const toastMessage = document.getElementById('toast-message');
-                toastMessage.textContent = message;
-                toast.className = `fixed top-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg ${isError ? 'bg-red-500' : 'bg-green-500'}`;
-                toast.classList.remove('hidden');
-                setTimeout(() => toast.classList.add('hidden'), 3000);
+<div id="toast" class="toast hidden">
+    <p id="toast-message"></p>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const rolesList = document.getElementById('roles-list');
+        const addRoleForm = document.getElementById('add-role-form');
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            toastMessage.textContent = message;
+            toast.className = `toast ${isError ? 'toast-error' : 'toast-success'}`;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+
+        async function fetchRoles() {
+            try {
+                const response = await fetch('/api/roles');
+                if (!response.ok) throw new Error('Could not fetch roles.');
+                const roles = await response.json();
+                renderRoles(roles);
+            } catch (error) {
+                showToast(error.message, true);
             }
+        }
 
-            async function fetchRoles() {
-                try {
-                    const response = await fetch('/api/roles');
-                    if (!response.ok) throw new Error('Could not fetch roles.');
-                    const roles = await response.json();
-                    renderRoles(roles);
-                } catch (error) {
-                    showToast(error.message, true);
-                }
+        function renderRoles(roles) {
+            rolesList.innerHTML = '';
+            if (roles.length === 0) {
+                rolesList.innerHTML = '<p class="text-gray-500">No roles found.</p>';
+                return;
             }
-
-            function renderRoles(roles) {
-                rolesList.innerHTML = '';
-                if (roles.length === 0) {
-                    rolesList.innerHTML = '<p class="text-gray-500">No roles found.</p>';
-                    return;
-                }
-                roles.forEach(role => {
-                    const roleItem = `
-                        <li class="p-4 border rounded-md bg-gray-50">
-                            <h3 class="font-semibold text-gray-900">${role.role_name}</h3>
-                            <p class="text-sm text-gray-600">${role.description || 'No description provided.'}</p>
-                        </li>
-                    `;
-                    rolesList.insertAdjacentHTML('beforeend', roleItem);
-                });
-            }
-
-            addRoleForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                const formData = new FormData(addRoleForm);
-                const roleData = Object.fromEntries(formData.entries());
-
-                try {
-                    const response = await fetch('/api/roles', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(roleData)
-                    });
-                    const result = await response.json();
-                    if (!response.ok) throw new Error(result.error || 'Failed to create role.');
-                    
-                    showToast('Role created successfully!');
-                    addRoleForm.reset();
-                    fetchRoles(); // Refresh the list
-                } catch (error) {
-                    showToast(error.message, true);
-                }
+            roles.forEach(role => {
+                const roleItem = `
+                    <li class="p-4 border rounded-md bg-gray-50">
+                        <h3 class="font-semibold text-gray-900">${role.role_name}</h3>
+                        <p class="text-sm text-gray-600">${role.description || 'No description provided.'}</p>
+                    </li>
+                `;
+                rolesList.insertAdjacentHTML('beforeend', roleItem);
             });
+        }
 
-            // Initial Load
-            fetchRoles();
+        addRoleForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(addRoleForm);
+            const roleData = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('/api/roles', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(roleData)
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || 'Failed to create role.');
+                
+                showToast('Role created successfully!');
+                addRoleForm.reset();
+                fetchRoles(); // Refresh the list
+            } catch (error) {
+                showToast(error.message, true);
+            }
         });
-    </script>
-</body>
-</html>
+
+        // Initial Load
+        fetchRoles();
+    });
+</script>
+{% endblock %}

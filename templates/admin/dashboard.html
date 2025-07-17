@@ -6,18 +6,18 @@
 
 {% block content %}
 <!-- Content goes here -->
-<div class="bg-white p-6 rounded-lg shadow">
+<div class="custom-card">
     <h2 class="text-xl font-semibold mb-4">Phone Inventory</h2>
-    <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
+    <table class="custom-table">
+        <thead>
             <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset Tag</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IMEI</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th>Asset Tag</th>
+                <th>Model</th>
+                <th>IMEI</th>
+                <th>Status</th>
             </tr>
         </thead>
-        <tbody id="phones-table-body" class="bg-white divide-y divide-gray-200">
+        <tbody id="phones-table-body">
             <!-- Rows will be inserted by JavaScript -->
         </tbody>
     </table>
@@ -42,13 +42,16 @@
 
                 let rows = '';
                 data.forEach(phone => {
+                    const statusClass = phone.status === 'In Stock' ? 'status-available' : 
+                                       phone.status === 'In Use' ? 'status-assigned' : 
+                                       'status-maintenance';
                     rows += `
                         <tr>
-                            <td class="px-6 py-4 whitespace-nowrap">${phone.asset_tag}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">${phone.manufacturer} ${phone.model}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">${phone.imei}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${phone.status === 'In Use' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                            <td>${phone.asset_tag}</td>
+                            <td>${phone.manufacturer} ${phone.model}</td>
+                            <td>${phone.imei}</td>
+                            <td>
+                                <span class="status-badge ${statusClass}">
                                     ${phone.status}
                                 </span>
                             </td>

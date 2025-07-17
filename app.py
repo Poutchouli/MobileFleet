@@ -129,6 +129,13 @@ def admin_users():
     """Serves the page for managing users."""
     return render_template('admin/users.html')
 
+@app.route('/admin/roles')
+@login_required
+@role_required('Administrator')
+def admin_roles():
+    """Serves the page for managing roles."""
+    return render_template('admin/roles.html')
+
 # --- API Endpoints for Users and Roles ---
 @app.route('/api/roles', methods=['GET'])
 @login_required
