@@ -553,6 +553,19 @@ body {
     box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3);
 }
 
+/* === Wizard Step Styles === */
+.wizard-step {
+    transition: all 0.3s ease-in-out;
+}
+
+.wizard-step.active {
+    display: block;
+}
+
+.wizard-step.hidden {
+    display: none;
+}
+
 /* === Dark Mode Support (Future) === */
 @media (prefers-color-scheme: dark) {
     /* Dark mode styles can be added here later */

@@ -1,106 +1,196 @@
 {% extends "base.html" %}
-
 {% block title %}Manager Dashboard{% endblock %}
 
-{% block page_title %}Manager Dashboard{% endblock %}
+{% block page_title %}Team Dashboard{% endblock %}
 
 {% block content %}
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-    <!-- Workers Overview -->
-    <div class="custom-card">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-sm font-medium text-gray-600">Active Workers</p>
-                <p class="text-3xl font-bold text-gray-900">24</p>
-            </div>
-            <div class="p-3 bg-blue-100 rounded-full">
-                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                </svg>
-            </div>
-        </div>
-    </div>
-
-    <!-- Assignments Overview -->
-    <div class="custom-card">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-sm font-medium text-gray-600">Active Assignments</p>
-                <p class="text-3xl font-bold text-gray-900">18</p>
-            </div>
-            <div class="p-3 bg-green-100 rounded-full">
-                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                </svg>
-            </div>
-        </div>
-    </div>
-
-    <!-- Pending Tasks -->
-    <div class="custom-card">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-sm font-medium text-gray-600">Pending Tasks</p>
-                <p class="text-3xl font-bold text-gray-900">6</p>
-            </div>
-            <div class="p-3 bg-yellow-100 rounded-full">
-                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Recent Activity -->
 <div class="custom-card">
-    <h2 class="text-xl font-semibold mb-4">Recent Activity</h2>
-    <div class="space-y-4">
-        <div class="flex items-center space-x-3">
-            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-            <p class="text-sm text-gray-600">Worker John Doe assigned new device (Asset: PHN-001)</p>
-            <span class="text-xs text-gray-400">2 hours ago</span>
-        </div>
-        <div class="flex items-center space-x-3">
-            <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
-            <p class="text-sm text-gray-600">New worker Sarah Smith added to sector Alpha</p>
-            <span class="text-xs text-gray-400">4 hours ago</span>
-        </div>
-        <div class="flex items-center space-x-3">
-            <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
-            <p class="text-sm text-gray-600">Device PHN-015 reported for maintenance</p>
-            <span class="text-xs text-gray-400">1 day ago</span>
-        </div>
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">My Team's Status</h2>
+        <button id="create-ticket-btn" class="btn btn-primary">Create New Ticket</button>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Worker Name</th>
+                    <th>Assigned Phone</th>
+                    <th>Phone Status</th>
+                    <th>Support Status</th>
+                </tr>
+            </thead>
+            <tbody id="team-status-table-body">
+                <!-- JS will populate this -->
+            </tbody>
+        </table>
     </div>
 </div>
-{% endblock %}
 
-        <!-- Main Content -->
-        <div class="flex-1 p-10">
-            <div class="flex justify-between items-center mb-8">
-                <h1 class="text-3xl font-bold">Manager Dashboard</h1>
-                <div>
-                    <span>Welcome, {{ session.username }}</span>
-                    <a href="{{ url_for('logout') }}" class="ml-4 text-indigo-600 hover:text-indigo-900">Logout</a>
+<!-- Create Ticket Modal -->
+<div id="ticket-modal" class="custom-modal hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="custom-modal-backdrop"></div>
+    <div class="custom-modal-content">
+        <form id="ticket-form" class="custom-form">
+            <div class="custom-modal-header">
+                <h3 id="modal-title" class="custom-modal-title">Create New Support Ticket</h3>
+            </div>
+            <div class="custom-modal-body">
+                <div class="custom-form-grid">
+                    <div class="custom-form-group custom-form-group-full">
+                        <label for="phone_id" class="custom-label">Worker / Phone*</label>
+                        <select id="phone_id" name="phone_id" required class="custom-input">
+                            <option value="">Select a worker's phone...</option>
+                            <!-- Options populated by JS -->
+                        </select>
+                    </div>
+                    <div class="custom-form-group">
+                        <label for="title" class="custom-label">Issue Title*</label>
+                        <input type="text" name="title" id="title" required class="custom-input" placeholder="e.g., Screen is cracked">
+                    </div>
+                    <div class="custom-form-group">
+                        <label for="priority" class="custom-label">Priority*</label>
+                        <select id="priority" name="priority" required class="custom-input">
+                            <option>Low</option>
+                            <option>Medium</option>
+                            <option>High</option>
+                            <option>Urgent</option>
+                        </select>
+                    </div>
+                    <div class="custom-form-group custom-form-group-full">
+                        <label for="description" class="custom-label">Full Description*</label>
+                        <textarea id="description" name="description" rows="4" required class="custom-input" placeholder="Please provide as much detail as possible..."></textarea>
+                    </div>
                 </div>
             </div>
-
-            <!-- Manager Dashboard Content -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-lg shadow">
-                    <h3 class="text-lg font-semibold mb-2">Fleet Overview</h3>
-                    <p class="text-gray-600">Future implementation: Manager's view of fleet status and metrics</p>
-                </div>
-                <div class="bg-white p-6 rounded-lg shadow">
-                    <h3 class="text-lg font-semibold mb-2">Active Tickets</h3>
-                    <p class="text-gray-600">Future implementation: Display tickets created by this manager</p>
-                </div>
-                <div class="bg-white p-6 rounded-lg shadow">
-                    <h3 class="text-lg font-semibold mb-2">Quick Actions</h3>
-                    <p class="text-gray-600">Future implementation: Quick access to common manager tasks</p>
-                </div>
+            <div class="custom-modal-footer">
+                <button type="button" id="cancel-ticket-btn" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit Ticket</button>
             </div>
-        </div>
+        </form>
     </div>
-</body>
-</html>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg hidden">
+    <p id="toast-message"></p>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tableBody = document.getElementById('team-status-table-body');
+        
+        // Modal elements
+        const ticketModal = document.getElementById('ticket-modal');
+        const createTicketBtn = document.getElementById('create-ticket-btn');
+        const cancelTicketBtn = document.getElementById('cancel-ticket-btn');
+        const ticketForm = document.getElementById('ticket-form');
+        const phoneSelect = document.getElementById('phone_id');
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            toastMessage.textContent = message;
+            toast.className = `fixed top-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg ${isError ? 'bg-red-500' : 'bg-green-500'}`;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+
+        async function fetchTeamStatus() {
+            try {
+                const response = await fetch('/api/manager/team_status');
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to fetch team status');
+                }
+                const teamStatus = await response.json();
+                renderTable(teamStatus);
+            } catch (error) {
+                showToast(error.message, true);
+            }
+        }
+
+        function renderTable(teamStatus) {
+            tableBody.innerHTML = '';
+            if (teamStatus.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4" class="text-center py-4">No workers found in your sectors.</td></tr>';
+                return;
+            }
+            teamStatus.forEach(member => {
+                const phoneInfo = member.asset_tag ? `${member.manufacturer} ${member.model} (${member.asset_tag})` : 'N/A';
+                const phoneStatus = member.phone_status ? `<span class="status-badge ${member.phone_status.toLowerCase().replace(' ', '-')}">${member.phone_status}</span>` : 'N/A';
+                
+                let supportStatus;
+                if (member.open_ticket_count > 0) {
+                    supportStatus = `<span class="status-badge retired">${member.open_ticket_count} Open Ticket(s)</span>`;
+                } else {
+                    supportStatus = `<span class="status-badge active">OK</span>`;
+                }
+
+                const row = `
+                    <tr>
+                        <td class="font-medium">${member.worker_name}</td>
+                        <td>${phoneInfo}</td>
+                        <td>${phoneStatus}</td>
+                        <td>${supportStatus}</td>
+                    </tr>
+                `;
+                tableBody.insertAdjacentHTML('beforeend', row);
+            });
+        }
+
+        // --- Ticket Modal Logic ---
+        
+        function openTicketModal() { ticketModal.classList.remove('hidden'); }
+        function closeTicketModal() { ticketModal.classList.add('hidden'); ticketForm.reset(); }
+
+        async function populateTicketForm() {
+            try {
+                const response = await fetch('/api/manager/selectable_phones');
+                if (!response.ok) throw new Error('Could not load worker data.');
+                const selectablePhones = await response.json();
+                
+                phoneSelect.innerHTML = '<option value="">Select a worker\'s phone...</option>';
+                selectablePhones.forEach(phone => {
+                    const optionText = `${phone.worker_name} - (${phone.manufacturer} ${phone.model}, ${phone.asset_tag})`;
+                    phoneSelect.innerHTML += `<option value="${phone.phone_id}">${optionText}</option>`;
+                });
+
+            } catch (error) {
+                showToast(error.message, true);
+            }
+        }
+
+        createTicketBtn.addEventListener('click', () => {
+            populateTicketForm();
+            openTicketModal();
+        });
+        
+        cancelTicketBtn.addEventListener('click', closeTicketModal);
+
+        ticketForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(ticketForm);
+            const ticketData = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('/api/tickets', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(ticketData)
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || 'Failed to create ticket.');
+                
+                showToast('Ticket created successfully!');
+                closeTicketModal();
+                fetchTeamStatus(); // Refresh the main dashboard table
+            } catch (error) {
+                showToast(error.message, true);
+            }
+        });
+
+        // Initial Load
+        fetchTeamStatus();
+    });
+</script>
+{% endblock %}

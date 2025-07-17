@@ -8,9 +8,10 @@
 <div class="custom-card">
     <div class="flex justify-between items-center mb-4">
         <h2 class="text-xl font-semibold">Phone Inventory</h2>
-        <button id="add-phone-btn" class="btn btn-primary">
-            Add New Phone
-        </button>
+        <div class="flex items-center gap-x-4">
+            <a href="{{ url_for('admin_provision_wizard') }}" class="btn btn-secondary">Provision Phone</a>
+            <button id="add-phone-btn" class="btn btn-primary">Add New Phone</button>
+        </div>
     </div>
     <table class="custom-table">
         <thead>

@@ -1,7 +1,5 @@
 <!-- templates/components/nav/manager_nav.html -->
 <nav>
     <a href="{{ url_for('manager_dashboard') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'manager_dashboard' %}active{% else %}hover:bg-gray-700{% endif %}">Dashboard</a>
-    <a href="{{ url_for('manager_workers') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'manager_workers' %}active{% else %}hover:bg-gray-700{% endif %}">Workers</a>
-    <a href="{{ url_for('manager_assignments') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'manager_assignments' %}active{% else %}hover:bg-gray-700{% endif %}">Assignments</a>
-    <a href="{{ url_for('manager_reports') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'manager_reports' %}active{% else %}hover:bg-gray-700{% endif %}">Reports</a>
+    <!-- Future manager routes will be added here -->
 </nav>

@@ -9,6 +9,10 @@ from werkzeug.security import check_password_hash
 from flask import (
     Flask, request, jsonify, render_template, session, redirect, url_for, g
 )
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # --- App Initialization ---
 app = Flask(__name__)
@@ -80,6 +84,8 @@ def login():
             return redirect(url_for('admin_dashboard'))
         elif user['role_name'] == 'Manager':
             return redirect(url_for('manager_dashboard'))
+        elif user['role_name'] == 'Support':
+            return redirect(url_for('support_dashboard'))
         else:
             return redirect(url_for('login'))
     return render_template('login.html')
@@ -97,6 +103,8 @@ def index():
         return redirect(url_for('admin_dashboard'))
     elif role == 'Manager':
         return redirect(url_for('manager_dashboard'))
+    elif role == 'Support':
+        return redirect(url_for('support_dashboard'))
     return redirect(url_for('logout'))
 
 # --- Role-Specific Dashboards & Pages ---
@@ -138,6 +146,20 @@ def admin_users():
 def admin_roles():
     """Serves the page for managing roles."""
     return render_template('admin/roles.html')
+
+@app.route('/admin/provision')
+@login_required
+@role_required('Administrator')
+def admin_provision_wizard():
+    """Serves the multi-step phone provisioning wizard page."""
+    return render_template('admin/provision.html')
+
+@app.route('/support/dashboard')
+@login_required
+@role_required('Support')
+def support_dashboard():
+    """Serves the main helpdesk dashboard for Support staff."""
+    return render_template('support/dashboard.html')
 
 # --- API Endpoints for Users and Roles ---
 @app.route('/api/roles', methods=['GET', 'POST'])
@@ -353,12 +375,187 @@ def handle_role(role_id):
             cursor.close()
             return jsonify({"error": "An unexpected error occurred", "message": str(e)}), 500
 
+# --- New API Endpoints for Provisioning Wizard ---
+
+@app.route('/api/provision/validate_phone', methods=['POST'])
+@login_required
+@role_required('Administrator')
+def provision_validate_phone():
+    """Validates that a phone exists and is in stock for provisioning."""
+    data = request.get_json()
+    identifier = data.get('identifier')
+    if not identifier:
+        return jsonify({"error": "Phone identifier (Asset Tag, IMEI, or Serial) is required."}), 400
+
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute(
+        "SELECT id, asset_tag, manufacturer, model, status FROM phones WHERE asset_tag = %s OR imei = %s OR serial_number = %s",
+        (identifier, identifier, identifier)
+    )
+    phone = cursor.fetchone()
+    cursor.close()
+
+    if not phone:
+        return jsonify({"error": f"No phone found with identifier '{identifier}'."}), 404
+    
+    if phone['status'] != 'In Stock':
+        return jsonify({"error": f"Phone {phone['asset_tag']} is currently '{phone['status']}' and cannot be provisioned."}), 409
+        
+    return jsonify(phone)
+
+
+@app.route('/api/provision/available_assets', methods=['GET'])
+@login_required
+@role_required('Administrator')
+def provision_get_available_assets():
+    """Gets lists of available SIMs and Workers for assignment."""
+    db = get_db()
+    cursor = db.cursor()
+    
+    # Get SIMs in stock
+    cursor.execute("SELECT s.id, s.iccid, s.carrier, pn.phone_number FROM sim_cards s LEFT JOIN phone_numbers pn ON s.id = pn.sim_card_id WHERE s.status = 'In Stock' ORDER BY s.carrier, pn.phone_number")
+    sims = cursor.fetchall()
+
+    # Get active workers not currently assigned a phone
+    cursor.execute("""
+        SELECT w.id, w.full_name, w.worker_id FROM workers w
+        WHERE w.status = 'Active' AND w.id NOT IN (
+            SELECT worker_id FROM assignments WHERE return_date IS NULL
+        ) ORDER BY w.full_name
+    """)
+    workers = cursor.fetchall()
+    
+    cursor.close()
+    return jsonify({"sims": sims, "workers": workers})
+
+
+@app.route('/api/provision/finalize', methods=['POST'])
+@login_required
+@role_required('Administrator')
+def provision_finalize():
+    """Finalizes the provisioning process, creating the assignment and logs."""
+    data = request.get_json()
+    required_keys = ['phone_id', 'sim_id', 'worker_id']
+    if not all(key in data for key in required_keys):
+        return jsonify({"error": "Missing data for finalization."}), 400
+
+    phone_id = data['phone_id']
+    sim_id = data['sim_id']
+    worker_id = data['worker_id']
+    user_id = session['user_id']
+
+    db = get_db()
+    cursor = db.cursor()
+
+    try:
+        # 1. Create the new assignment
+        cursor.execute(
+            "INSERT INTO assignments (phone_id, sim_card_id, worker_id, assignment_date) VALUES (%s, %s, %s, now())",
+            (phone_id, sim_id, worker_id)
+        )
+
+        # 2. Update statuses
+        cursor.execute("UPDATE phones SET status = 'In Use' WHERE id = %s", (phone_id,))
+        cursor.execute("UPDATE sim_cards SET status = 'In Use' WHERE id = %s", (sim_id,))
+
+        # 3. Create log entries
+        log_event(cursor, 'Phone', phone_id, 'Provisioning Step', 'Physical inspection passed.')
+        log_event(cursor, 'Phone', phone_id, 'Provisioning Step', 'Software configured.')
+        log_event(cursor, 'Phone', phone_id, 'Assigned', f"Assigned to worker ID {worker_id}.")
+        log_event(cursor, 'SIM', sim_id, 'Assigned', f"Assigned to worker ID {worker_id} with phone ID {phone_id}.")
+
+        db.commit()
+        cursor.close()
+        return jsonify({"message": "Phone provisioned and assigned successfully!"})
+
+    except Exception as e:
+        db.rollback()
+        cursor.close()
+        return jsonify({"error": "An error occurred during finalization.", "details": str(e)}), 500
+
 @app.route('/manager/dashboard')
 @login_required
 @role_required('Manager')
 def manager_dashboard():
     """Serves the main dashboard for Managers."""
     return render_template('manager/dashboard.html')
+
+# --- API Endpoint for Manager Portal ---
+
+@app.route('/api/manager/team_status', methods=['GET'])
+@login_required
+@role_required('Manager')
+def get_manager_team_status():
+    """
+    API endpoint to get the status of all workers and their assigned assets
+    for the currently logged-in manager.
+    """
+    manager_id = session.get('user_id')
+    db = get_db()
+    cursor = db.cursor()
+    
+    # This query securely fetches only the workers belonging to the manager's sectors.
+    # It also gets details of their currently assigned phone and a count of any open tickets.
+    query = """
+        SELECT
+            w.id AS worker_id,
+            w.full_name AS worker_name,
+            p.id AS phone_id,
+            p.asset_tag,
+            p.manufacturer,
+            p.model,
+            p.status AS phone_status,
+            (SELECT COUNT(*)
+             FROM tickets t
+             WHERE t.phone_id = p.id AND t.status NOT IN ('Solved', 'Closed')) AS open_ticket_count
+        FROM workers w
+        LEFT JOIN assignments a ON w.id = a.worker_id AND a.return_date IS NULL
+        LEFT JOIN phones p ON a.phone_id = p.id
+        JOIN secteurs s ON w.secteur_id = s.id
+        WHERE s.manager_id = %s
+        ORDER BY w.full_name;
+    """
+    
+    cursor.execute(query, (manager_id,))
+    team_status = cursor.fetchall()
+    cursor.close()
+    
+    return jsonify(team_status)
+
+@app.route('/api/manager/selectable_phones', methods=['GET'])
+@login_required
+@role_required('Manager')
+def get_manager_selectable_phones():
+    """
+    API endpoint to get all phones assigned to workers under the current manager,
+    formatted for ticket creation dropdown.
+    """
+    manager_id = session.get('user_id')
+    db = get_db()
+    cursor = db.cursor()
+    
+    # Get all phones assigned to workers in the manager's sectors
+    query = """
+        SELECT
+            p.id AS phone_id,
+            w.full_name AS worker_name,
+            p.asset_tag,
+            p.manufacturer,
+            p.model
+        FROM phones p
+        JOIN assignments a ON p.id = a.phone_id AND a.return_date IS NULL
+        JOIN workers w ON a.worker_id = w.id
+        JOIN secteurs s ON w.secteur_id = s.id
+        WHERE s.manager_id = %s
+        ORDER BY w.full_name;
+    """
+    
+    cursor.execute(query, (manager_id,))
+    selectable_phones = cursor.fetchall()
+    cursor.close()
+    
+    return jsonify(selectable_phones)
 
 # --- API Endpoints ---
 
@@ -581,6 +778,282 @@ def delete_worker(worker_id):
     cursor.close()
     return jsonify({"message": "Worker has been set to Inactive."}), 200
 
+# --- API Endpoint for Support Portal ---
+
+@app.route('/api/support/tickets', methods=['GET'])
+@login_required
+@role_required('Support')
+def get_all_active_tickets():
+    """
+    API endpoint for Support to get all tickets that are not yet solved or closed.
+    """
+    db = get_db()
+    cursor = db.cursor()
+    
+    # This query joins tickets with phones and the reporting manager's user table
+    # to provide a comprehensive overview for the helpdesk.
+    query = """
+        SELECT 
+            t.id AS ticket_id,
+            t.title,
+            t.status,
+            t.priority,
+            t.created_at,
+            p.asset_tag AS phone_asset_tag,
+            reporter.full_name AS reported_by,
+            assignee.full_name AS assigned_to
+        FROM tickets t
+        JOIN phones p ON t.phone_id = p.id
+        JOIN users reporter ON t.reported_by_manager_id = reporter.id
+        LEFT JOIN users assignee ON t.assigned_to_support_id = assignee.id
+        WHERE t.status NOT IN ('Solved', 'Closed')
+        ORDER BY
+            CASE t.priority
+                WHEN 'Urgent' THEN 1
+                WHEN 'High' THEN 2
+                WHEN 'Medium' THEN 3
+                WHEN 'Low' THEN 4
+            END,
+            t.created_at ASC;
+    """
+    
+    cursor.execute(query)
+    tickets = cursor.fetchall()
+    cursor.close()
+    
+    # Convert datetime objects to string format for JSON serialization
+    for ticket in tickets:
+        ticket['created_at'] = ticket['created_at'].isoformat()
+        
+    return jsonify(tickets)
+
+# --- API Endpoint for Ticket Creation ---
+
+@app.route('/api/tickets', methods=['POST'])
+@login_required
+@role_required('Manager')
+def create_ticket():
+    """
+    API endpoint for Managers to create new support tickets.
+    """
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        required_fields = ['phone_id', 'title', 'description', 'priority']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+        
+        # Validate priority
+        valid_priorities = ['Low', 'Medium', 'High', 'Urgent']
+        if data['priority'] not in valid_priorities:
+            return jsonify({'error': 'Invalid priority level'}), 400
+        
+        db = get_db()
+        cursor = db.cursor()
+        
+        # Verify the phone exists and belongs to the manager's sector
+        phone_check_query = """
+            SELECT p.id, p.asset_tag, w.full_name as worker_name
+            FROM phones p
+            JOIN assignments a ON p.id = a.phone_id AND a.return_date IS NULL
+            JOIN workers w ON a.worker_id = w.id
+            JOIN secteurs s ON w.secteur_id = s.id
+            WHERE p.id = %s AND s.manager_id = %s
+        """
+        cursor.execute(phone_check_query, (data['phone_id'], session.get('user_id')))
+        phone_info = cursor.fetchone()
+        
+        if not phone_info:
+            cursor.close()
+            return jsonify({'error': 'Phone not found or not in your sector'}), 400
+        
+        # Insert the new ticket
+        insert_query = """
+            INSERT INTO tickets (title, description, phone_id, reported_by_manager_id, status, priority)
+            VALUES (%s, %s, %s, %s, 'New', %s)
+            RETURNING id
+        """
+        cursor.execute(insert_query, (
+            data['title'],
+            data['description'],
+            data['phone_id'],
+            session.get('user_id'),
+            data['priority']
+        ))
+        
+        ticket_id = cursor.fetchone()['id']
+        db.commit()
+        cursor.close()
+        
+        return jsonify({
+            'message': 'Ticket created successfully',
+            'ticket_id': ticket_id,
+            'phone_info': phone_info
+        }), 201
+        
+    except Exception as e:
+        if 'db' in locals():
+            db.rollback()
+        if 'cursor' in locals():
+            cursor.close()
+        return jsonify({'error': f'Failed to create ticket: {str(e)}'}), 500
+
+# --- New Route for Support Ticket Detail Page ---
+
+@app.route('/support/ticket/<int:ticket_id>')
+@login_required
+@role_required('Support')
+def support_ticket_detail(ticket_id):
+    """Serves the detailed view page for a single support ticket."""
+    return render_template('support/ticket_detail.html', ticket_id=ticket_id)
+
+
+# --- New API Endpoints for a Single Ticket ---
+
+@app.route('/api/support/ticket/<int:ticket_id>', methods=['GET'])
+@login_required
+@role_required('Support')
+def get_ticket_details(ticket_id):
+    """
+    API endpoint to get all details for a single ticket, including phone,
+    worker, and all historical updates.
+    """
+    db = get_db()
+    cursor = db.cursor()
+    
+    # Main ticket details query
+    ticket_query = """
+        SELECT 
+            t.*,
+            p.asset_tag, p.manufacturer, p.model, p.serial_number,
+            w.full_name AS worker_name,
+            reporter.full_name AS reported_by,
+            assignee.full_name AS assigned_to
+        FROM tickets t
+        JOIN phones p ON t.phone_id = p.id
+        JOIN users reporter ON t.reported_by_manager_id = reporter.id
+        LEFT JOIN users assignee ON t.assigned_to_support_id = assignee.id
+        LEFT JOIN assignments a ON t.phone_id = a.phone_id AND a.return_date IS NULL
+        LEFT JOIN workers w ON a.worker_id = w.id
+        WHERE t.id = %s;
+    """
+    cursor.execute(ticket_query, (ticket_id,))
+    ticket_details = cursor.fetchone()
+
+    if not ticket_details:
+        cursor.close()
+        return jsonify({"error": "Ticket not found"}), 404
+
+    # Updates query
+    updates_query = """
+        SELECT
+            tu.id,
+            tu.update_text,
+            tu.created_at,
+            tu.is_internal_note,
+            u.full_name AS author_name
+        FROM ticket_updates tu
+        JOIN users u ON tu.update_author_id = u.id
+        WHERE tu.ticket_id = %s
+        ORDER BY tu.created_at ASC;
+    """
+    cursor.execute(updates_query, (ticket_id,))
+    ticket_updates = cursor.fetchall()
+    
+    cursor.close()
+
+    # Combine results and format dates for JSON
+    ticket_details['updates'] = [dict(update) for update in ticket_updates]
+    for key, value in ticket_details.items():
+        if hasattr(value, 'isoformat'):
+            ticket_details[key] = value.isoformat()
+    for update in ticket_details['updates']:
+        update['created_at'] = update['created_at'].isoformat()
+            
+    return jsonify(ticket_details)
+
+
+@app.route('/api/support/ticket/<int:ticket_id>', methods=['PUT'])
+@login_required
+@role_required('Support')
+def update_ticket_properties(ticket_id):
+    """
+    API endpoint for Support to update a ticket's core properties like
+    status, priority, or assignment.
+    """
+    data = request.get_json()
+    
+    # Fields that a support agent is allowed to change
+    allowed_fields = {
+        'status': data.get('status'),
+        'priority': data.get('priority'),
+        'assigned_to_support_id': data.get('assigned_to_support_id')
+    }
+    
+    # Filter out any fields not provided in the request
+    update_data = {k: v for k, v in allowed_fields.items() if v is not None}
+    
+    if not update_data:
+        return jsonify({"error": "No valid fields provided for update."}), 400
+
+    # Build the SET part of the SQL query dynamically
+    set_clause = ", ".join([f"{key} = %s" for key in update_data.keys()])
+    values = list(update_data.values())
+    values.append(ticket_id)
+
+    db = get_db()
+    cursor = db.cursor()
+    
+    try:
+        cursor.execute(f"UPDATE tickets SET {set_clause} WHERE id = %s RETURNING id;", tuple(values))
+        if cursor.fetchone() is None:
+            return jsonify({"error": "Ticket not found"}), 404
+        
+        # Log this action
+        log_details = f"Ticket properties updated: {', '.join(update_data.keys())}"
+        log_event(cursor, 'Ticket', ticket_id, 'Properties Updated', log_details)
+        
+        db.commit()
+        cursor.close()
+        return jsonify({"message": "Ticket updated successfully."})
+    except Exception as e:
+        db.rollback()
+        cursor.close()
+        return jsonify({"error": "An unexpected error occurred", "message": str(e)}), 500
+
+
+@app.route('/api/support/ticket/<int:ticket_id>/updates', methods=['POST'])
+@login_required
+@role_required('Support')
+def add_ticket_update(ticket_id):
+    """
+    API endpoint for Support to post a new update (comment) to a ticket.
+    """
+    data = request.get_json()
+    if not data or not data.get('update_text'):
+        return jsonify({"error": "Update text is required."}), 400
+
+    user_id = session['user_id']
+    update_text = data['update_text']
+    is_internal = data.get('is_internal_note', False)
+
+    db = get_db()
+    cursor = db.cursor()
+    
+    try:
+        cursor.execute(
+            "INSERT INTO ticket_updates (ticket_id, update_author_id, update_text, is_internal_note) VALUES (%s, %s, %s, %s) RETURNING id;",
+            (ticket_id, user_id, update_text, is_internal)
+        )
+        db.commit()
+        cursor.close()
+        return jsonify({"message": "Update added successfully."}), 201
+    except Exception as e:
+        db.rollback()
+        cursor.close()
+        return jsonify({"error": "An unexpected error occurred", "message": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=True)
