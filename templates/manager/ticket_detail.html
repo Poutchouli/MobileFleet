@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}Ticket Details{% endblock %}
+
+{% block page_title %}Ticket Details{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <h2 class="text-2xl font-bold text-gray-900">Ticket Details</h2>
+        <a href="/manager/tickets" 
+           class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Back to My Tickets
+        </a>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading" class="text-center py-12">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <p class="mt-4 text-gray-600">Loading ticket details...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="error" class="hidden bg-red-50 border border-red-200 rounded-md p-4">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800">Error Loading Ticket</h3>
+                <p id="error-message" class="mt-1 text-sm text-red-700"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Ticket Content -->
+    <div id="ticket-content" class="hidden space-y-6">
+        <!-- Ticket Header -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex-1">
+                        <h3 class="text-lg font-medium text-gray-900">
+                            Ticket #<span id="ticket-id"></span>
+                        </h3>
+                        <h4 class="mt-1 text-xl font-semibold text-gray-900" id="ticket-title"></h4>
+                    </div>
+                    <div class="mt-4 sm:mt-0 sm:ml-4 flex flex-col items-end">
+                        <span class="inline-flex px-3 py-1 text-sm font-semibold rounded-full" id="ticket-status-badge"></span>
+                        <span class="mt-1 text-sm text-gray-500">Priority: <span class="font-medium" id="ticket-priority"></span></span>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Device Information -->
+                    <div>
+                        <h5 class="text-lg font-medium text-gray-900 mb-3">Device Information</h5>
+                        <dl class="space-y-2">
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Asset Tag</dt>
+                                <dd class="text-sm text-gray-900" id="asset-tag"></dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Device</dt>
+                                <dd class="text-sm text-gray-900" id="device-info"></dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Assigned To</dt>
+                                <dd class="text-sm text-gray-900" id="worker-name"></dd>
+                            </div>
+                        </dl>
+                    </div>
+                    
+                    <!-- Ticket Information -->
+                    <div>
+                        <h5 class="text-lg font-medium text-gray-900 mb-3">Ticket Information</h5>
+                        <dl class="space-y-2">
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Created</dt>
+                                <dd class="text-sm text-gray-900" id="created-date"></dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Assigned To</dt>
+                                <dd class="text-sm text-gray-900" id="assigned-to"></dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Last Updated</dt>
+                                <dd class="text-sm text-gray-900" id="last-updated"></dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <h5 class="text-lg font-medium text-gray-900 mb-2">Description</h5>
+                    <div class="bg-gray-50 rounded-md p-4">
+                        <p class="text-gray-700 whitespace-pre-wrap" id="ticket-description"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ticket Updates -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Ticket Updates</h3>
+            </div>
+            <div class="px-6 py-4">
+                <div id="updates-container" class="space-y-4">
+                    <!-- Updates will be loaded here -->
+                </div>
+                
+                <div id="no-updates" class="hidden text-center py-8">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                    </svg>
+                    <p class="mt-2 text-sm text-gray-500">No public updates available for this ticket.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+                                <p><strong>Asset Tag:</strong> <span id="asset-tag"></span></p>
+                                <p><strong>Device:</strong> <span id="device-info"></span></p>
+                                <p><strong>Assigned To:</strong> <span id="worker-name"></span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><strong>Ticket Information</strong></h6>
+                                <p><strong>Created:</strong> <span id="created-date"></span></p>
+                                <p><strong>Assigned To:</strong> <span id="assigned-to"></span></p>
+                                <p><strong>Last Updated:</strong> <span id="last-updated"></span></p>
+                            </div>
+                        </div>
+                        <hr>
+                        <h6><strong>Description</strong></h6>
+                        <p id="ticket-description"></p>
+                    </div>
+                </div>
+
+                <!-- Ticket Updates -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Ticket Updates</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="updates-container">
+                            <!-- Updates will be loaded here -->
+                        </div>
+                        
+                        <div id="no-updates" style="display: none;">
+                            <p class="text-muted text-center">No public updates available for this ticket.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ticketId = {{ ticket_id }};
+    
+    // Load ticket details
+    fetch(`/api/manager/ticket/${ticketId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to load ticket details');
+            }
+            return response.json();
+        })
+        .then(data => {
+            displayTicketDetails(data);
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('ticket-content').classList.remove('hidden');
+        })
+        .catch(error => {
+            console.error('Error loading ticket:', error);
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('error').classList.remove('hidden');
+            document.getElementById('error-message').textContent = error.message;
+        });
+
+    function displayTicketDetails(ticket) {
+        // Set ticket header information
+        document.getElementById('ticket-id').textContent = ticket.id;
+        document.getElementById('ticket-title').textContent = ticket.title;
+        document.getElementById('ticket-description').textContent = ticket.description;
+        
+        // Set status badge
+        const statusBadge = document.getElementById('ticket-status-badge');
+        statusBadge.textContent = ticket.status;
+        statusBadge.className = `inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getStatusBadgeClasses(ticket.status)}`;
+        
+        // Set priority
+        document.getElementById('ticket-priority').textContent = ticket.priority;
+        
+        // Set device information
+        document.getElementById('asset-tag').textContent = ticket.asset_tag || 'N/A';
+        document.getElementById('device-info').textContent = `${ticket.manufacturer} ${ticket.model}`;
+        document.getElementById('worker-name').textContent = ticket.worker_name || 'Unassigned';
+        
+        // Set ticket information
+        document.getElementById('created-date').textContent = formatDate(ticket.created_at);
+        document.getElementById('assigned-to').textContent = ticket.assigned_to || 'Unassigned';
+        document.getElementById('last-updated').textContent = formatDate(ticket.updated_at);
+        
+        // Display updates
+        displayUpdates(ticket.updates);
+    }
+
+    function displayUpdates(updates) {
+        const container = document.getElementById('updates-container');
+        const noUpdates = document.getElementById('no-updates');
+        
+        if (!updates || updates.length === 0) {
+            noUpdates.classList.remove('hidden');
+            return;
+        }
+        
+        updates.forEach(update => {
+            const updateDiv = document.createElement('div');
+            updateDiv.className = 'border-b border-gray-200 pb-4 last:border-b-0';
+            
+            updateDiv.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-sm font-medium text-gray-900">${escapeHtml(update.author_name)}</span>
+                    <span class="text-sm text-gray-500">${formatDate(update.created_at)}</span>
+                </div>
+                <div class="bg-gray-50 rounded-md p-3">
+                    <p class="text-gray-700 whitespace-pre-wrap">${escapeHtml(update.update_text)}</p>
+                </div>
+            `;
+            
+            container.appendChild(updateDiv);
+        });
+    }
+
+    function getStatusBadgeClasses(status) {
+        const classes = {
+            'Open': 'bg-blue-100 text-blue-800',
+            'In Progress': 'bg-yellow-100 text-yellow-800',
+            'Resolved': 'bg-green-100 text-green-800',
+            'Closed': 'bg-gray-100 text-gray-800'
+        };
+        return classes[status] || 'bg-gray-100 text-gray-800';
+    }
+
+    function formatDate(dateString) {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+});
+</script>
+{% endblock %}

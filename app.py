@@ -909,6 +909,20 @@ def manager_dashboard():
     """Serves the main dashboard for Managers."""
     return render_template('manager/dashboard.html')
 
+@app.route('/manager/tickets')
+@login_required
+@role_required('Manager')
+def manager_tickets():
+    """Serves the page for a manager to view their submitted tickets."""
+    return render_template('manager/tickets.html')
+
+@app.route('/manager/ticket/<int:ticket_id>')
+@login_required
+@role_required('Manager')
+def manager_ticket_detail(ticket_id):
+    """Serves the detailed ticket view page for a manager."""
+    return render_template('manager/ticket_detail.html', ticket_id=ticket_id)
+
 # --- API Endpoint for Manager Portal ---
 
 @app.route('/api/manager/team_status', methods=['GET'])
@@ -984,6 +998,103 @@ def get_manager_selectable_phones():
     cursor.close()
     
     return jsonify(selectable_phones)
+
+@app.route('/api/manager/tickets', methods=['GET'])
+@login_required
+@role_required('Manager')
+def get_manager_tickets():
+    """API endpoint to get all tickets submitted by the current manager."""
+    manager_id = session.get('user_id')
+    db = get_db()
+    cursor = db.cursor()
+    query = """
+        SELECT 
+            t.id,
+            t.title,
+            t.status,
+            t.priority,
+            t.created_at,
+            p.asset_tag,
+            p.manufacturer,
+            p.model,
+            w.full_name AS worker_name
+        FROM tickets t
+        JOIN phones p ON t.phone_id = p.id
+        LEFT JOIN assignments a ON p.id = a.phone_id AND a.return_date IS NULL
+        LEFT JOIN workers w ON a.worker_id = w.id
+        WHERE t.reported_by_manager_id = %s
+        ORDER BY t.created_at DESC;
+    """
+    cursor.execute(query, (manager_id,))
+    tickets = cursor.fetchall()
+    cursor.close()
+    
+    # Convert to list of dicts and format dates
+    tickets_list = []
+    for ticket in tickets:
+        ticket_dict = dict(ticket)
+        if ticket_dict.get('created_at'):
+            ticket_dict['created_at'] = ticket_dict['created_at'].isoformat()
+        tickets_list.append(ticket_dict)
+            
+    return jsonify(tickets_list)
+
+@app.route('/api/manager/ticket/<int:ticket_id>', methods=['GET'])
+@login_required
+@role_required('Manager')
+def get_manager_ticket_details(ticket_id):
+    """
+    API endpoint for a manager to get details for a specific ticket they reported.
+    Internal notes are filtered out for security.
+    """
+    manager_id = session.get('user_id')
+    db = get_db()
+    cursor = db.cursor()
+
+    # Security check: Ensure the ticket was reported by this manager
+    cursor.execute("SELECT reported_by_manager_id FROM tickets WHERE id = %s", (ticket_id,))
+    ticket = cursor.fetchone()
+    if not ticket or ticket['reported_by_manager_id'] != manager_id:
+        cursor.close()
+        return jsonify({"error": "Ticket not found or you are not authorized to view it."}), 404
+
+    # Fetch main ticket details
+    ticket_query = """
+        SELECT 
+            t.*, p.asset_tag, p.manufacturer, p.model, w.full_name AS worker_name,
+            assignee.full_name AS assigned_to
+        FROM tickets t
+        JOIN phones p ON t.phone_id = p.id
+        LEFT JOIN users assignee ON t.assigned_to_support_id = assignee.id
+        LEFT JOIN assignments a ON t.phone_id = a.phone_id AND a.return_date IS NULL
+        LEFT JOIN workers w ON a.worker_id = w.id
+        WHERE t.id = %s;
+    """
+    cursor.execute(ticket_query, (ticket_id,))
+    ticket_details = dict(cursor.fetchone())
+
+    # Fetch ONLY public updates
+    updates_query = """
+        SELECT tu.update_text, tu.created_at, u.full_name AS author_name
+        FROM ticket_updates tu
+        JOIN users u ON tu.update_author_id = u.id
+        WHERE tu.ticket_id = %s AND tu.is_internal_note = FALSE
+        ORDER BY tu.created_at ASC;
+    """
+    cursor.execute(updates_query, (ticket_id,))
+    ticket_updates = cursor.fetchall()
+    cursor.close()
+
+    # Combine and format for JSON
+    ticket_details['updates'] = [dict(update) for update in ticket_updates]
+    for key, value in ticket_details.items():
+        if hasattr(value, 'isoformat'): 
+            ticket_details[key] = value.isoformat()
+    for update in ticket_details['updates']:
+        if hasattr(update['created_at'], 'isoformat'):
+            update['created_at'] = update['created_at'].isoformat()
+            
+    return jsonify(ticket_details)
 
 # --- API Endpoints ---
 

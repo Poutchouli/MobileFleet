@@ -32,9 +32,9 @@ services:
       - .:/app
     # Define environment variables for the web service.
     environment:
-      # The DATABASE_URL points to the 'db' service.
+      # The DATABASE_URL points to the 'db' service in SQLAlchemy format.
       # The user, password, and db name must match the 'db' service's environment variables.
-      - DATABASE_URL=dbname=fleet_db user=postgres password=password host=db
+      - DATABASE_URL=postgresql://postgres:password@db:5432/fleet_db
       # Flask environment settings.
       - FLASK_ENV=development
     # This service depends on the 'db' service. Docker Compose will start the 'db'

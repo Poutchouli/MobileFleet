@@ -1,0 +1,149 @@
+{% extends "manager/base.html" %}
+
+{% block title %}Ticket Details{% endblock %}
+
+{% block page_title %}Ticket Details{% endblock %}
+
+{% block content %}
+<main class="p-4 sm:p-6 lg:p-8" id="ticket-detail-view" data-ticket-id="{{ ticket_id }}">
+    <!-- Header -->
+    <div class="mb-6">
+        <a href="{{ url_for('manager_tickets') }}" class="btn-link mb-4 inline-block">&larr; Back to My Tickets</a>
+        <div id="ticket-header" class="custom-card p-4">
+            <!-- JS will populate this -->
+            <div class="text-center p-8 text-gray-400">Loading ticket details...</div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Conversation Thread -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="custom-card">
+                <div class="card-header">
+                    <h2 class="card-title">Conversation History</h2>
+                </div>
+                <div id="updates-list" class="p-4 space-y-4">
+                    <!-- JS will populate this -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Sidebar with Details -->
+        <div class="space-y-6">
+            <div class="custom-card">
+                <div class="card-header">
+                    <h3 class="card-title">Properties</h3>
+                </div>
+                <div id="properties-body" class="p-4 space-y-4">
+                    <!-- JS will populate this -->
+                </div>
+            </div>
+            <div class="custom-card">
+                <div class="card-header">
+                    <h3 class="card-title">Asset Details</h3>
+                </div>
+                <div id="asset-body" class="p-4 space-y-2">
+                    <!-- JS will populate this -->
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const view = document.getElementById('ticket-detail-view');
+    const ticketId = view.dataset.ticketId;
+
+    const ticketHeader = document.getElementById('ticket-header');
+    const updatesList = document.getElementById('updates-list');
+    const propertiesBody = document.getElementById('properties-body');
+    const assetBody = document.getElementById('asset-body');
+
+    function formatDateTime(isoString) {
+        if (!isoString) return 'N/A';
+        return new Date(isoString).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+    }
+
+    async function fetchAndRenderTicket() {
+        try {
+            const response = await fetch(`/api/manager/ticket/${ticketId}`);
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || 'Ticket not found or access denied.');
+            }
+            const data = await response.json();
+            
+            renderHeader(data);
+            renderUpdates(data.updates, data.description);
+            renderProperties(data);
+            renderAssetDetails(data);
+
+        } catch (error) {
+            console.error(error);
+            document.querySelector('main').innerHTML = `<div class="custom-card text-center p-8 text-red-500">${error.message}</div>`;
+        }
+    }
+
+    function renderHeader(data) {
+        ticketHeader.innerHTML = `
+            <p class="text-sm text-gray-500">Ticket #${data.ticket_id}</p>
+            <h1 class="text-2xl font-bold mt-1">${data.title}</h1>
+            <p class="text-sm text-gray-600 mt-2">
+                Submitted for worker <strong>${data.worker_name || 'N/A'}</strong> on ${formatDateTime(data.created_at)}
+            </p>
+        `;
+    }
+
+    function renderUpdates(updates, initialDescription) {
+        updatesList.innerHTML = `
+            <div class="p-4 bg-sky-50 border border-sky-200 rounded-lg">
+                <p class="font-semibold text-gray-800">Your Initial Description</p>
+                <p class="text-gray-700 whitespace-pre-wrap">${initialDescription}</p>
+            </div>
+        `;
+        updates.forEach(update => {
+            const updateEl = `
+                <div class="p-4 rounded-lg border bg-gray-50 border-gray-200">
+                    <div class="flex justify-between items-center mb-2">
+                        <p class="font-semibold text-gray-800">${update.author_name}</p>
+                        <p class="text-xs text-gray-500">${formatDateTime(update.created_at)}</p>
+                    </div>
+                    <p class="text-gray-700 whitespace-pre-wrap">${update.update_text}</p>
+                </div>
+            `;
+            updatesList.insertAdjacentHTML('beforeend', updateEl);
+        });
+    }
+
+    function renderProperties(data) {
+        propertiesBody.innerHTML = `
+            <div>
+                <label class="custom-label">Status</label>
+                <p class="font-medium"><span class="status-badge ${data.status.toLowerCase().replace(' ', '-')}">${data.status}</span></p>
+            </div>
+            <div>
+                <label class="custom-label">Priority</label>
+                <p class="font-medium">${data.priority}</p>
+            </div>
+            <div>
+                <label class="custom-label">Assigned To</label>
+                <p class="font-medium">${data.assigned_to || 'Unassigned'}</p>
+            </div>
+        `;
+    }
+
+    function renderAssetDetails(data) {
+        assetBody.innerHTML = `
+            <p><strong class="custom-label inline">Asset Tag:</strong> ${data.asset_tag}</p>
+            <p><strong class="custom-label inline">Model:</strong> ${data.manufacturer} ${data.model}</p>
+        `;
+    }
+
+    fetchAndRenderTicket();
+});
+</script>
+{% endblock %}
