@@ -109,6 +109,12 @@ def index():
         return redirect(url_for('support_dashboard'))
     return redirect(url_for('logout'))
 
+@app.route('/profile')
+@login_required
+def profile():
+    """Serves the user profile page for password management."""
+    return render_template('profile.html')
+
 # --- Role-Specific Dashboards & Pages ---
 @app.route('/admin/dashboard')
 @login_required
@@ -390,6 +396,74 @@ def handle_role(role_id):
             db.rollback()
             cursor.close()
             return jsonify({"error": "An unexpected error occurred", "message": str(e)}), 500
+
+# --- User Profile Management ---
+
+@app.route('/api/profile/change_password', methods=['POST'])
+@login_required
+def change_password():
+    """
+    Allows users to change their own password.
+    Requires current password validation for security.
+    """
+    from werkzeug.security import generate_password_hash
+    
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided."}), 400
+    
+    current_password = data.get('current_password')
+    new_password = data.get('new_password')
+    confirm_password = data.get('confirm_password')
+    
+    # Validate input
+    if not current_password or not new_password or not confirm_password:
+        return jsonify({"error": "All fields are required."}), 400
+    
+    if new_password != confirm_password:
+        return jsonify({"error": "New passwords do not match."}), 400
+    
+    if len(new_password) < 8:
+        return jsonify({"error": "New password must be at least 8 characters long."}), 400
+    
+    db = get_db()
+    cursor = db.cursor()
+    
+    try:
+        # Get current user's password hash
+        cursor.execute(
+            "SELECT password_hash FROM users WHERE id = %s",
+            (session['user_id'],)
+        )
+        user = cursor.fetchone()
+        
+        if not user:
+            cursor.close()
+            return jsonify({"error": "User not found."}), 404
+        
+        # Verify current password
+        if not check_password_hash(user['password_hash'], current_password):
+            cursor.close()
+            return jsonify({"error": "Current password is incorrect."}), 401
+        
+        # Generate new password hash
+        new_password_hash = generate_password_hash(new_password)
+        
+        # Update password in database
+        cursor.execute(
+            "UPDATE users SET password_hash = %s WHERE id = %s",
+            (new_password_hash, session['user_id'])
+        )
+        
+        db.commit()
+        cursor.close()
+        
+        return jsonify({"message": "Password changed successfully."}), 200
+        
+    except Exception as e:
+        db.rollback()
+        cursor.close()
+        return jsonify({"error": "An unexpected error occurred", "message": str(e)}), 500
 
 # --- New API Endpoints for Provisioning Wizard ---
 
