@@ -4,6 +4,8 @@
 import os
 import csv
 import io
+import logging
+from logging.handlers import RotatingFileHandler
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from functools import wraps
@@ -11,6 +13,8 @@ from werkzeug.security import check_password_hash
 from flask import (
     Flask, request, jsonify, render_template, session, redirect, url_for, g
 )
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -20,13 +24,171 @@ load_dotenv()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
 
+# --- Database Configuration for Migrations ---
+# Configure SQLAlchemy to work alongside existing psycopg2 connections
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize SQLAlchemy and Flask-Migrate
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+
+# --- SQLAlchemy Models for Migration Management ---
+# These models represent the existing database schema for migration tracking
+# The application continues to use raw SQL queries for operations
+
+class Role(db.Model):
+    __tablename__ = 'roles'
+    id = db.Column(db.Integer, primary_key=True)
+    role_name = db.Column(db.String(50), nullable=False, unique=True)
+    description = db.Column(db.Text)
+
+class User(db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(150), nullable=False, unique=True)
+    password_hash = db.Column(db.String(255), nullable=False)
+    full_name = db.Column(db.String(255), nullable=False)
+    email = db.Column(db.String(255), nullable=False, unique=True)
+    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=db.func.now())
+    updated_at = db.Column(db.DateTime(timezone=True), nullable=False, default=db.func.now())
+
+class Secteur(db.Model):
+    __tablename__ = 'secteurs'
+    id = db.Column(db.Integer, primary_key=True)
+    secteur_name = db.Column(db.String(255), nullable=False, unique=True)
+    manager_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    description = db.Column(db.Text)
+
+class Worker(db.Model):
+    __tablename__ = 'workers'
+    id = db.Column(db.Integer, primary_key=True)
+    worker_id = db.Column(db.String(50), nullable=False, unique=True)
+    full_name = db.Column(db.String(255), nullable=False)
+    secteur_id = db.Column(db.Integer, db.ForeignKey('secteurs.id'), nullable=False)
+    status = db.Column(db.String(20), nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=db.func.now())
+
+class Phone(db.Model):
+    __tablename__ = 'phones'
+    id = db.Column(db.Integer, primary_key=True)
+    asset_tag = db.Column(db.String(50), nullable=False, unique=True)
+    imei = db.Column(db.String(15), nullable=False, unique=True)
+    serial_number = db.Column(db.String(100), nullable=False, unique=True)
+    manufacturer = db.Column(db.String(100))
+    model = db.Column(db.String(100))
+    purchase_date = db.Column(db.Date)
+    warranty_end_date = db.Column(db.Date)
+    status = db.Column(db.String(20), nullable=False)
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=db.func.now())
+    updated_at = db.Column(db.DateTime(timezone=True), nullable=False, default=db.func.now())
+
+class SimCard(db.Model):
+    __tablename__ = 'sim_cards'
+    id = db.Column(db.Integer, primary_key=True)
+    iccid = db.Column(db.String(22), nullable=False, unique=True)
+    carrier = db.Column(db.String(100))
+    plan_details = db.Column(db.Text)
+    status = db.Column(db.String(20), nullable=False)
+
+class PhoneNumber(db.Model):
+    __tablename__ = 'phone_numbers'
+    id = db.Column(db.Integer, primary_key=True)
+    phone_number = db.Column(db.String(20), nullable=False, unique=True)
+    sim_card_id = db.Column(db.Integer, db.ForeignKey('sim_cards.id'), unique=True)
+    status = db.Column(db.String(20), nullable=False)
+
+class Assignment(db.Model):
+    __tablename__ = 'assignments'
+    id = db.Column(db.Integer, primary_key=True)
+    phone_id = db.Column(db.Integer, db.ForeignKey('phones.id'), nullable=False)
+    sim_card_id = db.Column(db.Integer, db.ForeignKey('sim_cards.id'), nullable=False)
+    worker_id = db.Column(db.Integer, db.ForeignKey('workers.id'), nullable=False)
+    assignment_date = db.Column(db.DateTime(timezone=True), nullable=False, default=db.func.now())
+    return_date = db.Column(db.DateTime(timezone=True), nullable=True)
+
+class Ticket(db.Model):
+    __tablename__ = 'tickets'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    phone_id = db.Column(db.Integer, db.ForeignKey('phones.id'), nullable=False)
+    reported_by_manager_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    assigned_to_support_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    status = db.Column(db.String(20), nullable=False)
+    priority = db.Column(db.String(20), nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=db.func.now())
+    updated_at = db.Column(db.DateTime(timezone=True), nullable=False, default=db.func.now())
+    resolved_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+class TicketUpdate(db.Model):
+    __tablename__ = 'ticket_updates'
+    id = db.Column(db.Integer, primary_key=True)
+    ticket_id = db.Column(db.Integer, db.ForeignKey('tickets.id'), nullable=False)
+    update_author_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    update_text = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=db.func.now())
+    is_internal_note = db.Column(db.Boolean, nullable=False, default=False)
+
+class AssetHistoryLog(db.Model):
+    __tablename__ = 'asset_history_log'
+    id = db.Column(db.Integer, primary_key=True)
+    asset_type = db.Column(db.String(20), nullable=False)
+    asset_id = db.Column(db.Integer, nullable=False)
+    event_type = db.Column(db.String(50), nullable=False)
+    event_timestamp = db.Column(db.DateTime(timezone=True), nullable=False, default=db.func.now())
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    details = db.Column(db.Text)
+
+# --- Logging Configuration ---
+def configure_logging():
+    """Configure structured logging for production use."""
+    # Create logs directory if it doesn't exist
+    if not os.path.exists('logs'):
+        os.makedirs('logs')
+    
+    # Configure the logger
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s %(levelname)s [%(name)s] %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    
+    # Create file handler with rotation
+    file_handler = RotatingFileHandler(
+        'logs/fleet_management.log',
+        maxBytes=10240000,  # 10MB
+        backupCount=10
+    )
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(
+        logging.Formatter(
+            '%(asctime)s %(levelname)s [%(name)s] %(message)s - %(pathname)s:%(lineno)d'
+        )
+    )
+    
+    # Add handler to app logger
+    app.logger.addHandler(file_handler)
+    app.logger.setLevel(logging.INFO)
+    app.logger.info("Fleet Management application started")
+
+# Initialize logging
+configure_logging()
+
 # --- Database Connection ---
 def get_db():
     if 'db' not in g:
         try:
             g.db = psycopg2.connect(os.environ.get('DATABASE_URL'), cursor_factory=RealDictCursor)
+            app.logger.debug("Database connection established")
         except psycopg2.OperationalError as e:
+            app.logger.error("Database connection failed: %s", e, exc_info=True)
             raise ConnectionError(f"Could not connect to the database: {e}")
+        except Exception as e:
+            app.logger.error("Unexpected error connecting to database: %s", e, exc_info=True)
+            raise
     return g.db
 
 @app.teardown_appcontext
@@ -34,6 +196,7 @@ def close_db(e=None):
     db = g.pop('db', None)
     if db is not None:
         db.close()
+        app.logger.debug("Database connection closed")
 
 # --- Helper function for logging ---
 def log_event(cursor, asset_type, asset_id, event_type, details):
@@ -70,30 +233,53 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute("SELECT u.id, u.username, u.password_hash, r.role_name FROM users u JOIN roles r ON u.role_id = r.id WHERE u.username = %s", (username,))
-        user = cursor.fetchone()
-        cursor.close()
-        if user is None or not check_password_hash(user['password_hash'], password):
-            error = 'Incorrect username or password.'
+        
+        # Log login attempt
+        app.logger.info("Login attempt for username: %s from IP: %s", username, request.remote_addr)
+        
+        try:
+            db = get_db()
+            cursor = db.cursor()
+            cursor.execute("SELECT u.id, u.username, u.password_hash, r.role_name FROM users u JOIN roles r ON u.role_id = r.id WHERE u.username = %s", (username,))
+            user = cursor.fetchone()
+            cursor.close()
+            
+            if user is None or not check_password_hash(user['password_hash'], password):
+                app.logger.warning("Failed login attempt for username: %s from IP: %s", username, request.remote_addr)
+                error = 'Incorrect username or password.'
+                return render_template('login.html', error=error)
+                
+            # Successful login
+            session.clear()
+            session['user_id'] = user['id']
+            session['username'] = user['username']
+            session['role'] = user['role_name']
+            
+            app.logger.info("Successful login for user: %s (ID: %s) with role: %s from IP: %s", 
+                          user['username'], user['id'], user['role_name'], request.remote_addr)
+            
+            if user['role_name'] == 'Administrator':
+                return redirect(url_for('admin_dashboard'))
+            elif user['role_name'] == 'Manager':
+                return redirect(url_for('manager_dashboard'))
+            elif user['role_name'] == 'Support':
+                return redirect(url_for('support_dashboard'))
+            else:
+                app.logger.warning("User %s has unrecognized role: %s", username, user['role_name'])
+                return redirect(url_for('login'))
+                
+        except Exception as e:
+            app.logger.error("Error during login process for username %s: %s", username, e, exc_info=True)
+            error = 'An unexpected error occurred. Please try again.'
             return render_template('login.html', error=error)
-        session.clear()
-        session['user_id'] = user['id']
-        session['username'] = user['username']
-        session['role'] = user['role_name']
-        if user['role_name'] == 'Administrator':
-            return redirect(url_for('admin_dashboard'))
-        elif user['role_name'] == 'Manager':
-            return redirect(url_for('manager_dashboard'))
-        elif user['role_name'] == 'Support':
-            return redirect(url_for('support_dashboard'))
-        else:
-            return redirect(url_for('login'))
+            
     return render_template('login.html')
 
 @app.route('/logout')
 def logout():
+    username = session.get('username', 'Unknown')
+    user_id = session.get('user_id', 'Unknown')
+    app.logger.info("User logout: %s (ID: %s) from IP: %s", username, user_id, request.remote_addr)
     session.clear()
     return redirect(url_for('login'))
 
@@ -218,14 +404,17 @@ def manage_roles():
             new_role = cursor.fetchone()
             db.commit()
             cursor.close()
+            app.logger.info("Role created successfully: %s by user %s", role_name, session.get('username'))
             return jsonify(new_role), 201
         except psycopg2.IntegrityError as e:
             db.rollback()
             cursor.close()
+            app.logger.warning("Failed to create role %s - integrity error: %s", role_name, e)
             return jsonify({'error': 'Role name already exists'}), 409
         except Exception as e:
             db.rollback()
             cursor.close()
+            app.logger.error("Unexpected error creating role %s: %s", role_name, e, exc_info=True)
             return jsonify({'error': str(e)}), 500
 
 @app.route('/api/users', methods=['GET'])
@@ -254,7 +443,11 @@ def create_user():
     data = request.get_json()
     
     if not data or not data.get('username') or not data.get('password') or not data.get('role_id'):
+        app.logger.warning("User creation attempt with missing fields by %s", session.get('username'))
         return jsonify({"error": "Missing required fields"}), 400
+
+    username = data['username']
+    app.logger.info("Creating user %s by administrator %s", username, session.get('username'))
 
     db = get_db()
     cursor = db.cursor()
@@ -274,12 +467,18 @@ def create_user():
         """, (new_user_id,))
         new_user = cursor.fetchone()
         cursor.close()
+        
+        app.logger.info("User %s created successfully with ID %s by %s", username, new_user_id, session.get('username'))
         return jsonify(new_user), 201
-    except psycopg2.IntegrityError:
+    except psycopg2.IntegrityError as e:
         db.rollback()
+        cursor.close()
+        app.logger.warning("Failed to create user %s - integrity constraint: %s", username, e)
         return jsonify({"error": "A user with this username may already exist."}), 409
     except Exception as e:
         db.rollback()
+        cursor.close()
+        app.logger.error("Unexpected error creating user %s: %s", username, e, exc_info=True)
         return jsonify({"error": "An unexpected error occurred", "message": str(e)}), 500
 
 @app.route('/api/users/<int:user_id>', methods=['PUT'])
@@ -429,6 +628,11 @@ def change_password():
     db = get_db()
     cursor = db.cursor()
     
+    username = session.get('username', 'Unknown')
+    user_id = session.get('user_id')
+    
+    app.logger.info("Password change attempt by user %s (ID: %s)", username, user_id)
+    
     try:
         # Get current user's password hash
         cursor.execute(
@@ -439,11 +643,13 @@ def change_password():
         
         if not user:
             cursor.close()
+            app.logger.warning("Password change failed - user %s not found in database", username)
             return jsonify({"error": "User not found."}), 404
         
         # Verify current password
         if not check_password_hash(user['password_hash'], current_password):
             cursor.close()
+            app.logger.warning("Password change failed - incorrect current password for user %s", username)
             return jsonify({"error": "Current password is incorrect."}), 401
         
         # Generate new password hash
@@ -458,11 +664,13 @@ def change_password():
         db.commit()
         cursor.close()
         
+        app.logger.info("Password changed successfully for user %s (ID: %s)", username, user_id)
         return jsonify({"message": "Password changed successfully."}), 200
         
     except Exception as e:
         db.rollback()
         cursor.close()
+        app.logger.error("Unexpected error during password change for user %s: %s", username, e, exc_info=True)
         return jsonify({"error": "An unexpected error occurred", "message": str(e)}), 500
 
 # --- New API Endpoints for Provisioning Wizard ---
@@ -528,12 +736,16 @@ def provision_finalize():
     data = request.get_json()
     required_keys = ['phone_id', 'sim_id', 'worker_id']
     if not all(key in data for key in required_keys):
+        app.logger.warning("Provision finalize called with missing data by user %s", session.get('username'))
         return jsonify({"error": "Missing data for finalization."}), 400
 
     phone_id = data['phone_id']
     sim_id = data['sim_id']
     worker_id = data['worker_id']
     user_id = session['user_id']
+
+    app.logger.info("Starting provisioning finalization: Phone %s, SIM %s, Worker %s by user %s", 
+                   phone_id, sim_id, worker_id, session.get('username'))
 
     db = get_db()
     cursor = db.cursor()
@@ -557,11 +769,15 @@ def provision_finalize():
 
         db.commit()
         cursor.close()
+        
+        app.logger.info("Provisioning completed successfully: Phone %s assigned to Worker %s by user %s", 
+                       phone_id, worker_id, session.get('username'))
         return jsonify({"message": "Phone provisioned and assigned successfully!"})
 
     except Exception as e:
         db.rollback()
         cursor.close()
+        app.logger.error("Error during provisioning finalization for Phone %s: %s", phone_id, e, exc_info=True)
         return jsonify({"error": "An error occurred during finalization.", "details": str(e)}), 500
 
 # --- CSV Import API Endpoint ---
@@ -574,12 +790,14 @@ def import_csv():
     
     # Check if file is present in request
     if 'csv_file' not in request.files:
+        app.logger.warning("CSV import attempt without file by user %s", session.get('username'))
         return jsonify({"error": "No file part"}), 400
     
     file = request.files['csv_file']
     
     # Check if file has a name
     if file.filename == '':
+        app.logger.warning("CSV import attempt with empty filename by user %s", session.get('username'))
         return jsonify({"error": "No selected file"}), 400
     
     # Get target table name from form data
@@ -588,7 +806,11 @@ def import_csv():
     # Whitelist of allowed target tables
     allowed_tables = ['phones', 'sim_cards', 'workers']
     if target_table not in allowed_tables:
+        app.logger.warning("CSV import attempt with invalid table '%s' by user %s", target_table, session.get('username'))
         return jsonify({"error": "Invalid target table"}), 400
+    
+    app.logger.info("Starting CSV import for table '%s' from file '%s' by user %s", 
+                   target_table, file.filename, session.get('username'))
     
     try:
         # Read file content as string
@@ -666,6 +888,8 @@ def import_csv():
         db.commit()
         cursor.close()
         
+        app.logger.info("CSV import completed successfully: %d rows processed for table '%s' by user %s", 
+                       row_count, target_table, session.get('username'))
         return jsonify({"message": f"Successfully processed {row_count} rows."}), 200
         
     except Exception as e:
@@ -674,6 +898,8 @@ def import_csv():
             db.rollback()
         if 'cursor' in locals():
             cursor.close()
+        app.logger.error("CSV import failed for table '%s' by user %s: %s", 
+                        target_table, session.get('username'), e, exc_info=True)
         return jsonify({"error": "An error occurred during CSV processing.", "details": str(e)}), 500
 
 @app.route('/manager/dashboard')
