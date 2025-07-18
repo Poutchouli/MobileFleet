@@ -5,68 +5,114 @@
 {% block page_title %}Admin Dashboard{% endblock %}
 
 {% block content %}
-<!-- Content goes here -->
+<!-- KPI Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="custom-card text-center">
+        <h3 class="text-lg font-semibold text-gray-500">Active Workers</h3>
+        <p id="stat-active-workers" class="text-4xl font-bold text-gradient mt-2">...</p>
+    </div>
+    <div class="custom-card text-center">
+        <h3 class="text-lg font-semibold text-gray-500">Phones In Use</h3>
+        <p id="stat-phones-in-use" class="text-4xl font-bold text-gradient mt-2">...</p>
+    </div>
+    <div class="custom-card text-center">
+        <h3 class="text-lg font-semibold text-gray-500">Phones In Stock</h3>
+        <p id="stat-phones-in-stock" class="text-4xl font-bold text-gradient mt-2">...</p>
+    </div>
+    <div class="custom-card text-center">
+        <h3 class="text-lg font-semibold text-gray-500">Open Tickets</h3>
+        <p id="stat-open-tickets" class="text-4xl font-bold text-gradient mt-2">...</p>
+    </div>
+</div>
+
+<!-- Worker Assignments -->
 <div class="custom-card">
-    <h2 class="text-xl font-semibold mb-4">Phone Inventory</h2>
-    <table class="custom-table">
-        <thead>
-            <tr>
-                <th>Asset Tag</th>
-                <th>Model</th>
-                <th>IMEI</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody id="phones-table-body">
-            <!-- Rows will be inserted by JavaScript -->
-        </tbody>
-    </table>
+    <div class="card-header">
+        <h2 class="card-title">Worker Assignments</h2>
+        <input type="text" id="worker-search-input" class="custom-input w-full md:w-1/3" placeholder="Search by worker name, ID, asset...">
+    </div>
+    <div id="worker-vignettes-grid" class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- JS will populate this -->
+    </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    // Fetch phone data from the API and populate the table
     document.addEventListener('DOMContentLoaded', function() {
-        fetch('/api/phones')
-            .then(response => response.json())
-            .then(data => {
-                const tableBody = document.getElementById('phones-table-body');
-                if (!tableBody) return;
-                
-                if (data.error) {
-                    console.error('Error fetching phones:', data.error);
-                    tableBody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-red-500">${data.message}</td></tr>`;
-                    return;
+        let workerData = [];
+
+        // Fetch and render summary stats
+        async function fetchSummaryStats() {
+            try {
+                const response = await fetch('/api/reports/summary_stats');
+                const stats = await response.json();
+                document.getElementById('stat-active-workers').textContent = stats.active_workers;
+                document.getElementById('stat-phones-in-use').textContent = stats.phones_in_use;
+                document.getElementById('stat-phones-in-stock').textContent = stats.phones_in_stock;
+                document.getElementById('stat-open-tickets').textContent = stats.open_tickets;
+            } catch (error) {
+                console.error("Failed to load summary stats:", error);
+            }
+        }
+
+        // Fetch and render worker assignments
+        async function fetchWorkerAssignments() {
+            try {
+                const response = await fetch('/api/reports/worker_assignments');
+                workerData = await response.json();
+                renderWorkerVignettes(workerData);
+            } catch (error) {
+                console.error("Failed to load worker assignments:", error);
+            }
+        }
+
+        function renderWorkerVignettes(data) {
+            const grid = document.getElementById('worker-vignettes-grid');
+            grid.innerHTML = '';
+            if (data.length === 0) {
+                grid.innerHTML = '<p class="text-gray-500 col-span-full text-center">No active workers found.</p>';
+                return;
+            }
+            data.forEach(worker => {
+                let assetHtml = '<p class="text-sm text-gray-500">No assets assigned</p>';
+                if (worker.asset) {
+                    assetHtml = `
+                        <div class="space-y-1 text-sm">
+                            <p><strong>Phone:</strong> ${worker.asset.phone_model} (${worker.asset.phone_asset_tag})</p>
+                            <p><strong>SIM:</strong> ${worker.asset.sim_iccid}</p>
+                            <p><strong>Number:</strong> ${worker.asset.phone_number || 'N/A'}</p>
+                        </div>
+                    `;
                 }
 
-                let rows = '';
-                data.forEach(phone => {
-                    const statusClass = phone.status === 'In Stock' ? 'status-available' : 
-                                       phone.status === 'In Use' ? 'status-assigned' : 
-                                       'status-maintenance';
-                    rows += `
-                        <tr>
-                            <td>${phone.asset_tag}</td>
-                            <td>${phone.manufacturer} ${phone.model}</td>
-                            <td>${phone.imei}</td>
-                            <td>
-                                <span class="status-badge ${statusClass}">
-                                    ${phone.status}
-                                </span>
-                            </td>
-                        </tr>
-                    `;
-                });
-                tableBody.innerHTML = rows;
-            })
-            .catch(error => {
-                console.error('Failed to fetch phones:', error);
-                const tableBody = document.getElementById('phones-table-body');
-                if(tableBody) {
-                    tableBody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-red-500">Failed to load data.</td></tr>';
-                }
+                const vignette = `
+                    <div class="border rounded-lg p-4 bg-gray-50 hover-lift worker-vignette">
+                        <div class="font-bold text-gray-800">${worker.full_name}</div>
+                        <div class="text-sm text-gray-500 mb-2">${worker.worker_id} &middot; ${worker.secteur_name}</div>
+                        <div class="border-t pt-2 mt-2">
+                            ${assetHtml}
+                        </div>
+                    </div>
+                `;
+                grid.insertAdjacentHTML('beforeend', vignette);
             });
+        }
+
+        // Search functionality
+        const searchInput = document.getElementById('worker-search-input');
+        searchInput.addEventListener('keyup', () => {
+            const searchTerm = searchInput.value.toLowerCase();
+            const filteredData = workerData.filter(worker => {
+                const searchableString = JSON.stringify(worker).toLowerCase();
+                return searchableString.includes(searchTerm);
+            });
+            renderWorkerVignettes(filteredData);
+        });
+
+        // Initial data load
+        fetchSummaryStats();
+        fetchWorkerAssignments();
     });
 </script>
 {% endblock %}

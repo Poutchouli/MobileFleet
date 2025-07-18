@@ -5,151 +5,210 @@
 {% block page_title %}Administrative Reports{% endblock %}
 
 {% block content %}
-<div class="custom-card">
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-xl font-semibold">Asset Assignment Overview</h2>
-        <button id="refresh-report-btn" class="btn btn-primary">
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-            </svg>
-            Refresh Report
-        </button>
+<!-- Reports Navigation -->
+<div class="mb-6">
+    <div class="border-b border-gray-200">
+        <nav class="-mb-px flex">
+            <button id="assignment-tab" class="tab-button active" data-tab="assignments">
+                Assignment Overview
+            </button>
+            <button id="missing-data-tab" class="tab-button" data-tab="missing-data">
+                Missing Data
+            </button>
+            <button id="inventory-tab" class="tab-button" data-tab="inventory">
+                Inventory Summary
+            </button>
+        </nav>
     </div>
-    
-    <!-- Summary Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div class="flex items-center">
-                <div class="p-2 bg-blue-100 rounded-lg">
-                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                    </svg>
+</div>
+
+<!-- Assignment Overview Tab -->
+<div id="assignments-panel" class="tab-panel active">
+    <div class="custom-card">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-semibold">Asset Assignment Overview</h2>
+            <button id="refresh-report-btn" class="btn btn-primary">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Refresh Report
+            </button>
+        </div>
+        
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div class="flex items-center">
+                    <div class="p-2 bg-blue-100 rounded-lg">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-blue-600 font-medium">Total Active Assignments</p>
+                        <p class="text-2xl font-bold text-blue-700" id="total-assignments">-</p>
+                    </div>
                 </div>
-                <div class="ml-3">
-                    <p class="text-sm text-blue-600 font-medium">Total Active Assignments</p>
-                    <p class="text-2xl font-bold text-blue-700" id="total-assignments">-</p>
+            </div>
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div class="flex items-center">
+                    <div class="p-2 bg-green-100 rounded-lg">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-green-600 font-medium">Secteurs Covered</p>
+                        <p class="text-2xl font-bold text-green-700" id="secteurs-count">-</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <div class="flex items-center">
+                    <div class="p-2 bg-purple-100 rounded-lg">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-purple-600 font-medium">Devices Deployed</p>
+                        <p class="text-2xl font-bold text-purple-700" id="devices-count">-</p>
+                    </div>
                 </div>
             </div>
         </div>
         
-        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div class="flex items-center">
-                <div class="p-2 bg-green-100 rounded-lg">
-                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        <!-- Search and Filter Controls -->
+        <div class="flex flex-col md:flex-row gap-4 mb-4">
+            <div class="flex-1">
+                <label for="search-input" class="custom-label">Search Worker or Asset</label>
+                <input type="text" id="search-input" placeholder="Search by worker name, asset tag, or phone number..." class="custom-input">
+            </div>
+            <div class="w-full md:w-48">
+                <label for="secteur-filter" class="custom-label">Filter by Secteur</label>
+                <select id="secteur-filter" class="custom-input">
+                    <option value="">All Secteurs</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Loading State -->
+        <div id="loading-state" class="text-center py-8">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+            <p class="mt-2 text-gray-600">Loading report data...</p>
+        </div>
+        
+        <!-- Report Table -->
+        <div id="report-table-container" class="hidden">
+            <div class="overflow-x-auto">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th class="text-left cursor-pointer hover:bg-gray-50" data-sort="worker_name">Worker Name</th>
+                            <th class="text-left cursor-pointer hover:bg-gray-50" data-sort="secteur_name">Secteur</th>
+                            <th class="text-left cursor-pointer hover:bg-gray-50" data-sort="asset_tag">Asset Tag</th>
+                            <th class="text-left cursor-pointer hover:bg-gray-50" data-sort="phone_number">Phone Number</th>
+                            <th class="text-left cursor-pointer hover:bg-gray-50" data-sort="assignment_date">Assignment Date</th>
+                            <th class="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="report-table-body">
+                        <!-- Data will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="no-data-message" class="text-center py-8 hidden">
+                <h3 class="text-lg font-medium text-gray-600 mb-2">No Assignments Found</h3>
+                <p class="text-gray-500">There are no active assignments matching your search criteria.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Missing Data Tab -->
+<div id="missing-data-panel" class="tab-panel">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="custom-card">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">Missing Data Report</h3>
+                <button id="refresh-missing-btn" class="text-blue-600 hover:text-blue-800">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                     </svg>
-                </div>
-                <div class="ml-3">
-                    <p class="text-sm text-green-600 font-medium">Secteurs Covered</p>
-                    <p class="text-2xl font-bold text-green-700" id="secteurs-count">-</p>
+                </button>
+            </div>
+            
+            <div id="missing-data-content" class="space-y-4">
+                <div class="text-center text-gray-500">
+                    <div class="loader">Loading...</div>
                 </div>
             </div>
         </div>
         
-        <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
-            <div class="flex items-center">
-                <div class="p-2 bg-purple-100 rounded-lg">
-                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                    </svg>
+        <div class="custom-card">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">Data Integrity Actions</h3>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 class="font-medium text-blue-800 mb-2">Add Phone Numbers</h4>
+                    <p class="text-sm text-blue-600 mb-3">Add phone numbers to SIM cards or create standalone entries.</p>
+                    <a href="/admin/phone_numbers" class="btn btn-primary btn-sm">Manage Phone Numbers</a>
                 </div>
-                <div class="ml-3">
-                    <p class="text-sm text-purple-600 font-medium">Devices Deployed</p>
-                    <p class="text-2xl font-bold text-purple-700" id="devices-count">-</p>
+                
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h4 class="font-medium text-green-800 mb-2">Link SIM Cards</h4>
+                    <p class="text-sm text-green-600 mb-3">Associate phone numbers with SIM cards for complete records.</p>
+                    <a href="/admin/sims" class="btn btn-primary btn-sm">Manage SIM Cards</a>
+                </div>
+                
+                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <h4 class="font-medium text-purple-800 mb-2">Assign to Workers</h4>
+                    <p class="text-sm text-purple-600 mb-3">Assign unassigned resources to workers.</p>
+                    <a href="/admin/workers" class="btn btn-primary btn-sm">Manage Workers</a>
+                </div>
+                
+                <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                    <h4 class="font-medium text-orange-800 mb-2">Data Import</h4>
+                    <p class="text-sm text-orange-600 mb-3">Import bulk data to fix missing information.</p>
+                    <a href="/admin/import" class="btn btn-primary btn-sm">Import Data</a>
                 </div>
             </div>
         </div>
     </div>
-    
-    <!-- Search and Filter Controls -->
-    <div class="flex flex-col md:flex-row gap-4 mb-4">
-        <div class="flex-1">
-            <label for="search-input" class="custom-label">Search Worker or Asset</label>
-            <input type="text" id="search-input" placeholder="Search by worker name, asset tag, or phone number..." class="custom-input">
-        </div>
-        <div class="w-full md:w-48">
-            <label for="secteur-filter" class="custom-label">Filter by Secteur</label>
-            <select id="secteur-filter" class="custom-input">
-                <option value="">All Secteurs</option>
-            </select>
-        </div>
-    </div>
-    
-    <!-- Loading State -->
-    <div id="loading-state" class="text-center py-8">
-        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
-        <p class="mt-2 text-gray-600">Loading report data...</p>
-    </div>
-    
-    <!-- Report Table -->
-    <div id="report-table-container" class="hidden">
-        <div class="overflow-x-auto">
-            <table class="custom-table">
-                <thead>
-                    <tr>
-                        <th class="text-left cursor-pointer hover:bg-gray-50" data-sort="worker_name">
-                            Worker Name
-                            <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-                            </svg>
-                        </th>
-                        <th class="text-left cursor-pointer hover:bg-gray-50" data-sort="worker_id">
-                            Worker ID
-                            <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-                            </svg>
-                        </th>
-                        <th class="text-left cursor-pointer hover:bg-gray-50" data-sort="secteur_name">
-                            Secteur
-                            <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-                            </svg>
-                        </th>
-                        <th class="text-left cursor-pointer hover:bg-gray-50" data-sort="asset_tag">
-                            Asset Tag
-                            <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-                            </svg>
-                        </th>
-                        <th class="text-left cursor-pointer hover:bg-gray-50" data-sort="manufacturer">
-                            Device
-                            <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-                            </svg>
-                        </th>
-                        <th class="text-left cursor-pointer hover:bg-gray-50" data-sort="iccid">
-                            SIM ICCID
-                            <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-                            </svg>
-                        </th>
-                        <th class="text-left cursor-pointer hover:bg-gray-50" data-sort="phone_number">
-                            Phone Number
-                            <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-                            </svg>
-                        </th>
-                        <th class="text-left cursor-pointer hover:bg-gray-50" data-sort="assignment_date">
-                            Assignment Date
-                            <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-                            </svg>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody id="report-table-body">
-                    <!-- Data will be populated by JavaScript -->
-                </tbody>
-            </table>
+</div>
+
+<!-- Inventory Summary Tab -->
+<div id="inventory-panel" class="tab-panel">
+    <div class="custom-card">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold">Inventory Summary</h3>
+            <button id="refresh-inventory-btn" class="text-blue-600 hover:text-blue-800">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+            </button>
         </div>
         
-        <!-- No Data Message -->
-        <div id="no-data-message" class="text-center py-8 hidden">
-            <svg class="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-            </svg>
-            <h3 class="text-lg font-medium text-gray-600 mb-2">No Assignments Found</h3>
-            <p class="text-gray-500">There are no active assignments matching your search criteria.</p>
+        <div id="inventory-summary-content" class="space-y-4">
+            <div class="text-center text-gray-500">
+                <div class="loader">Loading...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detail Modal -->
+<div id="detail-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-gray-900" id="detail-modal-title">Details</h3>
+                <button id="close-detail-modal" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div id="detail-content" class="max-h-96 overflow-y-auto">
+                <!-- Content will be populated by JavaScript -->
+            </div>
         </div>
     </div>
 </div>
@@ -157,101 +216,102 @@
 
 {% block scripts %}
 <script>
-    // Global variables
     let reportData = [];
     let filteredData = [];
     let sortColumn = 'worker_name';
     let sortDirection = 'asc';
+    let currentTab = 'assignments';
 
-    // Initialize the reports page
     document.addEventListener('DOMContentLoaded', function() {
-        loadReportData();
         setupEventListeners();
+        loadReportData();
     });
 
     function setupEventListeners() {
-        // Refresh button
+        // Tab switching
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                switchTab(e.target.dataset.tab);
+            });
+        });
+
+        // Assignment tab events
         document.getElementById('refresh-report-btn').addEventListener('click', loadReportData);
-
-        // Search input
-        document.getElementById('search-input').addEventListener('input', function() {
-            filterAndDisplayData();
-        });
-
-        // Secteur filter
-        document.getElementById('secteur-filter').addEventListener('change', function() {
-            filterAndDisplayData();
-        });
-
-        // Column sorting
+        document.getElementById('search-input').addEventListener('input', filterAndDisplayData);
+        document.getElementById('secteur-filter').addEventListener('change', filterAndDisplayData);
         document.querySelectorAll('[data-sort]').forEach(header => {
-            header.addEventListener('click', function() {
-                const column = this.getAttribute('data-sort');
+            header.addEventListener('click', () => {
+                const column = header.getAttribute('data-sort');
                 sortData(column);
-            });
-        });
-    }
-
-    function loadReportData() {
-        showLoading(true);
-        
-        fetch('/api/reports/assignment_overview')
-            .then(response => response.json())
-            .then(data => {
-                reportData = data;
-                filteredData = [...data];
-                
-                updateSummaryCards();
-                populateSecteurFilter();
                 filterAndDisplayData();
-                showLoading(false);
-            })
-            .catch(error => {
-                console.error('Error loading report data:', error);
-                showErrorMessage('Failed to load report data. Please try again.');
-                showLoading(false);
             });
-    }
+        });
+        document.getElementById('report-table-body').addEventListener('click', handleTableActions);
 
-    function updateSummaryCards() {
-        const totalAssignments = reportData.length;
-        const uniqueSecteurs = new Set(reportData.map(row => row.secteur_name)).size;
-        const uniqueDevices = new Set(reportData.map(row => row.asset_tag)).size;
+        // Missing data tab events
+        document.getElementById('refresh-missing-btn').addEventListener('click', loadMissingDataReport);
         
-        document.getElementById('total-assignments').textContent = totalAssignments;
-        document.getElementById('secteurs-count').textContent = uniqueSecteurs;
-        document.getElementById('devices-count').textContent = uniqueDevices;
-    }
-
-    function populateSecteurFilter() {
-        const secteurFilter = document.getElementById('secteur-filter');
-        const uniqueSecteurs = [...new Set(reportData.map(row => row.secteur_name))].sort();
+        // Inventory tab events
+        document.getElementById('refresh-inventory-btn').addEventListener('click', loadInventorySummary);
         
-        // Clear existing options except "All Secteurs"
-        secteurFilter.innerHTML = '<option value="">All Secteurs</option>';
-        
-        uniqueSecteurs.forEach(secteur => {
-            const option = document.createElement('option');
-            option.value = secteur;
-            option.textContent = secteur;
-            secteurFilter.appendChild(option);
+        // Modal events
+        document.getElementById('close-detail-modal').addEventListener('click', closeDetailModal);
+        document.getElementById('detail-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'detail-modal') {
+                closeDetailModal();
+            }
         });
     }
 
+    function switchTab(tabName) {
+        currentTab = tabName;
+        
+        // Update tab buttons
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.classList.remove('active');
+        });
+        document.getElementById(tabName + '-tab').classList.add('active');
+        
+        // Update tab panels
+        document.querySelectorAll('.tab-panel').forEach(panel => {
+            panel.classList.remove('active');
+        });
+        document.getElementById(tabName + '-panel').classList.add('active');
+        
+        // Load data for specific tabs
+        if (tabName === 'missing-data') {
+            loadMissingDataReport();
+        } else if (tabName === 'inventory') {
+            loadInventorySummary();
+        }
+    }
+
+    async function loadReportData() {
+        showLoading(true);
+        try {
+            const response = await fetch('/api/reports/assignment_overview');
+            if (!response.ok) throw new Error('Failed to fetch report data.');
+            reportData = await response.json();
+            filteredData = [...reportData];
+            updateSummaryCards();
+            populateSecteurFilter();
+            filterAndDisplayData();
+        } catch (error) {
+            console.error('Error loading report data:', error);
+            showErrorMessage(error.message);
+        } finally {
+            showLoading(false);
+        }
+    }
+    
     function filterAndDisplayData() {
         const searchTerm = document.getElementById('search-input').value.toLowerCase();
         const secteurFilter = document.getElementById('secteur-filter').value;
         
         filteredData = reportData.filter(row => {
-            const matchesSearch = !searchTerm || 
-                row.worker_name.toLowerCase().includes(searchTerm) ||
-                row.worker_id.toLowerCase().includes(searchTerm) ||
-                row.asset_tag.toLowerCase().includes(searchTerm) ||
-                (row.phone_number && row.phone_number.toLowerCase().includes(searchTerm)) ||
-                row.iccid.toLowerCase().includes(searchTerm);
-            
             const matchesSecteur = !secteurFilter || row.secteur_name === secteurFilter;
-            
+            const matchesSearch = !searchTerm || 
+                Object.values(row).some(val => String(val).toLowerCase().includes(searchTerm));
             return matchesSearch && matchesSecteur;
         });
         
@@ -260,112 +320,455 @@
     }
 
     function sortData(column, direction = null) {
-        if (column === sortColumn && direction === null) {
-            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-        } else if (direction) {
+        if (direction) {
             sortDirection = direction;
         } else {
-            sortColumn = column;
-            sortDirection = 'asc';
+            sortDirection = (column === sortColumn && sortDirection === 'asc') ? 'desc' : 'asc';
         }
+        sortColumn = column;
         
         filteredData.sort((a, b) => {
             let aVal = a[column] || '';
             let bVal = b[column] || '';
-            
-            // Handle date sorting
-            if (column === 'assignment_date') {
-                aVal = new Date(aVal);
-                bVal = new Date(bVal);
-            } else {
-                aVal = aVal.toString().toLowerCase();
-                bVal = bVal.toString().toLowerCase();
-            }
-            
-            if (sortDirection === 'asc') {
-                return aVal > bVal ? 1 : -1;
-            } else {
-                return aVal < bVal ? 1 : -1;
-            }
+            if (sortDirection === 'asc') return aVal > bVal ? 1 : -1;
+            return aVal < bVal ? 1 : -1;
         });
-        
-        updateSortIndicators();
-    }
-
-    function updateSortIndicators() {
-        // Reset all sort indicators
-        document.querySelectorAll('[data-sort]').forEach(header => {
-            header.classList.remove('bg-gray-100');
-            const svg = header.querySelector('svg');
-            svg.classList.remove('text-indigo-500');
-        });
-        
-        // Highlight current sort column
-        const currentHeader = document.querySelector(`[data-sort="${sortColumn}"]`);
-        if (currentHeader) {
-            currentHeader.classList.add('bg-gray-100');
-            const svg = currentHeader.querySelector('svg');
-            svg.classList.add('text-indigo-500');
-        }
     }
 
     function displayReportData() {
         const tableBody = document.getElementById('report-table-body');
         const noDataMessage = document.getElementById('no-data-message');
         
+        tableBody.innerHTML = '';
         if (filteredData.length === 0) {
-            tableBody.innerHTML = '';
             noDataMessage.classList.remove('hidden');
             return;
         }
         
         noDataMessage.classList.add('hidden');
+        filteredData.forEach(row => {
+            const tableRow = `
+                <tr class="hover:bg-gray-50">
+                    <td class="font-medium">${row.worker_name}</td>
+                    <td><span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">${row.secteur_name}</span></td>
+                    <td class="font-mono text-sm">${row.asset_tag}</td>
+                    <td class="font-mono">${row.phone_number || 'N/A'}</td>
+                    <td>${formatDate(row.assignment_date)}</td>
+                    <td class="text-right">
+                        <button class="btn-link text-red-600 return-btn" data-assignment-id="${row.assignment_id}" data-worker-name="${row.worker_name}">Return</button>
+                    </td>
+                </tr>`;
+            tableBody.insertAdjacentHTML('beforeend', tableRow);
+        });
+    }
+
+    async function handleTableActions(e) {
+        if (!e.target.classList.contains('return-btn')) return;
+
+        const button = e.target;
+        const assignmentId = button.dataset.assignmentId;
+        const workerName = button.dataset.workerName;
+
+        if (confirm(`Are you sure you want to return the asset assigned to ${workerName}? This will mark the phone and SIM as 'In Stock'.`)) {
+            try {
+                const response = await fetch(`/api/admin/assignments/${assignmentId}`, { method: 'DELETE' });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to return asset.');
+                }
+                const result = await response.json();
+                showToast(result.message);
+                loadReportData(); // Refresh the entire report
+            } catch (error) {
+                showErrorMessage(error.message);
+            }
+        }
+    }
+
+    async function loadMissingDataReport() {
+        const content = document.getElementById('missing-data-content');
+        content.innerHTML = '<div class="text-center text-gray-500"><div class="loader">Loading...</div></div>';
         
-        tableBody.innerHTML = filteredData.map(row => `
-            <tr class="hover:bg-gray-50">
-                <td class="font-medium">${row.worker_name}</td>
-                <td class="text-gray-600">${row.worker_id}</td>
-                <td>
-                    <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                        ${row.secteur_name}
-                    </span>
-                </td>
-                <td class="font-mono text-sm">${row.asset_tag}</td>
-                <td class="text-gray-600">${row.manufacturer} ${row.model}</td>
-                <td class="font-mono text-xs text-gray-500">${row.iccid}</td>
-                <td class="font-mono">${row.phone_number || 'N/A'}</td>
-                <td class="text-gray-600">${formatDate(row.assignment_date)}</td>
-            </tr>
-        `).join('');
+        try {
+            const response = await fetch('/api/reports/missing_data');
+            if (!response.ok) throw new Error('Failed to load missing data report');
+            
+            const data = await response.json();
+            renderMissingDataReport(data);
+        } catch (error) {
+            console.error('Error loading missing data report:', error);
+            content.innerHTML = '<div class="text-center text-red-500">Error loading report</div>';
+        }
+    }
+
+    async function loadInventorySummary() {
+        const content = document.getElementById('inventory-summary-content');
+        content.innerHTML = '<div class="text-center text-gray-500"><div class="loader">Loading...</div></div>';
+        
+        try {
+            const response = await fetch('/api/reports/inventory_summary');
+            if (!response.ok) throw new Error('Failed to load inventory summary');
+            
+            const data = await response.json();
+            renderInventorySummary(data);
+        } catch (error) {
+            console.error('Error loading inventory summary:', error);
+            content.innerHTML = '<div class="text-center text-red-500">Error loading summary</div>';
+        }
+    }
+
+    function renderMissingDataReport(data) {
+        const content = document.getElementById('missing-data-content');
+        
+        let html = '';
+        
+        // SIM Cards without Phone Numbers
+        if (data.sim_cards_without_phone_numbers.length > 0) {
+            html += `
+                <div class="border-l-4 border-yellow-400 bg-yellow-50 p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <h4 class="text-sm font-medium text-yellow-800">SIM Cards without Phone Numbers</h4>
+                                <p class="text-sm text-yellow-700">${data.sim_cards_without_phone_numbers.length} SIM cards found</p>
+                            </div>
+                        </div>
+                        <button onclick="showDetails('SIM Cards without Phone Numbers', ${JSON.stringify(data.sim_cards_without_phone_numbers).replace(/"/g, '&quot;')}, 'sim')" class="text-yellow-600 hover:text-yellow-800">
+                            View Details
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Phone Numbers without SIM Cards
+        if (data.phone_numbers_without_sim_cards.length > 0) {
+            html += `
+                <div class="border-l-4 border-orange-400 bg-orange-50 p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-orange-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <h4 class="text-sm font-medium text-orange-800">Phone Numbers without SIM Cards</h4>
+                                <p class="text-sm text-orange-700">${data.phone_numbers_without_sim_cards.length} phone numbers found</p>
+                            </div>
+                        </div>
+                        <button onclick="showDetails('Phone Numbers without SIM Cards', ${JSON.stringify(data.phone_numbers_without_sim_cards).replace(/"/g, '&quot;')}, 'phone')" class="text-orange-600 hover:text-orange-800">
+                            View Details
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Unassigned Resources
+        if (data.unassigned_resources.length > 0) {
+            html += `
+                <div class="border-l-4 border-blue-400 bg-blue-50 p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <h4 class="text-sm font-medium text-blue-800">Unassigned Resources</h4>
+                                <p class="text-sm text-blue-700">${data.unassigned_resources.length} resources available</p>
+                            </div>
+                        </div>
+                        <button onclick="showDetails('Unassigned Resources', ${JSON.stringify(data.unassigned_resources).replace(/"/g, '&quot;')}, 'unassigned')" class="text-blue-600 hover:text-blue-800">
+                            View Details
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Incomplete Records
+        if (data.incomplete_records.length > 0) {
+            html += `
+                <div class="border-l-4 border-red-400 bg-red-50 p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <h4 class="text-sm font-medium text-red-800">Incomplete Records</h4>
+                                <p class="text-sm text-red-700">${data.incomplete_records.length} records need attention</p>
+                            </div>
+                        </div>
+                        <button onclick="showDetails('Incomplete Records', ${JSON.stringify(data.incomplete_records).replace(/"/g, '&quot;')}, 'incomplete')" class="text-red-600 hover:text-red-800">
+                            View Details
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        if (html === '') {
+            html = '<div class="text-center text-green-500 py-8">✓ No missing data found</div>';
+        }
+
+        content.innerHTML = html;
+    }
+
+    function renderInventorySummary(data) {
+        const content = document.getElementById('inventory-summary-content');
+        
+        let html = `
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <div class="text-2xl font-bold text-blue-600">${data.total_phones}</div>
+                    <div class="text-sm text-blue-800">Total Phones</div>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <div class="text-2xl font-bold text-green-600">${data.total_sim_cards}</div>
+                    <div class="text-sm text-green-800">Total SIM Cards</div>
+                </div>
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <div class="text-2xl font-bold text-purple-600">${data.total_phone_numbers}</div>
+                    <div class="text-sm text-purple-800">Total Phone Numbers</div>
+                </div>
+                <div class="bg-orange-50 p-4 rounded-lg">
+                    <div class="text-2xl font-bold text-orange-600">${data.total_workers}</div>
+                    <div class="text-sm text-orange-800">Total Workers</div>
+                </div>
+            </div>
+            
+            <div class="mt-6">
+                <h4 class="text-sm font-medium text-gray-700 mb-3">Status Breakdown</h4>
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-600">Active Phones:</span>
+                        <span class="text-sm font-medium text-green-600">${data.active_phones}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-600">Active SIM Cards:</span>
+                        <span class="text-sm font-medium text-green-600">${data.active_sim_cards}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-600">Active Phone Numbers:</span>
+                        <span class="text-sm font-medium text-green-600">${data.active_phone_numbers}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-600">Assigned Resources:</span>
+                        <span class="text-sm font-medium text-blue-600">${data.assigned_resources}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-600">Available Resources:</span>
+                        <span class="text-sm font-medium text-yellow-600">${data.available_resources}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        content.innerHTML = html;
+    }
+
+    function showDetails(title, data, type) {
+        document.getElementById('detail-modal-title').textContent = title;
+        const content = document.getElementById('detail-content');
+        
+        let html = '';
+        
+        if (type === 'sim') {
+            html = `
+                <div class="overflow-x-auto">
+                    <table class="min-w-full table-auto">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">ICCID</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Carrier</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.map(item => `
+                                <tr class="border-b">
+                                    <td class="px-4 py-2 font-mono text-sm">${item.iccid}</td>
+                                    <td class="px-4 py-2 text-sm">${item.carrier}</td>
+                                    <td class="px-4 py-2 text-sm">${item.status}</td>
+                                    <td class="px-4 py-2 text-sm">
+                                        <a href="/admin/phone_numbers" class="text-blue-600 hover:text-blue-800">Add Phone Number</a>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        } else if (type === 'phone') {
+            html = `
+                <div class="overflow-x-auto">
+                    <table class="min-w-full table-auto">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Phone Number</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.map(item => `
+                                <tr class="border-b">
+                                    <td class="px-4 py-2 font-mono text-sm">${item.phone_number}</td>
+                                    <td class="px-4 py-2 text-sm">${item.status}</td>
+                                    <td class="px-4 py-2 text-sm">
+                                        <a href="/admin/sims" class="text-blue-600 hover:text-blue-800">Link SIM Card</a>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        } else if (type === 'unassigned') {
+            html = `
+                <div class="overflow-x-auto">
+                    <table class="min-w-full table-auto">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Resource Type</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Identifier</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.map(item => `
+                                <tr class="border-b">
+                                    <td class="px-4 py-2 text-sm">${item.resource_type}</td>
+                                    <td class="px-4 py-2 font-mono text-sm">${item.identifier}</td>
+                                    <td class="px-4 py-2 text-sm">${item.status}</td>
+                                    <td class="px-4 py-2 text-sm">
+                                        <a href="/admin/workers" class="text-blue-600 hover:text-blue-800">Assign to Worker</a>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        } else if (type === 'incomplete') {
+            html = `
+                <div class="overflow-x-auto">
+                    <table class="min-w-full table-auto">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Resource Type</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Identifier</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Issues</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.map(item => `
+                                <tr class="border-b">
+                                    <td class="px-4 py-2 text-sm">${item.resource_type}</td>
+                                    <td class="px-4 py-2 font-mono text-sm">${item.identifier}</td>
+                                    <td class="px-4 py-2 text-sm">${item.issues}</td>
+                                    <td class="px-4 py-2 text-sm">
+                                        <a href="/admin/${item.resource_type.toLowerCase()}s" class="text-blue-600 hover:text-blue-800">Fix Issues</a>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+        
+        content.innerHTML = html;
+        document.getElementById('detail-modal').classList.remove('hidden');
+    }
+
+    function closeDetailModal() {
+        document.getElementById('detail-modal').classList.add('hidden');
+    }
+
+    function updateSummaryCards() {
+        document.getElementById('total-assignments').textContent = reportData.length;
+        document.getElementById('secteurs-count').textContent = new Set(reportData.map(r => r.secteur_name)).size;
+        document.getElementById('devices-count').textContent = new Set(reportData.map(r => r.asset_tag)).size;
+    }
+
+    function populateSecteurFilter() {
+        const select = document.getElementById('secteur-filter');
+        const uniqueSecteurs = [...new Set(reportData.map(r => r.secteur_name))].sort();
+        select.innerHTML = '<option value="">All Secteurs</option>';
+        uniqueSecteurs.forEach(s => select.innerHTML += `<option value="${s}">${s}</option>`);
     }
 
     function formatDate(dateString) {
         if (!dateString) return 'N/A';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-        });
+        return new Date(dateString).toLocaleDateString('en-CA'); // YYYY-MM-DD format
     }
 
-    function showLoading(show) {
-        const loadingState = document.getElementById('loading-state');
-        const reportContainer = document.getElementById('report-table-container');
-        
-        if (show) {
-            loadingState.classList.remove('hidden');
-            reportContainer.classList.add('hidden');
-        } else {
-            loadingState.classList.add('hidden');
-            reportContainer.classList.remove('hidden');
-        }
+    function showLoading(isLoading) {
+        document.getElementById('loading-state').classList.toggle('hidden', !isLoading);
+        document.getElementById('report-table-container').classList.toggle('hidden', isLoading);
     }
 
-    function showErrorMessage(message) {
-        // You can implement a toast notification here
-        console.error(message);
-        alert(message); // Simple fallback
-    }
+    function showToast(message, isError = false) { /* Your existing toast logic */ }
+    function showErrorMessage(message) { showToast(message, true); }
 </script>
+
+<style>
+    .tab-button {
+        padding: 0.5rem 1rem;
+        border-bottom: 2px solid transparent;
+        font-weight: 500;
+        font-size: 0.875rem;
+        cursor: pointer;
+        color: #6b7280;
+        transition: all 0.2s ease;
+    }
+
+    .tab-button.active {
+        color: #2563eb;
+        border-color: #2563eb;
+    }
+
+    .tab-button:hover:not(.active) {
+        color: #6b7280;
+        border-color: #d1d5db;
+    }
+
+    .tab-panel {
+        display: none;
+    }
+
+    .tab-panel.active {
+        display: block;
+    }
+
+    .loader {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 2s linear infinite;
+        margin: 0 auto;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
 {% endblock %}

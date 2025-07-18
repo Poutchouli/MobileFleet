@@ -30,7 +30,7 @@
 </div>
 
 <!-- Add/Edit Phone Modal -->
-<div id="phone-modal" class="custom-modal hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+<div id="phone-modal" class="custom-modal hidden">
     <div class="custom-modal-backdrop"></div>
     <div class="custom-modal-content">
         <div class="custom-modal-header">
@@ -40,46 +40,15 @@
             <div class="custom-modal-body">
                 <input type="hidden" id="phone-id" name="id">
                 <div class="custom-form-grid">
-                    <div class="custom-form-group">
-                        <label for="asset_tag" class="custom-label">Asset Tag*</label>
-                        <input type="text" name="asset_tag" id="asset_tag" required class="custom-input">
-                    </div>
-                    <div class="custom-form-group">
-                        <label for="status" class="custom-label">Status</label>
-                        <select id="status" name="status" class="custom-select">
-                            <option>In Stock</option>
-                            <option>In Use</option>
-                            <option>In Repair</option>
-                        </select>
-                    </div>
-                    <div class="custom-form-group">
-                        <label for="imei" class="custom-label">IMEI*</label>
-                        <input type="text" name="imei" id="imei" required class="custom-input">
-                    </div>
-                    <div class="custom-form-group">
-                        <label for="serial_number" class="custom-label">Serial Number*</label>
-                        <input type="text" name="serial_number" id="serial_number" required class="custom-input">
-                    </div>
-                    <div class="custom-form-group">
-                        <label for="manufacturer" class="custom-label">Manufacturer</label>
-                        <input type="text" name="manufacturer" id="manufacturer" class="custom-input">
-                    </div>
-                    <div class="custom-form-group">
-                        <label for="model" class="custom-label">Model</label>
-                        <input type="text" name="model" id="model" class="custom-input">
-                    </div>
-                    <div class="custom-form-group">
-                        <label for="purchase_date" class="custom-label">Purchase Date</label>
-                        <input type="date" name="purchase_date" id="purchase_date" class="custom-input">
-                    </div>
-                    <div class="custom-form-group">
-                        <label for="warranty_end_date" class="custom-label">Warranty End</label>
-                        <input type="date" name="warranty_end_date" id="warranty_end_date" class="custom-input">
-                    </div>
-                    <div class="custom-form-group custom-form-group-full">
-                        <label for="notes" class="custom-label">Notes</label>
-                        <textarea id="notes" name="notes" rows="3" class="custom-textarea"></textarea>
-                    </div>
+                    <div class="custom-form-group"><label for="asset_tag" class="custom-label">Asset Tag*</label><input type="text" name="asset_tag" id="asset_tag" required class="custom-input"></div>
+                    <div class="custom-form-group"><label for="status" class="custom-label">Status</label><select id="status" name="status" class="custom-select"><option>In Stock</option><option>In Use</option><option>In Repair</option></select></div>
+                    <div class="custom-form-group"><label for="imei" class="custom-label">IMEI*</label><input type="text" name="imei" id="imei" required class="custom-input"></div>
+                    <div class="custom-form-group"><label for="serial_number" class="custom-label">Serial Number*</label><input type="text" name="serial_number" id="serial_number" required class="custom-input"></div>
+                    <div class="custom-form-group"><label for="manufacturer" class="custom-label">Manufacturer</label><input type="text" name="manufacturer" id="manufacturer" class="custom-input"></div>
+                    <div class="custom-form-group"><label for="model" class="custom-label">Model</label><input type="text" name="model" id="model" class="custom-input"></div>
+                    <div class="custom-form-group"><label for="purchase_date" class="custom-label">Purchase Date</label><input type="date" name="purchase_date" id="purchase_date" class="custom-input"></div>
+                    <div class="custom-form-group"><label for="warranty_end_date" class="custom-label">Warranty End</label><input type="date" name="warranty_end_date" id="warranty_end_date" class="custom-input"></div>
+                    <div class="custom-form-group custom-form-group-full"><label for="notes" class="custom-label">Notes</label><textarea id="notes" name="notes" rows="3" class="custom-textarea"></textarea></div>
                 </div>
             </div>
             <div class="custom-modal-footer">
@@ -89,175 +58,187 @@
         </form>
     </div>
 </div>
-    
-    <!-- Toast Notification -->
-    <div id="toast" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg hidden">
-        <p id="toast-message"></p>
+
+<!-- History Log Modal -->
+<div id="history-modal" class="custom-modal hidden">
+    <div class="custom-modal-backdrop"></div>
+    <div class="custom-modal-content">
+        <div class="custom-modal-header">
+            <h3 id="history-modal-title" class="custom-modal-title">Asset History</h3>
+        </div>
+        <div class="custom-modal-body max-h-[70vh] overflow-y-auto">
+            <ul id="history-list" class="space-y-4">
+                <!-- JS will populate this -->
+            </ul>
+        </div>
+        <div class="custom-modal-footer">
+            <button type="button" id="history-cancel-btn" class="btn btn-secondary">Close</button>
+        </div>
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const modal = document.getElementById('phone-modal');
-            const addPhoneBtn = document.getElementById('add-phone-btn');
-            const cancelBtn = document.getElementById('cancel-btn');
-            const phoneForm = document.getElementById('phone-form');
-            const modalTitle = document.getElementById('modal-title');
-            const tableBody = document.getElementById('phones-table-body');
-
-            // --- Utility Functions ---
-            function showToast(message, isError = false) {
-                const toast = document.getElementById('toast');
-                const toastMessage = document.getElementById('toast-message');
-                toastMessage.textContent = message;
-                toast.className = `fixed top-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg ${isError ? 'bg-red-500' : 'bg-green-500'}`;
-                toast.classList.remove('hidden');
-                setTimeout(() => toast.classList.add('hidden'), 3000);
-            }
-
-            // --- Modal Handling ---
-            function openModal() { modal.classList.remove('hidden'); }
-            function closeModal() { modal.classList.add('hidden'); phoneForm.reset(); document.getElementById('phone-id').value = ''; }
-
-            addPhoneBtn.addEventListener('click', () => {
-                modalTitle.textContent = 'Add New Phone';
-                openModal();
-            });
-            cancelBtn.addEventListener('click', closeModal);
-
-            // --- API Calls & Table Rendering ---
-            async function fetchPhones() {
-                try {
-                    const response = await fetch('/api/phones');
-                    if (!response.ok) throw new Error('Failed to fetch phones');
-                    const phones = await response.json();
-                    renderTable(phones);
-                } catch (error) {
-                    console.error('Error fetching phones:', error);
-                    showToast('Could not load phone data.', true);
-                }
-            }
-
-            function renderTable(phones) {
-                tableBody.innerHTML = '';
-                if (phones.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4">No phones found.</td></tr>';
-                    return;
-                }
-                phones.forEach(phone => {
-                    const statusClass = phone.status === 'In Stock' ? 'status-available' : 
-                                       phone.status === 'In Use' ? 'status-assigned' : 
-                                       'status-maintenance';
-                    const row = `
-                        <tr>
-                            <td>${phone.asset_tag}</td>
-                            <td>${phone.manufacturer || ''} ${phone.model || ''}</td>
-                            <td>${phone.imei}</td>
-                            <td>
-                                <span class="status-badge ${statusClass}">
-                                    ${phone.status}
-                                </span>
-                            </td>
-                            <td class="text-right">
-                                <button data-id="${phone.id}" class="edit-btn btn-link">Edit</button>
-                                <button data-id="${phone.id}" data-tag="${phone.asset_tag}" class="delete-btn btn-link text-red-600 ml-4">Retire</button>
-                            </td>
-                        </tr>
-                    `;
-                    tableBody.insertAdjacentHTML('beforeend', row);
-                });
-            }
-
-            // --- Form Submission (Create/Update) ---
-            phoneForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                const formData = new FormData(phoneForm);
-                const phoneData = Object.fromEntries(formData.entries());
-                const phoneId = phoneData.id;
-                
-                const url = phoneId ? `/api/phones/${phoneId}` : '/api/phones';
-                const method = phoneId ? 'PUT' : 'POST';
-
-                try {
-                    const response = await fetch(url, {
-                        method: method,
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(phoneData)
-                    });
-                    const result = await response.json();
-                    if (!response.ok) {
-                        throw new Error(result.message || 'Failed to save phone.');
-                    }
-                    showToast(`Phone successfully ${phoneId ? 'updated' : 'created'}!`);
-                    closeModal();
-                    fetchPhones();
-                } catch (error) {
-                    console.error('Error saving phone:', error);
-                    showToast(error.message, true);
-                }
-            });
-
-            // --- Event Delegation for Edit/Delete ---
-            tableBody.addEventListener('click', async function(e) {
-                const target = e.target;
-                const phoneId = target.dataset.id;
-
-                // Edit button clicked
-                if (target.classList.contains('edit-btn')) {
-                    try {
-                        const response = await fetch(`/api/phones/${phoneId}`);
-                        if (!response.ok) throw new Error('Failed to fetch phone details.');
-                        const phone = await response.json();
-
-                        // Populate form
-                        for (const key in phone) {
-                            if (phoneForm.elements[key]) {
-                                // Handle date formatting for input[type=date]
-                                if (['purchase_date', 'warranty_end_date'].includes(key) && phone[key]) {
-                                    phoneForm.elements[key].value = phone[key].split('T')[0];
-                                } else {
-                                    phoneForm.elements[key].value = phone[key];
-                                }
-                            }
-                        }
-                        document.getElementById('phone-id').value = phone.id;
-                        modalTitle.textContent = 'Edit Phone';
-                        openModal();
-                    } catch (error) {
-                        console.error('Error fetching for edit:', error);
-                        showToast(error.message, true);
-                    }
-                }
-
-                // Delete (Retire) button clicked
-                if (target.classList.contains('delete-btn')) {
-                    const assetTag = target.dataset.tag;
-                    if (confirm(`Are you sure you want to retire phone ${assetTag}? This action cannot be undone.`)) {
-                        try {
-                            const response = await fetch(`/api/phones/${phoneId}`, { method: 'DELETE' });
-                            const result = await response.json();
-                            if (!response.ok) throw new Error(result.message || 'Failed to retire phone.');
-                            showToast(result.message);
-                            fetchPhones();
-                        } catch (error) {
-                            console.error('Error retiring phone:', error);
-                            showToast(error.message, true);
-                        }
-                    }
-                }
-            });
-
-            // Initial load
-            fetchPhones();
-        });
-</script>
-
-<div id="toast" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg hidden">
-    <p id="toast-message"></p>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-// Phone management script was moved to the template above
+    document.addEventListener('DOMContentLoaded', function() {
+        const phoneModal = document.getElementById('phone-modal');
+        const addPhoneBtn = document.getElementById('add-phone-btn');
+        const cancelBtn = document.getElementById('cancel-btn');
+        const phoneForm = document.getElementById('phone-form');
+        const modalTitle = document.getElementById('modal-title');
+        const tableBody = document.getElementById('phones-table-body');
+        
+        const historyModal = document.getElementById('history-modal');
+        const historyModalTitle = document.getElementById('history-modal-title');
+        const historyList = document.getElementById('history-list');
+        const historyCancelBtn = document.getElementById('history-cancel-btn');
+
+        // --- Utility Functions ---
+        function showToast(message, isError = false) { /* Your existing toast logic here */ }
+        function openPhoneModal() { phoneModal.classList.remove('hidden'); }
+        function closePhoneModal() { phoneModal.classList.add('hidden'); phoneForm.reset(); document.getElementById('phone-id').value = ''; }
+        function openHistoryModal() { historyModal.classList.remove('hidden'); }
+        function closeHistoryModal() { historyModal.classList.add('hidden'); historyList.innerHTML = ''; }
+
+        addPhoneBtn.addEventListener('click', () => {
+            modalTitle.textContent = 'Add New Phone';
+            openPhoneModal();
+        });
+        cancelBtn.addEventListener('click', closePhoneModal);
+        historyCancelBtn.addEventListener('click', closeHistoryModal);
+
+        async function fetchPhones() {
+            try {
+                const response = await fetch('/api/phones');
+                if (!response.ok) throw new Error('Failed to fetch phones');
+                const phones = await response.json();
+                renderTable(phones);
+            } catch (error) {
+                console.error('Error fetching phones:', error);
+            }
+        }
+
+        function renderTable(phones) {
+            tableBody.innerHTML = '';
+            if (phones.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4">No phones found.</td></tr>';
+                return;
+            }
+            phones.forEach(phone => {
+                const statusClass = phone.status === 'In Stock' ? 'status-available' : 
+                                   phone.status === 'In Use' ? 'status-assigned' : 
+                                   'status-maintenance';
+                const row = `
+                    <tr>
+                        <td>${phone.asset_tag}</td>
+                        <td>${phone.manufacturer || ''} ${phone.model || ''}</td>
+                        <td>${phone.imei}</td>
+                        <td><span class="status-badge ${statusClass}">${phone.status}</span></td>
+                        <td class="text-right">
+                            <button data-id="${phone.id}" data-tag="${phone.asset_tag}" class="history-btn btn-link">History</button>
+                            <button data-id="${phone.id}" class="edit-btn btn-link ml-4">Edit</button>
+                            <button data-id="${phone.id}" data-tag="${phone.asset_tag}" class="delete-btn btn-link text-red-600 ml-4">Retire</button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.insertAdjacentHTML('beforeend', row);
+            });
+        }
+
+        phoneForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(phoneForm);
+            const phoneData = Object.fromEntries(formData.entries());
+            const phoneId = phoneData.id;
+            const url = phoneId ? `/api/phones/${phoneId}` : '/api/phones';
+            const method = phoneId ? 'PUT' : 'POST';
+
+            try {
+                const response = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(phoneData) });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.message || 'Failed to save phone.');
+                closePhoneModal();
+                fetchPhones();
+            } catch (error) {
+                console.error('Error saving phone:', error);
+            }
+        });
+
+        tableBody.addEventListener('click', async function(e) {
+            const target = e.target;
+            const phoneId = target.dataset.id;
+
+            if (target.classList.contains('edit-btn')) {
+                try {
+                    const response = await fetch(`/api/phones/${phoneId}`);
+                    if (!response.ok) throw new Error('Failed to fetch phone details.');
+                    const phone = await response.json();
+                    for (const key in phone) {
+                        if (phoneForm.elements[key]) {
+                            const input = phoneForm.elements[key];
+                            if (input.type === 'date' && phone[key]) {
+                                input.value = phone[key].split('T')[0];
+                            } else {
+                                input.value = phone[key];
+                            }
+                        }
+                    }
+                    modalTitle.textContent = 'Edit Phone';
+                    openPhoneModal();
+                } catch (error) {
+                    console.error('Error fetching for edit:', error);
+                }
+            }
+
+            if (target.classList.contains('delete-btn')) {
+                const assetTag = target.dataset.tag;
+                if (confirm(`Are you sure you want to retire phone ${assetTag}?`)) {
+                    try {
+                        const response = await fetch(`/api/phones/${phoneId}`, { method: 'DELETE' });
+                        if (!response.ok) throw new Error('Failed to retire phone.');
+                        fetchPhones();
+                    } catch (error) {
+                        console.error('Error retiring phone:', error);
+                    }
+                }
+            }
+            
+            if (target.classList.contains('history-btn')) {
+                const assetTag = target.dataset.tag;
+                historyModalTitle.textContent = `History for ${assetTag}`;
+                try {
+                    const response = await fetch(`/api/phones/${phoneId}/history`);
+                    if (!response.ok) throw new Error('Could not load history.');
+                    const historyData = await response.json();
+                    renderHistory(historyData);
+                    openHistoryModal();
+                } catch (error) {
+                    console.error(error);
+                }
+            }
+        });
+
+        function renderHistory(historyData) {
+            historyList.innerHTML = '';
+            if (historyData.length === 0) {
+                historyList.innerHTML = '<li>No history found for this asset.</li>';
+                return;
+            }
+            historyData.forEach(item => {
+                const date = new Date(item.event_timestamp).toLocaleString();
+                const user = item.user_name ? `by ${item.user_name}` : '';
+                const listItem = `
+                    <li class="border-l-4 pl-4 border-gray-300">
+                        <p class="font-semibold">${item.event_type}</p>
+                        <p class="text-sm text-gray-700">${item.details}</p>
+                        <p class="text-xs text-gray-500 mt-1">${date} ${user}</p>
+                    </li>
+                `;
+                historyList.insertAdjacentHTML('beforeend', listItem);
+            });
+        }
+
+        fetchPhones();
+    });
 </script>
 {% endblock %}

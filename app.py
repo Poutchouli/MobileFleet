@@ -128,6 +128,13 @@ def admin_phones():
 def admin_sims():
     return render_template('admin/sims.html')
 
+@app.route('/admin/phone-numbers')
+@login_required
+@role_required('Administrator')
+def admin_phone_numbers():
+    """Serves the page for managing phone numbers."""
+    return render_template('admin/phone_numbers.html')
+
 @app.route('/admin/workers')
 @login_required
 @role_required('Administrator')
@@ -595,128 +602,6 @@ def import_csv():
             cursor.close()
         return jsonify({"error": "An error occurred during CSV processing.", "details": str(e)}), 500
 
-# --- API Endpoints for Import Wizard ---
-
-@app.route('/api/import/preview', methods=['POST'])
-@login_required
-@role_required('Administrator')
-def import_preview():
-    """Handles CSV file upload and provides a data preview."""
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file uploaded'}), 400
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'Empty filename'}), 400
-
-    try:
-        csv_content = file.stream.read().decode('utf-8')
-        reader = csv.DictReader(io.StringIO(csv_content))
-        headers = reader.fieldnames
-        preview_data = []
-        for i, row in enumerate(reader):
-            if i >= 5:  # Limit to 5 preview rows
-                break
-            preview_data.append(row)
-
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';")
-        tables = [table['table_name'] for table in cursor.fetchall()]
-        cursor.close()
-
-        return jsonify({'headers': headers, 'preview_data': preview_data, 'tables': tables})
-
-    except Exception as e:
-        return jsonify({'error': f"File processing failed: {str(e)}"}), 500
-
-@app.route('/api/import/schema', methods=['POST'])
-@login_required
-@role_required('Administrator')
-def import_schema():
-    """Retrieves the schema for a given database table."""
-    data = request.get_json()
-    if not data or 'table_name' not in data:
-        return jsonify({'error': 'Table name missing'}), 400
-    table_name = data['table_name']
-
-    try:
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute("""
-            SELECT column_name
-            FROM information_schema.columns
-            WHERE table_name = %s AND table_schema = 'public';
-        """, (table_name,))
-        columns = [column['column_name'] for column in cursor.fetchall()]
-        cursor.close()
-
-        return jsonify({'columns': columns})
-
-    except Exception as e:
-        return jsonify({'error': f"Schema retrieval failed: {str(e)}"}), 500
-
-@app.route('/api/import/process', methods=['POST'])
-@login_required
-@role_required('Administrator')
-def import_process():
-    """Processes the CSV data and imports it into the database."""
-    data = request.get_json()
-    if not data or not all(k in data for k in ('csv_data', 'target_table', 'merge_key_csv', 'merge_key_db', 'column_mappings')):
-        return jsonify({'error': 'Missing required data'}), 400
-
-    csv_data = data['csv_data']
-    target_table = data['target_table']
-    merge_key_csv = data['merge_key_csv']
-    merge_key_db = data['merge_key_db']
-    column_mappings = data['column_mappings']
-
-    try:
-        reader = csv.DictReader(io.StringIO(csv_data))
-        db = get_db()
-        cursor = db.cursor()
-        updated_count = 0
-        inserted_count = 0
-
-        for row in reader:
-            columns = []
-            values = []
-            updates = []
-
-            for csv_header, db_column in column_mappings.items():
-                if db_column and row[csv_header]:
-                    columns.append(db_column)
-                    values.append(row[csv_header])
-                    if db_column != merge_key_db:
-                        updates.append(f"{db_column} = EXCLUDED.{db_column}")
-
-            if not columns:  # Skip rows with no valid mappings
-                continue
-
-            placeholders = ', '.join(['%s'] * len(columns))
-            columns_sql = ', '.join(columns)
-            update_sql = ', '.join(updates)
-
-            sql = f"""
-                INSERT INTO {target_table} ({columns_sql})
-                VALUES ({placeholders})
-                ON CONFLICT ({merge_key_db})
-                DO UPDATE SET {update_sql}
-            """
-
-            cursor.execute(sql, values)
-            if cursor.rowcount > 1:
-                updated_count += 1
-            else:
-                inserted_count += 1
-
-        db.commit()
-        cursor.close()
-        return jsonify({'message': 'Data import successful', 'inserted': inserted_count, 'updated': updated_count})
-
-    except Exception as e:
-        db.rollback()
-        return jsonify({'error': f"Data import failed: {str(e)}"}), 500
-
 @app.route('/manager/dashboard')
 @login_required
 @role_required('Manager')
@@ -920,6 +805,159 @@ def handle_sim(item_id):
         db.commit()
         cursor.close()
         return jsonify({"message": f"SIM {item['iccid']} has been deactivated."})
+
+# --- Phone Numbers Management ---
+
+@app.route('/api/phone-numbers', methods=['GET', 'POST'])
+@login_required
+@role_required('Administrator')
+def handle_phone_numbers():
+    """API endpoint to get all phone numbers or create a new one."""
+    db = get_db()
+    cursor = db.cursor()
+    
+    if request.method == 'GET':
+        cursor.execute("""
+            SELECT 
+                pn.id,
+                pn.phone_number,
+                pn.status,
+                s.id as sim_id,
+                s.iccid,
+                s.carrier,
+                CASE 
+                    WHEN a.id IS NOT NULL THEN 'Assigned'
+                    WHEN s.status = 'In Stock' THEN 'Available'
+                    ELSE 'Unassigned'
+                END as assignment_status,
+                w.full_name as assigned_to_worker
+            FROM phone_numbers pn
+            LEFT JOIN sim_cards s ON pn.sim_card_id = s.id
+            LEFT JOIN assignments a ON s.id = a.sim_card_id AND a.return_date IS NULL
+            LEFT JOIN workers w ON a.worker_id = w.id
+            ORDER BY pn.phone_number
+        """)
+        phone_numbers = cursor.fetchall()
+        cursor.close()
+        return jsonify(phone_numbers)
+    
+    elif request.method == 'POST':
+        data = request.get_json()
+        phone_number = data.get('phone_number')
+        sim_card_id = data.get('sim_card_id')
+        
+        if not phone_number:
+            return jsonify({"error": "Phone number is required"}), 400
+        
+        try:
+            cursor.execute(
+                "INSERT INTO phone_numbers (phone_number, sim_card_id, status) VALUES (%s, %s, %s) RETURNING id;",
+                (phone_number, sim_card_id, 'Active')
+            )
+            new_id = cursor.fetchone()['id']
+            db.commit()
+            
+            # Fetch the complete record for response
+            cursor.execute("""
+                SELECT 
+                    pn.id,
+                    pn.phone_number,
+                    pn.status,
+                    s.id as sim_id,
+                    s.iccid,
+                    s.carrier
+                FROM phone_numbers pn
+                LEFT JOIN sim_cards s ON pn.sim_card_id = s.id
+                WHERE pn.id = %s
+            """, (new_id,))
+            new_phone_number = cursor.fetchone()
+            cursor.close()
+            return jsonify(new_phone_number), 201
+        except psycopg2.IntegrityError:
+            db.rollback()
+            cursor.close()
+            return jsonify({"error": "This phone number already exists"}), 409
+        except Exception as e:
+            db.rollback()
+            cursor.close()
+            return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+@app.route('/api/phone-numbers/<int:number_id>', methods=['GET', 'PUT', 'DELETE'])
+@login_required
+@role_required('Administrator')
+def handle_phone_number(number_id):
+    """API endpoint to get, update, or delete a specific phone number."""
+    db = get_db()
+    cursor = db.cursor()
+    
+    if request.method == 'GET':
+        cursor.execute("""
+            SELECT 
+                pn.id,
+                pn.phone_number,
+                pn.status,
+                s.id as sim_id,
+                s.iccid,
+                s.carrier
+            FROM phone_numbers pn
+            LEFT JOIN sim_cards s ON pn.sim_card_id = s.id
+            WHERE pn.id = %s
+        """, (number_id,))
+        phone_number = cursor.fetchone()
+        cursor.close()
+        return jsonify(phone_number) if phone_number else (jsonify({"error": "Phone number not found"}), 404)
+    
+    elif request.method == 'PUT':
+        data = request.get_json()
+        phone_number = data.get('phone_number')
+        sim_card_id = data.get('sim_card_id')
+        status = data.get('status')
+        
+        if not phone_number:
+            return jsonify({"error": "Phone number is required"}), 400
+        
+        try:
+            cursor.execute(
+                "UPDATE phone_numbers SET phone_number = %s, sim_card_id = %s, status = %s WHERE id = %s",
+                (phone_number, sim_card_id, status, number_id)
+            )
+            db.commit()
+            
+            # Fetch updated record
+            cursor.execute("""
+                SELECT 
+                    pn.id,
+                    pn.phone_number,
+                    pn.status,
+                    s.id as sim_id,
+                    s.iccid,
+                    s.carrier
+                FROM phone_numbers pn
+                LEFT JOIN sim_cards s ON pn.sim_card_id = s.id
+                WHERE pn.id = %s
+            """, (number_id,))
+            updated_phone_number = cursor.fetchone()
+            cursor.close()
+            return jsonify(updated_phone_number)
+        except psycopg2.IntegrityError:
+            db.rollback()
+            cursor.close()
+            return jsonify({"error": "This phone number already exists"}), 409
+        except Exception as e:
+            db.rollback()
+            cursor.close()
+            return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+    
+    elif request.method == 'DELETE':
+        cursor.execute("SELECT phone_number FROM phone_numbers WHERE id = %s", (number_id,))
+        phone_number = cursor.fetchone()
+        if not phone_number:
+            return jsonify({"error": "Phone number not found"}), 404
+        
+        cursor.execute("UPDATE phone_numbers SET status = 'Inactive' WHERE id = %s", (number_id,))
+        db.commit()
+        cursor.close()
+        return jsonify({"message": f"Phone number {phone_number['phone_number']} has been deactivated."})
 
 # --- RESTful API Endpoints for Workers & Secteurs ---
 
@@ -1321,6 +1359,7 @@ def get_assignment_overview():
     cursor = db.cursor()
     query = """
         SELECT 
+            a.id AS assignment_id,
             w.full_name AS worker_name,
             w.worker_id,
             s.secteur_name,
@@ -1343,15 +1382,549 @@ def get_assignment_overview():
     report_data = cursor.fetchall()
     cursor.close()
     
-    # Convert to list of dictionaries and format dates for JSON
-    result = []
+    # Format dates for JSON
     for row in report_data:
-        row_dict = dict(row)
-        if row_dict.get('assignment_date'):
-            row_dict['assignment_date'] = row_dict['assignment_date'].isoformat()
-        result.append(row_dict)
+        if row.get('assignment_date'):
+            row['assignment_date'] = row['assignment_date'].isoformat()
             
+    return jsonify(report_data)
+
+# --- Enhanced Reports for Data Integrity ---
+
+@app.route('/api/reports/missing_data', methods=['GET'])
+@login_required
+@role_required('Administrator')
+def get_missing_data_report():
+    """
+    Comprehensive report to identify missing or incomplete data across the system.
+    """
+    db = get_db()
+    cursor = db.cursor()
+    
+    report = {
+        "sim_cards_without_phone_numbers": [],
+        "phone_numbers_without_sim_cards": [],
+        "sim_cards_without_assignments": [],
+        "phones_without_assignments": [],
+        "workers_without_assignments": [],
+        "incomplete_phone_records": [],
+        "incomplete_sim_records": [],
+        "incomplete_worker_records": []
+    }
+    
+    # SIM cards without phone numbers
+    cursor.execute("""
+        SELECT s.id, s.iccid, s.carrier, s.status
+        FROM sim_cards s
+        LEFT JOIN phone_numbers pn ON s.id = pn.sim_card_id
+        WHERE pn.id IS NULL AND s.status != 'Deactivated'
+        ORDER BY s.iccid
+    """)
+    report["sim_cards_without_phone_numbers"] = cursor.fetchall()
+    
+    # Phone numbers without SIM cards
+    cursor.execute("""
+        SELECT pn.id, pn.phone_number, pn.status
+        FROM phone_numbers pn
+        WHERE pn.sim_card_id IS NULL AND pn.status = 'Active'
+        ORDER BY pn.phone_number
+    """)
+    report["phone_numbers_without_sim_cards"] = cursor.fetchall()
+    
+    # SIM cards without current assignments (available for deployment)
+    cursor.execute("""
+        SELECT s.id, s.iccid, s.carrier, pn.phone_number
+        FROM sim_cards s
+        LEFT JOIN phone_numbers pn ON s.id = pn.sim_card_id
+        WHERE s.status = 'In Stock'
+        AND s.id NOT IN (
+            SELECT sim_card_id FROM assignments WHERE return_date IS NULL
+        )
+        ORDER BY s.carrier, pn.phone_number
+    """)
+    report["sim_cards_without_assignments"] = cursor.fetchall()
+    
+    # Phones without current assignments (available for deployment)
+    cursor.execute("""
+        SELECT p.id, p.asset_tag, p.manufacturer, p.model, p.status
+        FROM phones p
+        WHERE p.status = 'In Stock'
+        AND p.id NOT IN (
+            SELECT phone_id FROM assignments WHERE return_date IS NULL
+        )
+        ORDER BY p.asset_tag
+    """)
+    report["phones_without_assignments"] = cursor.fetchall()
+    
+    # Workers without current assignments (available for new assignments)
+    cursor.execute("""
+        SELECT w.id, w.worker_id, w.full_name, s.secteur_name
+        FROM workers w
+        JOIN secteurs s ON w.secteur_id = s.id
+        WHERE w.status = 'Active'
+        AND w.id NOT IN (
+            SELECT worker_id FROM assignments WHERE return_date IS NULL
+        )
+        ORDER BY w.full_name
+    """)
+    report["workers_without_assignments"] = cursor.fetchall()
+    
+    # Incomplete phone records (missing key information)
+    cursor.execute("""
+        SELECT id, asset_tag, manufacturer, model, imei, serial_number, purchase_date, warranty_end_date
+        FROM phones
+        WHERE status != 'Retired' AND (
+            manufacturer IS NULL OR manufacturer = '' OR
+            model IS NULL OR model = '' OR
+            imei IS NULL OR imei = '' OR
+            serial_number IS NULL OR serial_number = '' OR
+            purchase_date IS NULL OR
+            warranty_end_date IS NULL
+        )
+        ORDER BY asset_tag
+    """)
+    report["incomplete_phone_records"] = cursor.fetchall()
+    
+    # Incomplete SIM records (missing key information)
+    cursor.execute("""
+        SELECT s.id, s.iccid, s.carrier, s.plan_details, pn.phone_number
+        FROM sim_cards s
+        LEFT JOIN phone_numbers pn ON s.id = pn.sim_card_id
+        WHERE s.status != 'Deactivated' AND (
+            s.carrier IS NULL OR s.carrier = '' OR
+            s.plan_details IS NULL OR s.plan_details = ''
+        )
+        ORDER BY s.iccid
+    """)
+    report["incomplete_sim_records"] = cursor.fetchall()
+    
+    # Incomplete worker records (missing key information)
+    cursor.execute("""
+        SELECT w.id, w.worker_id, w.full_name, s.secteur_name
+        FROM workers w
+        JOIN secteurs s ON w.secteur_id = s.id
+        WHERE w.status = 'Active' AND (
+            w.full_name IS NULL OR w.full_name = '' OR
+            w.secteur_id IS NULL
+        )
+        ORDER BY w.worker_id
+    """)
+    report["incomplete_worker_records"] = cursor.fetchall()
+    
+    cursor.close()
+    
+    # Format dates for JSON
+    for category in report.values():
+        for item in category:
+            for key, value in item.items():
+                if hasattr(value, 'isoformat'):
+                    item[key] = value.isoformat()
+    
+    return jsonify(report)
+
+@app.route('/api/reports/inventory_summary', methods=['GET'])
+@login_required
+@role_required('Administrator')
+def get_inventory_summary():
+    """
+    Provides a comprehensive inventory summary with counts and availability.
+    """
+    db = get_db()
+    cursor = db.cursor()
+    
+    summary = {}
+    
+    # Phone inventory summary
+    cursor.execute("""
+        SELECT 
+            status,
+            COUNT(*) as count,
+            COUNT(CASE WHEN manufacturer IS NULL OR manufacturer = '' THEN 1 END) as missing_manufacturer,
+            COUNT(CASE WHEN model IS NULL OR model = '' THEN 1 END) as missing_model,
+            COUNT(CASE WHEN imei IS NULL OR imei = '' THEN 1 END) as missing_imei,
+            COUNT(CASE WHEN purchase_date IS NULL THEN 1 END) as missing_purchase_date
+        FROM phones
+        WHERE status != 'Retired'
+        GROUP BY status
+        ORDER BY status
+    """)
+    summary["phones_by_status"] = cursor.fetchall()
+    
+    # SIM card inventory summary
+    cursor.execute("""
+        SELECT 
+            s.status,
+            COUNT(*) as count,
+            COUNT(pn.id) as with_phone_numbers,
+            COUNT(*) - COUNT(pn.id) as without_phone_numbers,
+            COUNT(CASE WHEN s.carrier IS NULL OR s.carrier = '' THEN 1 END) as missing_carrier
+        FROM sim_cards s
+        LEFT JOIN phone_numbers pn ON s.id = pn.sim_card_id
+        WHERE s.status != 'Deactivated'
+        GROUP BY s.status
+        ORDER BY s.status
+    """)
+    summary["sim_cards_by_status"] = cursor.fetchall()
+    
+    # Worker summary
+    cursor.execute("""
+        SELECT 
+            w.status,
+            COUNT(*) as count,
+            COUNT(a.id) as with_assignments,
+            COUNT(*) - COUNT(a.id) as without_assignments
+        FROM workers w
+        LEFT JOIN assignments a ON w.id = a.worker_id AND a.return_date IS NULL
+        GROUP BY w.status
+        ORDER BY w.status
+    """)
+    summary["workers_by_status"] = cursor.fetchall()
+    
+    # Phone numbers summary
+    cursor.execute("""
+        SELECT 
+            pn.status,
+            COUNT(*) as count,
+            COUNT(s.id) as linked_to_sim,
+            COUNT(*) - COUNT(s.id) as unlinked
+        FROM phone_numbers pn
+        LEFT JOIN sim_cards s ON pn.sim_card_id = s.id
+        GROUP BY pn.status
+        ORDER BY pn.status
+    """)
+    summary["phone_numbers_by_status"] = cursor.fetchall()
+    
+    cursor.close()
+    return jsonify(summary)
+
+# --- API Endpoints for Admin Dashboard Widgets ---
+
+@app.route('/api/reports/summary_stats', methods=['GET'])
+@login_required
+@role_required('Administrator')
+def get_summary_stats():
+    """Provides key summary statistics for the admin dashboard."""
+    db = get_db()
+    cursor = db.cursor()
+    
+    queries = {
+        "active_workers": "SELECT COUNT(*) FROM workers WHERE status = 'Active'",
+        "phones_in_stock": "SELECT COUNT(*) FROM phones WHERE status = 'In Stock'",
+        "phones_in_use": "SELECT COUNT(*) FROM phones WHERE status = 'In Use'",
+        "open_tickets": "SELECT COUNT(*) FROM tickets WHERE status NOT IN ('Solved', 'Closed')"
+    }
+    
+    stats = {}
+    for key, query in queries.items():
+        cursor.execute(query)
+        stats[key] = cursor.fetchone()['count']
+        
+    cursor.close()
+    return jsonify(stats)
+
+@app.route('/api/reports/worker_assignments', methods=['GET'])
+@login_required
+@role_required('Administrator')
+def get_worker_assignments():
+    """
+    Provides a list of all active workers and their currently assigned assets.
+    """
+    db = get_db()
+    cursor = db.cursor()
+    
+    # Get all active workers first
+    cursor.execute("SELECT id, full_name, worker_id, secteur_name FROM workers w JOIN secteurs s ON w.secteur_id = s.id WHERE w.status = 'Active' ORDER BY w.full_name")
+    workers = cursor.fetchall()
+    
+    # Get all current assignments
+    cursor.execute("""
+        SELECT a.worker_id, p.asset_tag, p.model, sc.iccid, pn.phone_number
+        FROM assignments a
+        JOIN phones p ON a.phone_id = p.id
+        JOIN sim_cards sc ON a.sim_card_id = sc.id
+        LEFT JOIN phone_numbers pn ON sc.id = pn.sim_card_id
+        WHERE a.return_date IS NULL
+    """)
+    assignments = cursor.fetchall()
+    cursor.close()
+    
+    # Create a lookup map for assignments
+    assignment_map = {a['worker_id']: a for a in assignments}
+    
+    # Combine the data
+    result = []
+    for worker in workers:
+        worker_data = dict(worker)
+        assignment_info = assignment_map.get(worker['id'])
+        if assignment_info:
+            worker_data['asset'] = {
+                "phone_asset_tag": assignment_info['asset_tag'],
+                "phone_model": assignment_info['model'],
+                "sim_iccid": assignment_info['iccid'],
+                "phone_number": assignment_info['phone_number']
+            }
+        else:
+            worker_data['asset'] = None
+        result.append(worker_data)
+        
     return jsonify(result)
+
+@app.route('/api/admin/assignments/<int:assignment_id>', methods=['DELETE'])
+@login_required
+@role_required('Administrator')
+def return_assignment(assignment_id):
+    """
+    Handles the return of an asset from a worker.
+    Sets the assignment's return_date, updates asset statuses, and logs the event.
+    """
+    db = get_db()
+    cursor = db.cursor()
+    
+    try:
+        # Step 1: Find the assignment and the associated asset IDs
+        cursor.execute("SELECT phone_id, sim_card_id, worker_id FROM assignments WHERE id = %s AND return_date IS NULL", (assignment_id,))
+        assignment = cursor.fetchone()
+        
+        if not assignment:
+            return jsonify({"error": "Active assignment not found."}), 404
+            
+        phone_id = assignment['phone_id']
+        sim_id = assignment['sim_card_id']
+        worker_id = assignment['worker_id']
+
+        # Step 2: Update the assignment with a return date
+        cursor.execute("UPDATE assignments SET return_date = now() WHERE id = %s", (assignment_id,))
+        
+        # Step 3: Update the status of the phone and SIM back to 'In Stock'
+        cursor.execute("UPDATE phones SET status = 'In Stock' WHERE id = %s", (phone_id,))
+        cursor.execute("UPDATE sim_cards SET status = 'In Stock' WHERE id = %s", (sim_id,))
+        
+        # Step 4: Log the return events
+        log_event(cursor, 'Phone', phone_id, 'Returned', f"Asset returned from worker ID {worker_id}.")
+        log_event(cursor, 'SIM', sim_id, 'Returned', f"SIM returned from worker ID {worker_id}.")
+        
+        db.commit()
+        cursor.close()
+        
+        return jsonify({"message": "Asset successfully returned to inventory."})
+
+    except Exception as e:
+        db.rollback()
+        cursor.close()
+        return jsonify({"error": "An error occurred during the return process.", "details": str(e)}), 500
+
+# --- CSV Import Wizard Routes & API Endpoints ---
+
+@app.route('/admin/import')
+@login_required
+@role_required('Administrator')
+def admin_import():
+    """Serves the CSV import wizard page."""
+    return render_template('import.html')
+
+@app.route('/api/import/preview', methods=['POST'])
+@login_required
+@role_required('Administrator')
+def import_preview():
+    """Handles CSV upload, reads headers and first 5 rows for preview."""
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part in the request."}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No file selected."}), 400
+
+    try:
+        import csv
+        import io
+
+        # Read the file into memory
+        file_content = file.stream.read().decode('utf-8')
+        file.stream.seek(0) # Reset stream for full read later if needed
+
+        # Use DictReader to get headers and preview data
+        reader = csv.DictReader(io.StringIO(file_content))
+        headers = reader.fieldnames
+        
+        preview_data = []
+        for i, row in enumerate(reader):
+            if i >= 5:
+                break
+            preview_data.append(row)
+
+        # Get available table names from the database
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute("""
+            SELECT tablename FROM pg_catalog.pg_tables 
+            WHERE schemaname = 'public' 
+            AND tablename IN ('phones', 'sim_cards', 'workers', 'users', 'secteurs', 'phone_numbers');
+        """)
+        tables = [row['tablename'] for row in cursor.fetchall()]
+        cursor.close()
+
+        return jsonify({
+            "headers": headers,
+            "preview_data": preview_data,
+            "tables": tables
+        })
+
+    except Exception as e:
+        return jsonify({"error": f"Failed to process file: {str(e)}"}), 500
+
+@app.route('/api/import/schema', methods=['POST'])
+@login_required
+@role_required('Administrator')
+def import_get_schema():
+    """Returns the column names for a given table."""
+    data = request.get_json()
+    table_name = data.get('table_name')
+    
+    # Security: Whitelist tables to prevent introspection of sensitive system tables
+    allowed_tables = ['phones', 'sim_cards', 'workers', 'users', 'secteurs', 'phone_numbers']
+    if not table_name or table_name not in allowed_tables:
+        return jsonify({"error": "Invalid or unsupported table specified."}), 400
+
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute("""
+            SELECT column_name FROM information_schema.columns 
+            WHERE table_schema = 'public' AND table_name = %s;
+        """, (table_name,))
+        columns = [row['column_name'] for row in cursor.fetchall()]
+        cursor.close()
+        return jsonify({"columns": columns})
+    except Exception as e:
+        return jsonify({"error": f"Failed to fetch schema: {str(e)}"}), 500
+
+@app.route('/api/import/process', methods=['POST'])
+@login_required
+@role_required('Administrator')
+def import_process():
+    """Processes the CSV data based on user-defined mappings."""
+    data = request.get_json()
+    
+    # --- Data Validation ---
+    required_keys = ['csv_data', 'target_table', 'merge_key_db', 'column_mappings']
+    if not all(key in data for key in required_keys):
+        return jsonify({"error": "Incomplete mapping data received."}), 400
+
+    target_table = data['target_table']
+    merge_key_db = data['merge_key_db']
+    mappings = data['column_mappings']
+    
+    # Security: Whitelist tables again on the processing endpoint
+    allowed_tables = ['phones', 'sim_cards', 'workers', 'users', 'secteurs', 'phone_numbers']
+    if target_table not in allowed_tables:
+        return jsonify({"error": "Invalid target table for import."}), 400
+
+    if not mappings or not merge_key_db:
+        return jsonify({"error": "A merge key and at least one mapped column are required."}), 400
+
+    import csv
+    import io
+    
+    db = get_db()
+    cursor = db.cursor()
+    
+    try:
+        reader = csv.DictReader(io.StringIO(data['csv_data']))
+        inserted_count = 0
+        updated_count = 0
+
+        for row in reader:
+            # --- Dynamic SQL Generation (Safe with Parameterization) ---
+            
+            # Filter out the merge key from the update set
+            update_mappings = {k: v for k, v in mappings.items() if v != merge_key_db}
+            
+            insert_cols = ", ".join(mappings.values())
+            insert_placeholders = ", ".join(["%s"] * len(mappings))
+            
+            # Values for INSERT
+            insert_values = [row.get(csv_col) for csv_col in mappings.keys()]
+            
+            # Build the query based on whether we have update mappings
+            if update_mappings:
+                # We have columns to update
+                set_clause = ", ".join([f"{db_col} = %s" for db_col in update_mappings.values()])
+                update_values = [row.get(csv_col) for csv_col in update_mappings.keys()]
+                
+                query = f"""
+                    INSERT INTO {target_table} ({insert_cols})
+                    VALUES ({insert_placeholders})
+                    ON CONFLICT ({merge_key_db}) DO UPDATE
+                    SET {set_clause}
+                    RETURNING (xmax = 0) AS inserted;
+                """
+                
+                # Combine all values for the final execution
+                final_values = tuple(insert_values + update_values)
+            else:
+                # Only merge key, so just do INSERT ... ON CONFLICT DO NOTHING
+                query = f"""
+                    INSERT INTO {target_table} ({insert_cols})
+                    VALUES ({insert_placeholders})
+                    ON CONFLICT ({merge_key_db}) DO NOTHING;
+                """
+                
+                final_values = tuple(insert_values)
+            
+            cursor.execute(query, final_values)
+            
+            # Handle result based on query type
+            if update_mappings:
+                result = cursor.fetchone()
+                if result and (result[0] if isinstance(result, tuple) else result.get('inserted')):
+                    inserted_count += 1
+                else:
+                    updated_count += 1
+            else:
+                # For DO NOTHING, we check if any row was affected
+                if cursor.rowcount > 0:
+                    inserted_count += 1
+                # If no rows affected, it means the record already existed (conflict)
+
+        db.commit()
+        cursor.close()
+        return jsonify({
+            "message": "Import completed successfully!",
+            "inserted": inserted_count,
+            "updated": updated_count
+        })
+
+    except Exception as e:
+        db.rollback()
+        cursor.close()
+        return jsonify({"error": f"An error occurred during import: {str(e)}"}), 500
+
+@app.route('/api/phones/<int:phone_id>/history', methods=['GET'])
+@login_required
+@role_required('Administrator')
+def get_phone_history(phone_id):
+    """API endpoint to get the asset history log for a specific phone."""
+    db = get_db()
+    cursor = db.cursor()
+    query = """
+        SELECT 
+            l.event_type,
+            l.details,
+            l.event_timestamp,
+            u.full_name AS user_name
+        FROM asset_history_log l
+        LEFT JOIN users u ON l.user_id = u.id
+        WHERE l.asset_type = 'Phone' AND l.asset_id = %s
+        ORDER BY l.event_timestamp DESC;
+    """
+    cursor.execute(query, (phone_id,))
+    history = cursor.fetchall()
+    cursor.close()
+
+    for item in history:
+        if item.get('event_timestamp'):
+            item['event_timestamp'] = item['event_timestamp'].isoformat()
+
+    return jsonify(history)
 
 
 if __name__ == "__main__":

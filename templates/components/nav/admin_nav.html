@@ -3,6 +3,7 @@
     <a href="{{ url_for('admin_dashboard') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin_dashboard' %}active{% else %}hover:bg-gray-700{% endif %}">Dashboard</a>
     <a href="{{ url_for('admin_phones') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin_phones' %}active{% else %}hover:bg-gray-700{% endif %}">Phones</a>
     <a href="{{ url_for('admin_sims') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin_sims' %}active{% else %}hover:bg-gray-700{% endif %}">SIM Cards</a>
+    <a href="{{ url_for('admin_phone_numbers') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin_phone_numbers' %}active{% else %}hover:bg-gray-700{% endif %}">Phone Numbers</a>
     <a href="{{ url_for('admin_workers') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin_workers' %}active{% else %}hover:bg-gray-700{% endif %}">Workers</a>
     <a href="{{ url_for('admin_users') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin_users' %}active{% else %}hover:bg-gray-700{% endif %}">Users</a>
     <a href="{{ url_for('admin_roles') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin_roles' %}active{% else %}hover:bg-gray-700{% endif %}">Roles</a>
