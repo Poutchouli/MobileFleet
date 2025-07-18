@@ -1633,7 +1633,7 @@ def get_worker_assignments():
     cursor = db.cursor()
     
     # Get all active workers first
-    cursor.execute("SELECT id, full_name, worker_id, secteur_name FROM workers w JOIN secteurs s ON w.secteur_id = s.id WHERE w.status = 'Active' ORDER BY w.full_name")
+    cursor.execute("SELECT w.id, w.full_name, w.worker_id, s.secteur_name FROM workers w JOIN secteurs s ON w.secteur_id = s.id WHERE w.status = 'Active' ORDER BY w.full_name")
     workers = cursor.fetchall()
     
     # Get all current assignments
