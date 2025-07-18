@@ -25,6 +25,69 @@
     </div>
 </div>
 
+<!-- Interactive Charts Section -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- Phones by Status Chart -->
+    <div class="custom-card">
+        <div class="card-header">
+            <h3 class="card-title">Phones by Status</h3>
+        </div>
+        <div class="p-4">
+            <canvas id="phonesStatusChart" width="400" height="300"></canvas>
+        </div>
+    </div>
+
+    <!-- Tickets by Priority Chart -->
+    <div class="custom-card">
+        <div class="card-header">
+            <h3 class="card-title">Open Tickets by Priority</h3>
+        </div>
+        <div class="p-4">
+            <canvas id="ticketsPriorityChart" width="400" height="300"></canvas>
+        </div>
+    </div>
+
+    <!-- SIM Cards by Carrier Chart -->
+    <div class="custom-card">
+        <div class="card-header">
+            <h3 class="card-title">SIM Cards by Carrier</h3>
+        </div>
+        <div class="p-4">
+            <canvas id="simCarrierChart" width="400" height="300"></canvas>
+        </div>
+    </div>
+
+    <!-- Workers by Sector Chart -->
+    <div class="custom-card">
+        <div class="card-header">
+            <h3 class="card-title">Workers by Sector</h3>
+        </div>
+        <div class="p-4">
+            <canvas id="workersSectorChart" width="400" height="300"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Assignment Trends Chart -->
+<div class="custom-card mb-8">
+    <div class="card-header">
+        <h3 class="card-title">Assignment Trends (Last 6 Months)</h3>
+    </div>
+    <div class="p-4">
+        <canvas id="assignmentTrendsChart" width="800" height="300"></canvas>
+    </div>
+</div>
+
+<!-- Ticket Resolution Time Chart -->
+<div class="custom-card mb-8">
+    <div class="card-header">
+        <h3 class="card-title">Average Ticket Resolution Time by Priority</h3>
+    </div>
+    <div class="p-4">
+        <canvas id="ticketResolutionChart" width="800" height="300"></canvas>
+    </div>
+</div>
+
 <!-- Worker Assignments -->
 <div class="custom-card">
     <div class="card-header">
@@ -41,6 +104,12 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         let workerData = [];
+        let charts = {}; // Store chart instances
+
+        // Chart.js default configuration
+        Chart.defaults.responsive = true;
+        Chart.defaults.maintainAspectRatio = false;
+        Chart.defaults.plugins.legend.position = 'bottom';
 
         // Fetch and render summary stats
         async function fetchSummaryStats() {
@@ -54,6 +123,270 @@
             } catch (error) {
                 console.error("Failed to load summary stats:", error);
             }
+        }
+
+        // Fetch and render dashboard charts
+        async function fetchDashboardCharts() {
+            try {
+                console.log('Fetching dashboard charts...');
+                const response = await fetch('/api/reports/dashboard_charts');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const chartData = await response.json();
+                console.log('Dashboard chart data received:', chartData);
+                renderAllCharts(chartData);
+            } catch (error) {
+                console.error("Failed to load chart data:", error);
+                // Try to render empty placeholders
+                renderEmptyCharts();
+            }
+        }
+
+        function renderAllCharts(data) {
+            // Phones by Status - Doughnut Chart
+            if (data.phones_by_status && data.phones_by_status.labels.length > 0) {
+                const ctx1 = document.getElementById('phonesStatusChart').getContext('2d');
+                charts.phonesStatus = new Chart(ctx1, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.phones_by_status.labels,
+                        datasets: [{
+                            data: data.phones_by_status.data,
+                            backgroundColor: data.phones_by_status.backgroundColors,
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((context.raw / total) * 100).toFixed(1);
+                                        return `${context.label}: ${context.raw} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Tickets by Priority - Bar Chart
+            if (data.tickets_by_priority && data.tickets_by_priority.labels.length > 0) {
+                const ctx2 = document.getElementById('ticketsPriorityChart').getContext('2d');
+                charts.ticketsPriority = new Chart(ctx2, {
+                    type: 'bar',
+                    data: {
+                        labels: data.tickets_by_priority.labels,
+                        datasets: [{
+                            label: 'Open Tickets',
+                            data: data.tickets_by_priority.data,
+                            backgroundColor: data.tickets_by_priority.backgroundColors,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // SIM Cards by Carrier - Pie Chart
+            if (data.sim_cards_by_carrier && data.sim_cards_by_carrier.labels.length > 0) {
+                const ctx3 = document.getElementById('simCarrierChart').getContext('2d');
+                charts.simCarrier = new Chart(ctx3, {
+                    type: 'pie',
+                    data: {
+                        labels: data.sim_cards_by_carrier.labels,
+                        datasets: [{
+                            data: data.sim_cards_by_carrier.data,
+                            backgroundColor: data.sim_cards_by_carrier.backgroundColors,
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((context.raw / total) * 100).toFixed(1);
+                                        return `${context.label}: ${context.raw} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Workers by Sector - Horizontal Bar Chart
+            if (data.workers_by_sector && data.workers_by_sector.labels.length > 0) {
+                const ctx4 = document.getElementById('workersSectorChart').getContext('2d');
+                charts.workersSector = new Chart(ctx4, {
+                    type: 'bar',
+                    data: {
+                        labels: data.workers_by_sector.labels,
+                        datasets: [{
+                            label: 'Active Workers',
+                            data: data.workers_by_sector.data,
+                            backgroundColor: data.workers_by_sector.backgroundColors.slice(0, data.workers_by_sector.labels.length),
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'y',
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Assignment Trends - Line Chart
+            if (data.assignment_trends && data.assignment_trends.labels.length > 0) {
+                const ctx5 = document.getElementById('assignmentTrendsChart').getContext('2d');
+                charts.assignmentTrends = new Chart(ctx5, {
+                    type: 'line',
+                    data: {
+                        labels: data.assignment_trends.labels,
+                        datasets: [{
+                            label: 'New Assignments',
+                            data: data.assignment_trends.data,
+                            borderColor: data.assignment_trends.borderColor,
+                            backgroundColor: data.assignment_trends.backgroundColor,
+                            fill: true,
+                            tension: 0.3,
+                            pointBackgroundColor: data.assignment_trends.borderColor,
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            pointRadius: 5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Ticket Resolution Time - Bar Chart
+            if (data.ticket_resolution_time && data.ticket_resolution_time.labels.length > 0) {
+                const ctx6 = document.getElementById('ticketResolutionChart').getContext('2d');
+                charts.ticketResolution = new Chart(ctx6, {
+                    type: 'bar',
+                    data: {
+                        labels: data.ticket_resolution_time.labels,
+                        datasets: [{
+                            label: 'Average Days',
+                            data: data.ticket_resolution_time.data,
+                            backgroundColor: data.ticket_resolution_time.backgroundColors,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.label}: ${context.raw} days average`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + ' days';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function renderEmptyCharts() {
+            console.log('Rendering empty charts placeholders...');
+            // Show loading state or "No data available" messages in chart containers
+            const chartContainers = [
+                'phonesStatusChart', 'ticketsPriorityChart', 'simCarrierChart', 
+                'workersSectorChart', 'assignmentTrendsChart', 'ticketResolutionChart'
+            ];
+            
+            chartContainers.forEach(containerId => {
+                const canvas = document.getElementById(containerId);
+                if (canvas) {
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#f3f4f6';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = '#9ca3af';
+                    ctx.font = '16px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('No data available', canvas.width / 2, canvas.height / 2);
+                }
+            });
         }
 
         // Fetch and render worker assignments
@@ -110,8 +443,26 @@
             renderWorkerVignettes(filteredData);
         });
 
+        // Refresh charts function
+        function refreshDashboard() {
+            // Destroy existing charts
+            Object.values(charts).forEach(chart => {
+                if (chart) chart.destroy();
+            });
+            charts = {};
+            
+            // Reload all data
+            fetchSummaryStats();
+            fetchDashboardCharts();
+            fetchWorkerAssignments();
+        }
+
+        // Add refresh button functionality if needed
+        // You can add a refresh button to the dashboard later
+
         // Initial data load
         fetchSummaryStats();
+        fetchDashboardCharts();
         fetchWorkerAssignments();
     });
 </script>

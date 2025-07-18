@@ -1696,6 +1696,124 @@ def get_summary_stats():
     cursor.close()
     return jsonify(stats)
 
+@app.route('/api/reports/dashboard_charts', methods=['GET'])
+@login_required
+@role_required('Administrator')
+def get_dashboard_charts():
+    """Provides chart data for interactive dashboard visualizations."""
+    db = get_db()
+    cursor = db.cursor()
+    
+    chart_data = {}
+    
+    # Chart 1: Phones by Status
+    cursor.execute("""
+        SELECT status, COUNT(*) as count
+        FROM phones
+        WHERE status != 'Retired'
+        GROUP BY status
+        ORDER BY status
+    """)
+    phone_status_data = cursor.fetchall()
+    chart_data["phones_by_status"] = {
+        "labels": [row['status'] for row in phone_status_data],
+        "data": [row['count'] for row in phone_status_data],
+        "backgroundColors": ['#10B981', '#3B82F6', '#F59E0B', '#EF4444']
+    }
+    
+    # Chart 2: Tickets by Priority
+    cursor.execute("""
+        SELECT priority, COUNT(*) as count
+        FROM tickets
+        WHERE status NOT IN ('Solved', 'Closed')
+        GROUP BY priority
+        ORDER BY CASE priority
+            WHEN 'Urgent' THEN 1
+            WHEN 'High' THEN 2
+            WHEN 'Medium' THEN 3
+            WHEN 'Low' THEN 4
+        END
+    """)
+    ticket_priority_data = cursor.fetchall()
+    chart_data["tickets_by_priority"] = {
+        "labels": [row['priority'] for row in ticket_priority_data],
+        "data": [row['count'] for row in ticket_priority_data],
+        "backgroundColors": ['#DC2626', '#EA580C', '#D97706', '#65A30D']
+    }
+    
+    # Chart 3: SIM Cards by Carrier
+    cursor.execute("""
+        SELECT carrier, COUNT(*) as count
+        FROM sim_cards
+        WHERE status != 'Deactivated'
+        GROUP BY carrier
+        ORDER BY count DESC
+    """)
+    sim_carrier_data = cursor.fetchall()
+    chart_data["sim_cards_by_carrier"] = {
+        "labels": [row['carrier'] for row in sim_carrier_data],
+        "data": [row['count'] for row in sim_carrier_data],
+        "backgroundColors": ['#8B5CF6', '#06B6D4', '#F59E0B', '#84CC16', '#EC4899']
+    }
+    
+    # Chart 4: Workers by Sector
+    cursor.execute("""
+        SELECT s.secteur_name, COUNT(w.id) as count
+        FROM secteurs s
+        LEFT JOIN workers w ON s.id = w.secteur_id AND w.status = 'Active'
+        GROUP BY s.id, s.secteur_name
+        ORDER BY count DESC
+    """)
+    workers_by_sector_data = cursor.fetchall()
+    chart_data["workers_by_sector"] = {
+        "labels": [row['secteur_name'] for row in workers_by_sector_data],
+        "data": [row['count'] for row in workers_by_sector_data],
+        "backgroundColors": ['#6366F1', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#06B6D4']
+    }
+    
+    # Chart 5: Assignment Trends (Last 6 months)
+    cursor.execute("""
+        SELECT 
+            DATE_TRUNC('month', assignment_date) as month,
+            COUNT(*) as assignments
+        FROM assignments
+        WHERE assignment_date >= CURRENT_DATE - INTERVAL '6 months'
+        GROUP BY DATE_TRUNC('month', assignment_date)
+        ORDER BY month
+    """)
+    assignment_trend_data = cursor.fetchall()
+    chart_data["assignment_trends"] = {
+        "labels": [row['month'].strftime('%B %Y') for row in assignment_trend_data],
+        "data": [row['assignments'] for row in assignment_trend_data],
+        "borderColor": '#3B82F6',
+        "backgroundColor": 'rgba(59, 130, 246, 0.1)'
+    }
+    
+    # Chart 6: Ticket Resolution Time (Average days by priority)
+    cursor.execute("""
+        SELECT 
+            priority,
+            AVG(EXTRACT(epoch FROM (resolved_at - created_at))/86400) as avg_days
+        FROM tickets
+        WHERE resolved_at IS NOT NULL
+        GROUP BY priority
+        ORDER BY CASE priority
+            WHEN 'Urgent' THEN 1
+            WHEN 'High' THEN 2
+            WHEN 'Medium' THEN 3
+            WHEN 'Low' THEN 4
+        END
+    """)
+    resolution_time_data = cursor.fetchall()
+    chart_data["ticket_resolution_time"] = {
+        "labels": [row['priority'] for row in resolution_time_data],
+        "data": [round(float(row['avg_days']), 1) if row['avg_days'] else 0 for row in resolution_time_data],
+        "backgroundColors": ['#DC2626', '#EA580C', '#D97706', '#65A30D']
+    }
+    
+    cursor.close()
+    return jsonify(chart_data)
+
 @app.route('/api/reports/worker_assignments', methods=['GET'])
 @login_required
 @role_required('Administrator')
