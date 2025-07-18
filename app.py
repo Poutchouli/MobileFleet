@@ -923,6 +923,13 @@ def manager_ticket_detail(ticket_id):
     """Serves the detailed ticket view page for a manager."""
     return render_template('manager/ticket_detail.html', ticket_id=ticket_id)
 
+@app.route('/manager/create_ticket')
+@login_required
+@role_required('Manager')
+def manager_create_ticket():
+    """Serves the create ticket page for a manager."""
+    return render_template('manager/create_ticket.html')
+
 # --- API Endpoint for Manager Portal ---
 
 @app.route('/api/manager/team_status', methods=['GET'])
@@ -1538,7 +1545,7 @@ def create_ticket():
                 return jsonify({'error': f'Missing required field: {field}'}), 400
         
         # Validate priority
-        valid_priorities = ['Low', 'Medium', 'High', 'Urgent']
+        valid_priorities = ['Low', 'Medium', 'High', 'Critical']
         if data['priority'] not in valid_priorities:
             return jsonify({'error': 'Invalid priority level'}), 400
         
