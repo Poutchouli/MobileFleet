@@ -49,6 +49,32 @@
             <option value="">-- Choose a table --</option>
         </select>
     </div>
+    
+    <!-- Table Fields Information -->
+    <div class="mb-6 hidden" id="table-fields-section">
+        <h3 class="text-lg font-medium mb-3">Target Table Fields:</h3>
+        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <div class="overflow-x-auto">
+                <table class="min-w-full table-auto">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Field Name</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data Type</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Required</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-fields-body" class="bg-white divide-y divide-gray-200">
+                        <!-- Fields will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-3 text-sm text-gray-600">
+                <p><strong>Note:</strong> Primary key fields are automatically generated and don't need to be included in your CSV.</p>
+            </div>
+        </div>
+    </div>
+    
     <h3 class="text-lg font-medium mb-3">Data Preview (First 5 rows):</h3>
     <div class="overflow-x-auto max-h-96">
         <table class="custom-table" id="preview-table">
@@ -66,12 +92,28 @@
 <div class="custom-card hidden" id="step3-section">
     <h2 class="card-title mb-4">Step 3: Map CSV Columns to Database Fields</h2>
     <p class="text-gray-600 mb-4">Map each CSV column to the corresponding database field. Select one column as the merge key for data updates.</p>
+    
+    <!-- Quick mapping suggestions -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+        <div class="flex items-center mb-2">
+            <svg class="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <h4 class="text-sm font-medium text-blue-800">Auto-mapping Tips</h4>
+        </div>
+        <p class="text-sm text-blue-700 mb-2">Columns with similar names have been automatically matched. Review and adjust as needed.</p>
+        <button type="button" id="auto-map-btn" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+            Re-run Auto-mapping
+        </button>
+    </div>
+    
     <div class="overflow-x-auto">
         <table class="custom-table">
             <thead>
                 <tr>
                     <th>CSV Column</th>
-                    <th>Database Column</th>
+                    <th>Database Field</th>
+                    <th>Field Info</th>
                     <th>Use as Merge Key</th>
                 </tr>
             </thead>
@@ -110,6 +152,7 @@
     let csvHeaders = [];
     let selectedTable = '';
     let dbColumns = [];
+    let dbColumnsInfo = [];
 
     document.addEventListener('DOMContentLoaded', function() {
         const fileInput = document.getElementById('csv-file-input');
@@ -127,6 +170,7 @@
         document.getElementById('target-table-select').addEventListener('change', handleTableSelection);
         document.getElementById('proceed-to-mapping').addEventListener('click', () => showStep(3));
         document.getElementById('run-import-btn').addEventListener('click', executeImport);
+        document.getElementById('auto-map-btn').addEventListener('click', autoMapColumns);
     });
 
     function showStep(stepNumber) {
@@ -144,7 +188,9 @@
         csvHeaders = [];
         selectedTable = '';
         dbColumns = [];
+        dbColumnsInfo = [];
         document.getElementById('csv-file-input').value = '';
+        document.getElementById('table-fields-section').classList.add('hidden');
         showStep(1);
     }
 
@@ -188,13 +234,55 @@
         tables.forEach(table => select.innerHTML += `<option value="${table}">${table}</option>`);
     }
 
+    function displayTableFields() {
+        const tbody = document.getElementById('table-fields-body');
+        tbody.innerHTML = '';
+        
+        dbColumnsInfo.forEach(column => {
+            const isRequired = !column.nullable && !column.primary_key && !column.default;
+            const notes = [];
+            
+            if (column.primary_key) {
+                notes.push('Primary Key (auto-generated)');
+            }
+            if (column.default) {
+                notes.push('Has default value');
+            }
+            
+            const notesText = notes.length > 0 ? notes.join(', ') : '-';
+            
+            const row = document.createElement('tr');
+            row.className = column.primary_key ? 'bg-blue-50' : '';
+            row.innerHTML = `
+                <td class="px-3 py-2 text-sm font-medium text-gray-900">
+                    ${column.name}
+                    ${column.primary_key ? '<span class="ml-1 text-xs bg-blue-100 text-blue-800 px-1 rounded">PK</span>' : ''}
+                </td>
+                <td class="px-3 py-2 text-sm text-gray-500 font-mono">${column.type}</td>
+                <td class="px-3 py-2 text-sm">
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        isRequired ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                    }">
+                        ${isRequired ? 'Required' : 'Optional'}
+                    </span>
+                </td>
+                <td class="px-3 py-2 text-sm text-gray-500">${notesText}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
     async function handleTableSelection() {
         selectedTable = this.value;
         const proceedBtn = document.getElementById('proceed-to-mapping');
+        const fieldsSection = document.getElementById('table-fields-section');
+        
         if (!selectedTable) {
             proceedBtn.disabled = true;
+            fieldsSection.classList.add('hidden');
             return;
         }
+        
         try {
             const response = await fetch('/api/import/schema', {
                 method: 'POST',
@@ -203,27 +291,136 @@
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.error);
+            
             dbColumns = data.columns;
+            dbColumnsInfo = data.columns_info;
+            
+            displayTableFields();
             setupColumnMapping();
             proceedBtn.disabled = false;
+            fieldsSection.classList.remove('hidden');
         } catch (error) {
             alert(`Error fetching schema: ${error.message}`);
             proceedBtn.disabled = true;
+            fieldsSection.classList.add('hidden');
         }
     }
 
     function setupColumnMapping() {
         const tbody = document.getElementById('column-mapping-body');
         tbody.innerHTML = '';
+        
         csvHeaders.forEach((csvHeader, index) => {
-            const dbOptions = dbColumns.map(col => `<option value="${col}" ${csvHeader.toLowerCase() === col.toLowerCase() ? 'selected' : ''}>${col}</option>`).join('');
-            const row = `
-                <tr>
-                    <td>${csvHeader}</td>
-                    <td><select class="custom-select" id="db-column-${index}"><option value="">Do not import</option>${dbOptions}</select></td>
-                    <td><input type="radio" name="merge-key" value="${csvHeader}" class="w-4 h-4 text-indigo-600" ${index === 0 ? 'checked' : ''}></td>
-                </tr>`;
-            tbody.insertAdjacentHTML('beforeend', row);
+            // Auto-match columns with similar names
+            const bestMatch = findBestColumnMatch(csvHeader);
+            const dbOptions = dbColumns.map(col => {
+                const columnInfo = dbColumnsInfo.find(info => info.name === col);
+                const isSelected = col === bestMatch ? 'selected' : '';
+                const disabled = columnInfo && columnInfo.primary_key ? 'disabled' : '';
+                const label = columnInfo && columnInfo.primary_key ? `${col} (auto-generated)` : col;
+                return `<option value="${col}" ${isSelected} ${disabled}>${label}</option>`;
+            }).join('');
+            
+            // Get field info for the selected column
+            const selectedColumnInfo = bestMatch ? dbColumnsInfo.find(info => info.name === bestMatch) : null;
+            const fieldInfoHtml = selectedColumnInfo ? getFieldInfoHtml(selectedColumnInfo) : '<span class="text-gray-400">No field selected</span>';
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="font-medium">${csvHeader}</td>
+                <td>
+                    <select class="custom-select column-select" id="db-column-${index}" data-csv-header="${csvHeader}">
+                        <option value="">Do not import</option>
+                        ${dbOptions}
+                    </select>
+                </td>
+                <td id="field-info-${index}" class="text-sm">${fieldInfoHtml}</td>
+                <td>
+                    <input type="radio" name="merge-key" value="${csvHeader}" class="w-4 h-4 text-indigo-600" ${index === 0 && bestMatch ? 'checked' : ''}>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+        
+        // Add event listeners to update field info when selection changes
+        document.querySelectorAll('.column-select').forEach(select => {
+            select.addEventListener('change', updateFieldInfo);
+        });
+    }
+
+    function findBestColumnMatch(csvHeader) {
+        const normalizedCsvHeader = csvHeader.toLowerCase().replace(/[_\s-]/g, '');
+        
+        // Try exact match first
+        for (const col of dbColumns) {
+            if (col.toLowerCase() === csvHeader.toLowerCase()) {
+                const columnInfo = dbColumnsInfo.find(info => info.name === col);
+                if (!columnInfo || !columnInfo.primary_key) {
+                    return col;
+                }
+            }
+        }
+        
+        // Try partial match
+        for (const col of dbColumns) {
+            const normalizedDbCol = col.toLowerCase().replace(/[_\s-]/g, '');
+            if (normalizedDbCol.includes(normalizedCsvHeader) || normalizedCsvHeader.includes(normalizedDbCol)) {
+                const columnInfo = dbColumnsInfo.find(info => info.name === col);
+                if (!columnInfo || !columnInfo.primary_key) {
+                    return col;
+                }
+            }
+        }
+        
+        return '';
+    }
+
+    function getFieldInfoHtml(columnInfo) {
+        const badges = [];
+        
+        if (columnInfo.primary_key) {
+            badges.push('<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">Primary Key</span>');
+        }
+        
+        const isRequired = !columnInfo.nullable && !columnInfo.primary_key && !columnInfo.default;
+        if (isRequired) {
+            badges.push('<span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded">Required</span>');
+        } else {
+            badges.push('<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">Optional</span>');
+        }
+        
+        return `
+            <div class="space-y-1">
+                <div class="text-gray-600 font-mono text-xs">${columnInfo.type}</div>
+                <div class="space-x-1">${badges.join(' ')}</div>
+            </div>
+        `;
+    }
+
+    function updateFieldInfo(event) {
+        const select = event.target;
+        const index = select.id.split('-')[2];
+        const fieldInfoContainer = document.getElementById(`field-info-${index}`);
+        
+        if (select.value) {
+            const columnInfo = dbColumnsInfo.find(info => info.name === select.value);
+            if (columnInfo) {
+                fieldInfoContainer.innerHTML = getFieldInfoHtml(columnInfo);
+            }
+        } else {
+            fieldInfoContainer.innerHTML = '<span class="text-gray-400">No field selected</span>';
+        }
+    }
+
+    function autoMapColumns() {
+        csvHeaders.forEach((csvHeader, index) => {
+            const select = document.getElementById(`db-column-${index}`);
+            const bestMatch = findBestColumnMatch(csvHeader);
+            select.value = bestMatch;
+            
+            // Trigger change event to update field info
+            const event = new Event('change');
+            select.dispatchEvent(event);
         });
     }
 

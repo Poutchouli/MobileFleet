@@ -1775,7 +1775,7 @@ def import_preview():
 @login_required
 @role_required('Administrator')
 def import_get_schema():
-    """Returns the column names for a given table."""
+    """Returns the column names and details for a given table."""
     data = request.get_json()
     table_name = data.get('table_name')
     
@@ -1788,12 +1788,51 @@ def import_get_schema():
         db = get_db()
         cursor = db.cursor()
         cursor.execute("""
-            SELECT column_name FROM information_schema.columns 
-            WHERE table_schema = 'public' AND table_name = %s;
+            SELECT 
+                column_name,
+                data_type,
+                is_nullable,
+                column_default,
+                character_maximum_length
+            FROM information_schema.columns 
+            WHERE table_schema = 'public' AND table_name = %s
+            ORDER BY ordinal_position;
         """, (table_name,))
-        columns = [row['column_name'] for row in cursor.fetchall()]
+        
+        columns_info = []
+        columns = []
+        
+        for row in cursor.fetchall():
+            column_name = row['column_name']
+            data_type = row['data_type']
+            is_nullable = row['is_nullable'] == 'YES'
+            column_default = row['column_default']
+            max_length = row['character_maximum_length']
+            
+            # Format data type display
+            type_display = data_type
+            if max_length:
+                type_display += f"({max_length})"
+            
+            # Check if it's a primary key or has constraints
+            is_primary_key = False
+            if column_default and 'nextval' in str(column_default):
+                is_primary_key = True
+            
+            columns.append(column_name)
+            columns_info.append({
+                'name': column_name,
+                'type': type_display,
+                'nullable': is_nullable,
+                'primary_key': is_primary_key,
+                'default': column_default
+            })
+        
         cursor.close()
-        return jsonify({"columns": columns})
+        return jsonify({
+            "columns": columns,
+            "columns_info": columns_info
+        })
     except Exception as e:
         return jsonify({"error": f"Failed to fetch schema: {str(e)}"}), 500
 
