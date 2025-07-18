@@ -163,7 +163,7 @@ def create_schema(cursor):
         """
         CREATE TABLE asset_history_log (
             id SERIAL PRIMARY KEY,
-            asset_type VARCHAR(20) NOT NULL CHECK (asset_type IN ('Phone', 'SIM')),
+            asset_type VARCHAR(20) NOT NULL CHECK (asset_type IN ('Phone', 'SIM', 'Ticket')),
             asset_id INTEGER NOT NULL,
             event_type VARCHAR(50) NOT NULL,
             event_timestamp TIMESTAMPTZ NOT NULL DEFAULT now(),

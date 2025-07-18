@@ -1545,7 +1545,7 @@ def create_ticket():
                 return jsonify({'error': f'Missing required field: {field}'}), 400
         
         # Validate priority
-        valid_priorities = ['Low', 'Medium', 'High', 'Critical']
+        valid_priorities = ['Low', 'Medium', 'High', 'Urgent']
         if data['priority'] not in valid_priorities:
             return jsonify({'error': 'Invalid priority level'}), 400
         
@@ -1692,6 +1692,9 @@ def update_ticket_properties(ticket_id):
     """
     data = request.get_json()
     
+    # Debug logging
+    print(f"Updating ticket {ticket_id} with data: {data}")
+    
     # Fields that a support agent is allowed to change
     allowed_fields = {
         'status': data.get('status'),
@@ -1699,14 +1702,20 @@ def update_ticket_properties(ticket_id):
         'assigned_to_support_id': data.get('assigned_to_support_id')
     }
     
+    # Convert empty strings to None for assigned_to_support_id
+    if allowed_fields['assigned_to_support_id'] == '':
+        allowed_fields['assigned_to_support_id'] = None
+    
     # Filter out any fields not provided in the request
-    update_data = {k: v for k, v in allowed_fields.items() if v is not None}
+    update_data = {k: v for k, v in allowed_fields.items() if v is not None or k == 'assigned_to_support_id'}
     
     if not update_data:
         return jsonify({"error": "No valid fields provided for update."}), 400
 
     # Build the SET part of the SQL query dynamically
     set_clause = ", ".join([f"{key} = %s" for key in update_data.keys()])
+    # Always update the updated_at timestamp
+    set_clause += ", updated_at = NOW()"
     values = list(update_data.values())
     values.append(ticket_id)
 
@@ -1714,8 +1723,12 @@ def update_ticket_properties(ticket_id):
     cursor = db.cursor()
     
     try:
+        print(f"Executing SQL: UPDATE tickets SET {set_clause} WHERE id = %s")
+        print(f"With values: {values}")
+        
         cursor.execute(f"UPDATE tickets SET {set_clause} WHERE id = %s RETURNING id;", tuple(values))
-        if cursor.fetchone() is None:
+        result = cursor.fetchone()
+        if result is None:
             return jsonify({"error": "Ticket not found"}), 404
         
         # Log this action
@@ -1726,6 +1739,7 @@ def update_ticket_properties(ticket_id):
         cursor.close()
         return jsonify({"message": "Ticket updated successfully."})
     except Exception as e:
+        print(f"Error updating ticket {ticket_id}: {str(e)}")
         db.rollback()
         cursor.close()
         return jsonify({"error": "An unexpected error occurred", "message": str(e)}), 500
@@ -1761,6 +1775,27 @@ def add_ticket_update(ticket_id):
         db.rollback()
         cursor.close()
         return jsonify({"error": "An unexpected error occurred", "message": str(e)}), 500
+
+
+@app.route('/api/support/users', methods=['GET'])
+@login_required
+@role_required('Support')
+def get_support_users():
+    """
+    API endpoint for Support role to get list of all support users for ticket assignment.
+    """
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("""
+        SELECT u.id, u.username, u.full_name, u.email, r.role_name
+        FROM users u
+        JOIN roles r ON u.role_id = r.id
+        WHERE r.role_name = 'Support'
+        ORDER BY u.full_name
+    """)
+    users = cursor.fetchall()
+    cursor.close()
+    return jsonify(users)
 
 
 # --- API Endpoint for Admin Reports ---
