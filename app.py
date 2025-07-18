@@ -1743,6 +1743,272 @@ def get_worker_assignments():
         
     return jsonify(result)
 
+@app.route('/api/reports/asset_lifecycle/<identifier>', methods=['GET'])
+@login_required
+@role_required('Administrator')
+def get_asset_lifecycle(identifier):
+    """
+    Get complete lifecycle history for a phone by asset tag or serial number.
+    This provides a chronological timeline of all events for auditing and tracking.
+    """
+    db = get_db()
+    cursor = db.cursor()
+    
+    # First, find the phone by asset tag or serial number
+    try:
+        cursor.execute("""
+            SELECT id, asset_tag, serial_number, imei, manufacturer, model, status, 
+                   purchase_date, warranty_end_date, notes, created_at, updated_at
+            FROM phones 
+            WHERE asset_tag = %s OR serial_number = %s OR imei = %s
+        """, (identifier, identifier, identifier))
+    except psycopg2.ProgrammingError:
+        # Fallback if created_at/updated_at columns don't exist yet
+        cursor.execute("""
+            SELECT id, asset_tag, serial_number, imei, manufacturer, model, status, 
+                   purchase_date, warranty_end_date, notes
+            FROM phones 
+            WHERE asset_tag = %s OR serial_number = %s OR imei = %s
+        """, (identifier, identifier, identifier))
+    
+    phone = cursor.fetchone()
+    if not phone:
+        cursor.close()
+        return jsonify({"error": "Phone not found with the provided identifier"}), 404
+    
+    phone_id = phone['id']
+    
+    # Build comprehensive timeline of events
+    timeline_events = []
+    
+    # 1. Phone creation/purchase event (use purchase_date if available, otherwise created_at)
+    try:
+        creation_date = phone['purchase_date'] or phone['created_at']
+        if creation_date:
+            timeline_events.append({
+                "event_type": "Phone Created" if phone['created_at'] else "Phone Purchased",
+                "event_date": creation_date.isoformat() if hasattr(creation_date, 'isoformat') else str(creation_date),
+                "description": f"Phone {phone['asset_tag']} ({phone['manufacturer']} {phone['model']}) added to inventory",
+                "details": {
+                    "asset_tag": phone['asset_tag'],
+                    "serial_number": phone['serial_number'],
+                    "imei": phone['imei'],
+                    "manufacturer": phone['manufacturer'],
+                    "model": phone['model']
+                },
+                "category": "inventory"
+            })
+    except (KeyError, TypeError):
+        # If created_at column doesn't exist, use purchase_date or skip creation event
+        try:
+            purchase_date = phone['purchase_date']
+            if purchase_date:
+                timeline_events.append({
+                    "event_type": "Phone Purchased",
+                    "event_date": purchase_date.isoformat() if hasattr(purchase_date, 'isoformat') else str(purchase_date),
+                    "description": f"Phone {phone['asset_tag']} ({phone['manufacturer']} {phone['model']}) purchased",
+                    "details": {
+                        "asset_tag": phone['asset_tag'],
+                        "serial_number": phone['serial_number'],
+                        "imei": phone['imei'],
+                        "manufacturer": phone['manufacturer'],
+                        "model": phone['model']
+                    },
+                    "category": "inventory"
+                })
+        except (KeyError, TypeError):
+            # If no date information is available, add a generic entry
+            timeline_events.append({
+                "event_type": "Phone Added to Inventory",
+                "event_date": "2024-01-01T00:00:00Z",  # Default fallback date
+                "description": f"Phone {phone['asset_tag']} ({phone['manufacturer']} {phone['model']}) added to inventory",
+                "details": {
+                    "asset_tag": phone['asset_tag'],
+                    "serial_number": phone['serial_number'],
+                    "imei": phone['imei'],
+                    "manufacturer": phone['manufacturer'],
+                    "model": phone['model']
+                },
+                "category": "inventory"
+            })
+    
+    # 2. Get assignment history
+    cursor.execute("""
+        SELECT a.assignment_date, a.return_date, 
+               w.full_name as worker_name, w.worker_id,
+               s.secteur_name,
+               sc.iccid, sc.carrier,
+               pn.phone_number,
+               u.full_name as assigned_by_user
+        FROM assignments a
+        JOIN workers w ON a.worker_id = w.id
+        JOIN secteurs s ON w.secteur_id = s.id
+        JOIN sim_cards sc ON a.sim_card_id = sc.id
+        LEFT JOIN phone_numbers pn ON sc.id = pn.sim_card_id
+        LEFT JOIN asset_history_log ahl ON ahl.asset_id = a.phone_id AND ahl.event_type = 'Assigned'
+        LEFT JOIN users u ON ahl.user_id = u.id
+        WHERE a.phone_id = %s
+        ORDER BY a.assignment_date
+    """, (phone_id,))
+    
+    assignments = cursor.fetchall()
+    for assignment in assignments:
+        # Assignment event
+        timeline_events.append({
+            "event_type": "Device Assigned",
+            "event_date": assignment['assignment_date'].isoformat(),
+            "description": f"Assigned to {assignment['worker_name']} ({assignment['worker_id']}) in {assignment['secteur_name']}",
+            "details": {
+                "worker_name": assignment['worker_name'],
+                "worker_id": assignment['worker_id'],
+                "secteur": assignment['secteur_name'],
+                "sim_iccid": assignment['iccid'],
+                "sim_carrier": assignment['carrier'],
+                "phone_number": assignment['phone_number'],
+                "assigned_by": assignment['assigned_by_user']
+            },
+            "category": "assignment"
+        })
+        
+        # Return event (if applicable)
+        if assignment['return_date']:
+            timeline_events.append({
+                "event_type": "Device Returned",
+                "event_date": assignment['return_date'].isoformat(),
+                "description": f"Returned from {assignment['worker_name']} ({assignment['worker_id']})",
+                "details": {
+                    "worker_name": assignment['worker_name'],
+                    "worker_id": assignment['worker_id'],
+                    "secteur": assignment['secteur_name']
+                },
+                "category": "assignment"
+            })
+    
+    # 3. Get support ticket history
+    cursor.execute("""
+        SELECT t.id, t.title, t.description, t.status, t.priority, 
+               t.created_at, t.updated_at, t.resolved_at,
+               reporter.full_name as reported_by,
+               assignee.full_name as assigned_to,
+               COUNT(tu.id) as update_count
+        FROM tickets t
+        JOIN users reporter ON t.reported_by_manager_id = reporter.id
+        LEFT JOIN users assignee ON t.assigned_to_support_id = assignee.id
+        LEFT JOIN ticket_updates tu ON t.id = tu.ticket_id
+        WHERE t.phone_id = %s
+        GROUP BY t.id, reporter.id, assignee.id
+        ORDER BY t.created_at
+    """, (phone_id,))
+    
+    tickets = cursor.fetchall()
+    for ticket in tickets:
+        timeline_events.append({
+            "event_type": "Support Ticket Created",
+            "event_date": ticket['created_at'].isoformat(),
+            "description": f"Ticket #{ticket['id']}: {ticket['title']} ({ticket['priority']} priority)",
+            "details": {
+                "ticket_id": ticket['id'],
+                "title": ticket['title'],
+                "description": ticket['description'],
+                "status": ticket['status'],
+                "priority": ticket['priority'],
+                "reported_by": ticket['reported_by'],
+                "assigned_to": ticket['assigned_to'],
+                "update_count": ticket['update_count']
+            },
+            "category": "support"
+        })
+        
+        if ticket['resolved_at']:
+            timeline_events.append({
+                "event_type": "Support Ticket Resolved",
+                "event_date": ticket['resolved_at'].isoformat(),
+                "description": f"Ticket #{ticket['id']} resolved: {ticket['title']}",
+                "details": {
+                    "ticket_id": ticket['id'],
+                    "title": ticket['title'],
+                    "final_status": ticket['status'],
+                    "resolved_by": ticket['assigned_to']
+                },
+                "category": "support"
+            })
+    
+    # 4. Get asset history log events
+    cursor.execute("""
+        SELECT ahl.event_type, ahl.event_timestamp, ahl.details,
+               u.full_name as performed_by
+        FROM asset_history_log ahl
+        LEFT JOIN users u ON ahl.user_id = u.id
+        WHERE ahl.asset_type = 'Phone' AND ahl.asset_id = %s
+        ORDER BY ahl.event_timestamp
+    """, (phone_id,))
+    
+    history_logs = cursor.fetchall()
+    for log in history_logs:
+        # Skip assignment events as we handle them above with more detail
+        if log['event_type'] not in ['Assigned']:
+            timeline_events.append({
+                "event_type": f"System Event: {log['event_type']}",
+                "event_date": log['event_timestamp'].isoformat(),
+                "description": log['details'] or f"{log['event_type']} event recorded",
+                "details": {
+                    "performed_by": log['performed_by'],
+                    "system_details": log['details']
+                },
+                "category": "system"
+            })
+    
+    # Sort all events chronologically
+    timeline_events.sort(key=lambda x: x['event_date'])
+    
+    # Calculate summary statistics
+    total_assignments = len([e for e in timeline_events if e['event_type'] == 'Device Assigned'])
+    total_tickets = len([e for e in timeline_events if e['event_type'] == 'Support Ticket Created'])
+    current_status = phone['status']
+    
+    # Get current assignment if any
+    cursor.execute("""
+        SELECT w.full_name, w.worker_id, s.secteur_name, pn.phone_number
+        FROM assignments a
+        JOIN workers w ON a.worker_id = w.id
+        JOIN secteurs s ON w.secteur_id = s.id
+        JOIN sim_cards sc ON a.sim_card_id = sc.id
+        LEFT JOIN phone_numbers pn ON sc.id = pn.sim_card_id
+        WHERE a.phone_id = %s AND a.return_date IS NULL
+    """, (phone_id,))
+    
+    current_assignment = cursor.fetchone()
+    cursor.close()
+    
+    # Format created_at for response if it exists
+    created_at_formatted = None
+    try:
+        if 'created_at' in phone and phone['created_at']:
+            created_at_formatted = phone['created_at'].isoformat()
+    except (KeyError, AttributeError):
+        pass
+    
+    response = {
+        "phone_info": {
+            "asset_tag": phone['asset_tag'],
+            "serial_number": phone['serial_number'],
+            "imei": phone['imei'],
+            "manufacturer": phone['manufacturer'],
+            "model": phone['model'],
+            "current_status": current_status,
+            "created_at": created_at_formatted
+        },
+        "current_assignment": dict(current_assignment) if current_assignment else None,
+        "summary_stats": {
+            "total_assignments": total_assignments,
+            "total_support_tickets": total_tickets,
+            "timeline_events_count": len(timeline_events)
+        },
+        "timeline": timeline_events
+    }
+    
+    return jsonify(response)
+
 @app.route('/api/admin/assignments/<int:assignment_id>', methods=['DELETE'])
 @login_required
 @role_required('Administrator')
@@ -2010,6 +2276,91 @@ def import_process():
         db.rollback()
         cursor.close()
         return jsonify({"error": f"An error occurred during import: {str(e)}"}), 500
+
+@app.route('/api/admin/migrate_timestamps', methods=['POST'])
+@login_required
+@role_required('Administrator')
+def migrate_timestamps():
+    """Migration endpoint to add timestamp columns to phones table."""
+    db = get_db()
+    cursor = db.cursor()
+    
+    try:
+        # Check if columns already exist
+        cursor.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'phones' AND column_name IN ('created_at', 'updated_at')
+        """)
+        existing_columns = [row['column_name'] for row in cursor.fetchall()]
+        
+        if 'created_at' in existing_columns and 'updated_at' in existing_columns:
+            cursor.close()
+            return jsonify({"message": "Timestamp columns already exist in phones table", "status": "already_exists"})
+        
+        migration_steps = []
+        
+        # Step 1: Add the columns
+        if 'created_at' not in existing_columns:
+            cursor.execute("ALTER TABLE phones ADD COLUMN created_at TIMESTAMPTZ")
+            migration_steps.append("Added created_at column")
+        
+        if 'updated_at' not in existing_columns:
+            cursor.execute("ALTER TABLE phones ADD COLUMN updated_at TIMESTAMPTZ")
+            migration_steps.append("Added updated_at column")
+        
+        # Step 2: Set default values for existing records
+        cursor.execute("""
+            UPDATE phones 
+            SET 
+                created_at = COALESCE(purchase_date::TIMESTAMPTZ, now()),
+                updated_at = now()
+            WHERE created_at IS NULL OR updated_at IS NULL
+        """)
+        migration_steps.append("Set default values for existing records")
+        
+        # Step 3: Set defaults and constraints
+        cursor.execute("ALTER TABLE phones ALTER COLUMN created_at SET DEFAULT now()")
+        cursor.execute("ALTER TABLE phones ALTER COLUMN updated_at SET DEFAULT now()")
+        cursor.execute("ALTER TABLE phones ALTER COLUMN created_at SET NOT NULL")
+        cursor.execute("ALTER TABLE phones ALTER COLUMN updated_at SET NOT NULL")
+        migration_steps.append("Set constraints and defaults")
+        
+        # Step 4: Create function to update updated_at timestamp
+        cursor.execute("""
+            CREATE OR REPLACE FUNCTION update_updated_at_column()
+            RETURNS TRIGGER AS $$
+            BEGIN
+                NEW.updated_at = now();
+                RETURN NEW;
+            END;
+            $$ language 'plpgsql'
+        """)
+        migration_steps.append("Created update function")
+        
+        # Step 5: Create trigger
+        cursor.execute("DROP TRIGGER IF EXISTS update_phones_updated_at ON phones")
+        cursor.execute("""
+            CREATE TRIGGER update_phones_updated_at 
+                BEFORE UPDATE ON phones 
+                FOR EACH ROW 
+                EXECUTE FUNCTION update_updated_at_column()
+        """)
+        migration_steps.append("Created update trigger")
+        
+        db.commit()
+        cursor.close()
+        
+        return jsonify({
+            "message": "Migration completed successfully!",
+            "status": "success",
+            "steps_completed": migration_steps
+        })
+        
+    except Exception as e:
+        db.rollback()
+        cursor.close()
+        return jsonify({"error": f"Migration failed: {str(e)}", "status": "error"}), 500
 
 @app.route('/api/phones/<int:phone_id>/history', methods=['GET'])
 @login_required

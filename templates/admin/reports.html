@@ -18,6 +18,9 @@
             <button id="inventory-tab" class="tab-button" data-tab="inventory">
                 Inventory Summary
             </button>
+            <button id="asset-lifecycle-tab" class="tab-button" data-tab="asset-lifecycle">
+                Asset Lifecycle
+            </button>
         </nav>
     </div>
 </div>
@@ -193,6 +196,154 @@
     </div>
 </div>
 
+<!-- Asset Lifecycle Tab -->
+<div id="asset-lifecycle-panel" class="tab-panel">
+    <div class="custom-card">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-semibold">Asset Lifecycle Tracking</h3>
+            <div class="text-sm text-gray-500">Complete audit trail for any device</div>
+        </div>
+        
+        <!-- Search Interface -->
+        <div class="bg-gray-50 rounded-lg p-4 mb-6">
+            <div class="flex gap-4 items-end">
+                <div class="flex-1">
+                    <label for="asset-search-input" class="block text-sm font-medium text-gray-700 mb-2">
+                        Search by Asset Tag, Serial Number, or IMEI
+                    </label>
+                    <input type="text" 
+                           id="asset-search-input" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="e.g., PHN-001, SN-AAA, 111111111111111">
+                </div>
+                <button id="search-asset-btn" class="btn btn-primary">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    Search Asset
+                </button>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">
+                Enter any identifier to view complete device history including assignments, tickets, and maintenance events.
+            </p>
+        </div>
+        
+        <!-- Results Container -->
+        <div id="asset-lifecycle-results" class="hidden">
+            <!-- Asset Information Card -->
+            <div id="asset-info-card" class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h4 class="text-lg font-semibold" id="asset-title">Asset Information</h4>
+                        <p class="text-sm text-gray-500" id="asset-subtitle">Device details and current status</p>
+                    </div>
+                    <span id="asset-status-badge" class="px-3 py-1 rounded-full text-sm font-medium">Status</span>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-500">Asset Tag</p>
+                        <p class="font-medium" id="asset-tag">-</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Serial Number</p>
+                        <p class="font-medium" id="asset-serial">-</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Device</p>
+                        <p class="font-medium" id="asset-device">-</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Current Assignment</p>
+                        <p class="font-medium" id="asset-assignment">-</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Summary Statistics -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-blue-100 rounded-lg">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-blue-600 font-medium">Total Assignments</p>
+                            <p class="text-2xl font-bold text-blue-700" id="total-assignments-count">-</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-yellow-100 rounded-lg">
+                            <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 6.5c-.77.833-.192 2.5 1.347 2.5z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-yellow-600 font-medium">Support Tickets</p>
+                            <p class="text-2xl font-bold text-yellow-700" id="total-tickets-count">-</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-green-100 rounded-lg">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-green-600 font-medium">Timeline Events</p>
+                            <p class="text-2xl font-bold text-green-700" id="timeline-events-count">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Timeline -->
+            <div class="bg-white border border-gray-200 rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h4 class="text-lg font-semibold">Complete Device Timeline</h4>
+                    <p class="text-sm text-gray-500">Chronological history of all events</p>
+                </div>
+                
+                <div id="timeline-container" class="p-6">
+                    <!-- Timeline will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Empty State -->
+        <div id="asset-lifecycle-empty" class="text-center py-12">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">Search for an Asset</h3>
+            <p class="mt-1 text-sm text-gray-500">Enter an asset tag, serial number, or IMEI to view its complete lifecycle.</p>
+        </div>
+        
+        <!-- Loading State -->
+        <div id="asset-lifecycle-loading" class="hidden text-center py-12">
+            <div class="loader mx-auto mb-4"></div>
+            <p class="text-sm text-gray-500">Searching for asset and building timeline...</p>
+        </div>
+        
+        <!-- Error State -->
+        <div id="asset-lifecycle-error" class="hidden text-center py-12">
+            <svg class="mx-auto h-12 w-12 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 6.5c-.77.833-.192 2.5 1.347 2.5z"></path>
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">Asset Not Found</h3>
+            <p class="mt-1 text-sm text-gray-500" id="error-message">Please check your search term and try again.</p>
+        </div>
+    </div>
+</div>
+
 <!-- Detail Modal -->
 <div id="detail-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
     <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
@@ -254,6 +405,14 @@
         // Inventory tab events
         document.getElementById('refresh-inventory-btn').addEventListener('click', loadInventorySummary);
         
+        // Asset Lifecycle tab events
+        document.getElementById('search-asset-btn').addEventListener('click', searchAssetLifecycle);
+        document.getElementById('asset-search-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchAssetLifecycle();
+            }
+        });
+        
         // Modal events
         document.getElementById('close-detail-modal').addEventListener('click', closeDetailModal);
         document.getElementById('detail-modal').addEventListener('click', (e) => {
@@ -283,6 +442,10 @@
             loadMissingDataReport();
         } else if (tabName === 'inventory') {
             loadInventorySummary();
+        } else if (tabName === 'asset-lifecycle') {
+            // Reset asset lifecycle to empty state when switching to tab
+            showAssetLifecycleState('empty');
+            document.getElementById('asset-search-input').value = '';
         }
     }
 
@@ -889,6 +1052,194 @@
 
     function showToast(message, isError = false) { /* Your existing toast logic */ }
     function showErrorMessage(message) { showToast(message, true); }
+
+    // Asset Lifecycle Functions
+    function searchAssetLifecycle() {
+        const searchTerm = document.getElementById('asset-search-input').value.trim();
+        if (!searchTerm) {
+            showErrorMessage('Please enter an asset tag, serial number, or IMEI to search.');
+            return;
+        }
+
+        // Show loading state
+        showAssetLifecycleState('loading');
+
+        fetch(`/api/reports/asset_lifecycle/${encodeURIComponent(searchTerm)}`)
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error('Asset not found. Please check your search term and try again.');
+                    }
+                    throw new Error(`Error: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                displayAssetLifecycle(data);
+                showAssetLifecycleState('results');
+            })
+            .catch(error => {
+                console.error('Error searching asset:', error);
+                document.getElementById('error-message').textContent = error.message;
+                showAssetLifecycleState('error');
+            });
+    }
+
+    function showAssetLifecycleState(state) {
+        const states = ['empty', 'loading', 'results', 'error'];
+        states.forEach(s => {
+            const element = document.getElementById(`asset-lifecycle-${s}`);
+            if (element) {
+                element.classList.toggle('hidden', s !== state);
+            }
+        });
+    }
+
+    function displayAssetLifecycle(data) {
+        const { phone_info, current_assignment, summary_stats, timeline } = data;
+
+        // Populate asset information
+        document.getElementById('asset-title').textContent = `${phone_info.manufacturer} ${phone_info.model}`;
+        document.getElementById('asset-subtitle').textContent = `Asset Tag: ${phone_info.asset_tag}`;
+        document.getElementById('asset-tag').textContent = phone_info.asset_tag;
+        document.getElementById('asset-serial').textContent = phone_info.serial_number;
+        document.getElementById('asset-device').textContent = `${phone_info.manufacturer} ${phone_info.model}`;
+        
+        // Current assignment
+        if (current_assignment) {
+            document.getElementById('asset-assignment').textContent = 
+                `${current_assignment.full_name} (${current_assignment.secteur_name})`;
+        } else {
+            document.getElementById('asset-assignment').textContent = 'Not assigned';
+        }
+
+        // Status badge
+        const statusBadge = document.getElementById('asset-status-badge');
+        statusBadge.textContent = phone_info.current_status;
+        statusBadge.className = `px-3 py-1 rounded-full text-sm font-medium ${getStatusBadgeClass(phone_info.current_status)}`;
+
+        // Summary statistics
+        document.getElementById('total-assignments-count').textContent = summary_stats.total_assignments;
+        document.getElementById('total-tickets-count').textContent = summary_stats.total_support_tickets;
+        document.getElementById('timeline-events-count').textContent = summary_stats.timeline_events_count;
+
+        // Populate timeline
+        displayTimeline(timeline);
+    }
+
+    function getStatusBadgeClass(status) {
+        const statusClasses = {
+            'In Use': 'bg-green-100 text-green-800',
+            'In Stock': 'bg-blue-100 text-blue-800',
+            'In Repair': 'bg-yellow-100 text-yellow-800',
+            'Retired': 'bg-gray-100 text-gray-800',
+            'Lost': 'bg-red-100 text-red-800'
+        };
+        return statusClasses[status] || 'bg-gray-100 text-gray-800';
+    }
+
+    function displayTimeline(timeline) {
+        const container = document.getElementById('timeline-container');
+        
+        if (!timeline || timeline.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 text-center py-4">No timeline events found.</p>';
+            return;
+        }
+
+        const timelineHTML = timeline.map((event, index) => {
+            const isLast = index === timeline.length - 1;
+            const eventDate = new Date(event.event_date);
+            const formattedDate = eventDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            return `
+                <div class="relative ${!isLast ? 'pb-8' : ''}">
+                    ${!isLast ? '<span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>' : ''}
+                    
+                    <div class="relative flex items-start space-x-3">
+                        <div class="relative">
+                            <div class="h-8 w-8 rounded-full ${getCategoryBadgeClass(event.category)} flex items-center justify-center ring-8 ring-white">
+                                ${getCategoryIcon(event.category)}
+                            </div>
+                        </div>
+                        
+                        <div class="min-w-0 flex-1">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">${event.event_type}</p>
+                                    <p class="text-sm text-gray-500">${event.description}</p>
+                                </div>
+                                <time class="text-xs text-gray-400 whitespace-nowrap ml-4" title="${eventDate.toISOString()}">
+                                    ${formattedDate}
+                                </time>
+                            </div>
+                            
+                            ${event.details && Object.keys(event.details).length > 0 ? `
+                                <div class="mt-2">
+                                    <button class="text-xs text-blue-600 hover:text-blue-800" onclick="toggleEventDetails(${index})">
+                                        <span id="details-toggle-${index}">Show Details</span>
+                                    </button>
+                                    <div id="details-content-${index}" class="hidden mt-2 p-3 bg-gray-50 rounded text-xs space-y-1">
+                                        ${formatEventDetails(event.details)}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = timelineHTML;
+    }
+
+    function getCategoryBadgeClass(category) {
+        const categoryClasses = {
+            'inventory': 'bg-blue-500',
+            'assignment': 'bg-green-500',
+            'support': 'bg-yellow-500',
+            'system': 'bg-purple-500'
+        };
+        return categoryClasses[category] || 'bg-gray-500';
+    }
+
+    function getCategoryIcon(category) {
+        const icons = {
+            'inventory': '<svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"></path></svg>',
+            'assignment': '<svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"></path></svg>',
+            'support': '<svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>',
+            'system': '<svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"></path></svg>'
+        };
+        return icons[category] || '<div class="w-4 h-4 bg-white rounded"></div>';
+    }
+
+    function formatEventDetails(details) {
+        return Object.entries(details)
+            .filter(([key, value]) => value !== null && value !== undefined && value !== '')
+            .map(([key, value]) => {
+                const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                return `<div><span class="font-medium">${formattedKey}:</span> ${value}</div>`;
+            })
+            .join('');
+    }
+
+    function toggleEventDetails(index) {
+        const content = document.getElementById(`details-content-${index}`);
+        const toggle = document.getElementById(`details-toggle-${index}`);
+        
+        if (content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            toggle.textContent = 'Hide Details';
+        } else {
+            content.classList.add('hidden');
+            toggle.textContent = 'Show Details';
+        }
+    }
 </script>
 
 <style>

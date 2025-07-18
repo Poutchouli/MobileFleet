@@ -103,7 +103,9 @@ def create_schema(cursor):
             purchase_date DATE,
             warranty_end_date DATE,
             status VARCHAR(20) NOT NULL CHECK (status IN ('In Stock', 'In Use', 'In Repair', 'Retired')),
-            notes TEXT
+            notes TEXT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
         );
         """,
         """
@@ -168,6 +170,23 @@ def create_schema(cursor):
             user_id INTEGER NULL REFERENCES users(id),
             details TEXT
         );
+        """,
+        """
+        -- Function to update the updated_at timestamp
+        CREATE OR REPLACE FUNCTION update_updated_at_column()
+        RETURNS TRIGGER AS $$
+        BEGIN
+            NEW.updated_at = now();
+            RETURN NEW;
+        END;
+        $$ language 'plpgsql';
+        """,
+        """
+        -- Trigger to automatically update updated_at for phones table
+        CREATE TRIGGER update_phones_updated_at 
+            BEFORE UPDATE ON phones 
+            FOR EACH ROW 
+            EXECUTE FUNCTION update_updated_at_column();
         """
     ]
     execute_queries(cursor, schema_queries)
