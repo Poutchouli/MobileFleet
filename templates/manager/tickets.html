@@ -9,15 +9,13 @@
     <!-- Header -->
     <div class="flex justify-end items-center">
         <button onclick="window.location.href='/manager/create_ticket'" 
-                cl            'Low': 'bg-green-100 text-green-800',
-            'Medium': 'bg-yellow-100 text-yellow-800', 
-            'High': 'bg-orange-100 text-orange-800',
-            'Urgent': 'bg-red-100 text-red-800'"inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
             </svg>
             Create New Ticket
         </button>
+    </div>
     </div>
 
     <!-- Loading State -->
@@ -52,9 +50,11 @@
                         <h3 class="text-lg font-medium text-gray-900 mb-4">Filter by Status</h3>
                         <div class="flex flex-wrap gap-2">
                             <button type="button" class="filter-btn active px-4 py-2 text-sm font-medium rounded-md border border-indigo-600 bg-indigo-600 text-white hover:bg-indigo-700" data-filter="all">All</button>
-                            <button type="button" class="filter-btn px-4 py-2 text-sm font-medium rounded-md border border-blue-600 text-blue-600 bg-white hover:bg-blue-50" data-filter="Open">Open</button>
-                            <button type="button" class="filter-btn px-4 py-2 text-sm font-medium rounded-md border border-yellow-600 text-yellow-600 bg-white hover:bg-yellow-50" data-filter="In Progress">In Progress</button>
-                            <button type="button" class="filter-btn px-4 py-2 text-sm font-medium rounded-md border border-green-600 text-green-600 bg-white hover:bg-green-50" data-filter="Resolved">Resolved</button>
+                            <button type="button" class="filter-btn px-4 py-2 text-sm font-medium rounded-md border border-blue-600 text-blue-600 bg-white hover:bg-blue-50" data-filter="New">New</button>
+                            <button type="button" class="filter-btn px-4 py-2 text-sm font-medium rounded-md border border-green-600 text-green-600 bg-white hover:bg-green-50" data-filter="Open">Open</button>
+                            <button type="button" class="filter-btn px-4 py-2 text-sm font-medium rounded-md border border-yellow-600 text-yellow-600 bg-white hover:bg-yellow-50" data-filter="Pending">Pending</button>
+                            <button type="button" class="filter-btn px-4 py-2 text-sm font-medium rounded-md border border-orange-600 text-orange-600 bg-white hover:bg-orange-50" data-filter="On-Hold">On-Hold</button>
+                            <button type="button" class="filter-btn px-4 py-2 text-sm font-medium rounded-md border border-emerald-600 text-emerald-600 bg-white hover:bg-emerald-50" data-filter="Solved">Solved</button>
                             <button type="button" class="filter-btn px-4 py-2 text-sm font-medium rounded-md border border-gray-600 text-gray-600 bg-white hover:bg-gray-50" data-filter="Closed">Closed</button>
                         </div>
                     </div>
@@ -62,22 +62,30 @@
                     <!-- Statistics -->
                     <div>
                         <h3 class="text-lg font-medium text-gray-900 mb-4">Statistics</h3>
-                        <div class="grid grid-cols-4 gap-4">
+                        <div class="grid grid-cols-3 gap-4">
                             <div class="text-center">
                                 <div class="text-2xl font-bold text-gray-900" id="total-count">0</div>
                                 <div class="text-sm text-gray-500">Total</div>
                             </div>
                             <div class="text-center">
-                                <div class="text-2xl font-bold text-blue-600" id="open-count">0</div>
+                                <div class="text-2xl font-bold text-blue-600" id="new-count">0</div>
+                                <div class="text-sm text-gray-500">New</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-green-600" id="open-count">0</div>
                                 <div class="text-sm text-gray-500">Open</div>
                             </div>
                             <div class="text-center">
-                                <div class="text-2xl font-bold text-yellow-600" id="progress-count">0</div>
-                                <div class="text-sm text-gray-500">In Progress</div>
+                                <div class="text-2xl font-bold text-yellow-600" id="pending-count">0</div>
+                                <div class="text-sm text-gray-500">Pending</div>
                             </div>
                             <div class="text-center">
-                                <div class="text-2xl font-bold text-green-600" id="resolved-count">0</div>
-                                <div class="text-sm text-gray-500">Resolved</div>
+                                <div class="text-2xl font-bold text-emerald-600" id="solved-count">0</div>
+                                <div class="text-sm text-gray-500">Solved</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-gray-600" id="closed-count">0</div>
+                                <div class="text-sm text-gray-500">Closed</div>
                             </div>
                         </div>
                     </div>
@@ -206,12 +214,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 b.classList.add('bg-white');
                 // Restore original color classes based on data-filter
                 const filter = b.dataset.filter;
-                if (filter === 'Open') {
+                if (filter === 'New') {
                     b.classList.add('text-blue-600', 'border-blue-600');
-                } else if (filter === 'In Progress') {
-                    b.classList.add('text-yellow-600', 'border-yellow-600');
-                } else if (filter === 'Resolved') {
+                } else if (filter === 'Open') {
                     b.classList.add('text-green-600', 'border-green-600');
+                } else if (filter === 'Pending') {
+                    b.classList.add('text-yellow-600', 'border-yellow-600');
+                } else if (filter === 'On-Hold') {
+                    b.classList.add('text-orange-600', 'border-orange-600');
+                } else if (filter === 'Solved') {
+                    b.classList.add('text-emerald-600', 'border-emerald-600');
                 } else if (filter === 'Closed') {
                     b.classList.add('text-gray-600', 'border-gray-600');
                 } else {
@@ -221,7 +233,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Set active state for clicked button
             this.classList.add('active', 'bg-indigo-600', 'text-white');
-            this.classList.remove('bg-white', 'text-blue-600', 'text-yellow-600', 'text-green-600', 'text-gray-600', 'text-indigo-600');
+            this.classList.remove('bg-white', 'text-blue-600', 'text-green-600', 'text-yellow-600', 'text-orange-600', 'text-emerald-600', 'text-gray-600', 'text-indigo-600');
             
             // Apply filter
             currentFilter = this.dataset.filter;
@@ -310,22 +322,28 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateStats() {
         const stats = {
             total: allTickets.length,
+            new: allTickets.filter(t => t.status === 'New').length,
             open: allTickets.filter(t => t.status === 'Open').length,
-            progress: allTickets.filter(t => t.status === 'In Progress').length,
-            resolved: allTickets.filter(t => t.status === 'Resolved').length
+            pending: allTickets.filter(t => t.status === 'Pending').length,
+            solved: allTickets.filter(t => t.status === 'Solved').length,
+            closed: allTickets.filter(t => t.status === 'Closed').length
         };
         
         document.getElementById('total-count').textContent = stats.total;
+        document.getElementById('new-count').textContent = stats.new;
         document.getElementById('open-count').textContent = stats.open;
-        document.getElementById('progress-count').textContent = stats.progress;
-        document.getElementById('resolved-count').textContent = stats.resolved;
+        document.getElementById('pending-count').textContent = stats.pending;
+        document.getElementById('solved-count').textContent = stats.solved;
+        document.getElementById('closed-count').textContent = stats.closed;
     }
 
     function getStatusBadgeClasses(status) {
         const classes = {
-            'Open': 'bg-blue-100 text-blue-800',
-            'In Progress': 'bg-yellow-100 text-yellow-800',
-            'Resolved': 'bg-green-100 text-green-800',
+            'New': 'bg-blue-100 text-blue-800',
+            'Open': 'bg-green-100 text-green-800',
+            'Pending': 'bg-yellow-100 text-yellow-800',
+            'On-Hold': 'bg-orange-100 text-orange-800',
+            'Solved': 'bg-emerald-100 text-emerald-800',
             'Closed': 'bg-gray-100 text-gray-800'
         };
         return classes[status] || 'bg-gray-100 text-gray-800';

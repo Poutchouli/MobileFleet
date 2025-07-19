@@ -7,6 +7,18 @@
 <div class="custom-card">
     <div class="flex justify-between items-center mb-4">
         <h2 class="text-xl font-semibold">Active Support Tickets</h2>
+        <div class="flex items-center space-x-3">
+            <div id="auto-refresh-indicator" class="flex items-center text-sm text-gray-500">
+                <div id="refresh-spinner" class="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin mr-2 hidden"></div>
+                <span id="last-updated">Loading...</span>
+            </div>
+            <button id="manual-refresh-btn" class="btn btn-secondary btn-sm">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Refresh
+            </button>
+        </div>
     </div>
     <div class="overflow-x-auto">
         <table class="custom-table">
@@ -37,6 +49,13 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const tableBody = document.getElementById('tickets-table-body');
+        const lastUpdatedElement = document.getElementById('last-updated');
+        const refreshSpinner = document.getElementById('refresh-spinner');
+        const manualRefreshBtn = document.getElementById('manual-refresh-btn');
+        
+        let currentTickets = [];
+        let refreshInterval;
+        const REFRESH_INTERVAL = 30000; // 30 seconds
 
         function showToast(message, isError = false) {
             const toast = document.getElementById('toast');
@@ -45,6 +64,21 @@
             toast.className = `fixed top-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg ${isError ? 'bg-red-500' : 'bg-green-500'}`;
             toast.classList.remove('hidden');
             setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+
+        function updateLastRefreshTime() {
+            const now = new Date();
+            lastUpdatedElement.textContent = `Last updated: ${now.toLocaleTimeString()}`;
+        }
+
+        function showRefreshSpinner(show = true) {
+            if (show) {
+                refreshSpinner.classList.remove('hidden');
+                manualRefreshBtn.disabled = true;
+            } else {
+                refreshSpinner.classList.add('hidden');
+                manualRefreshBtn.disabled = false;
+            }
         }
 
         function formatPriority(priority) {
@@ -57,17 +91,69 @@
             return `<span class="px-2 py-1 text-xs font-bold rounded-full ${colors[priority] || 'bg-gray-200'}">${priority}</span>`;
         }
 
-        async function fetchActiveTickets() {
+        async function fetchActiveTickets(isAutoRefresh = false) {
             try {
+                if (!isAutoRefresh) {
+                    showRefreshSpinner(true);
+                }
+                
                 const response = await fetch('/api/support/tickets');
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.error || 'Failed to fetch tickets');
                 }
                 const tickets = await response.json();
+                
+                // Check for new tickets if this is an auto-refresh
+                if (isAutoRefresh && currentTickets.length > 0) {
+                    checkForNewTickets(tickets);
+                }
+                
+                currentTickets = tickets;
                 renderTable(tickets);
+                updateLastRefreshTime();
+                
+                if (!isAutoRefresh) {
+                    showToast('Tickets refreshed successfully');
+                }
             } catch (error) {
-                showToast(error.message, true);
+                console.error('Error fetching tickets:', error);
+                if (!isAutoRefresh) {
+                    showToast(error.message, true);
+                }
+            } finally {
+                showRefreshSpinner(false);
+            }
+        }
+
+        function checkForNewTickets(newTickets) {
+            const currentTicketIds = new Set(currentTickets.map(t => t.ticket_id));
+            const newTicketIds = newTickets.filter(t => !currentTicketIds.has(t.ticket_id));
+            
+            if (newTicketIds.length > 0) {
+                const message = newTicketIds.length === 1 
+                    ? `New ticket #${newTicketIds[0].ticket_id}: ${newTicketIds[0].title}`
+                    : `${newTicketIds.length} new tickets received`;
+                
+                showToast(message);
+                
+                // Optional: Play a notification sound
+                // const audio = new Audio('/static/sounds/notification.wav');
+                // audio.play().catch(() => {}); // Ignore errors if sound fails
+                
+                // Optional: Show browser notification (requires permission)
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    new Notification('New Support Ticket', {
+                        body: message,
+                        icon: '/static/favicon.ico'
+                    });
+                }
+            }
+        }
+
+        function requestNotificationPermission() {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
             }
         }
 
@@ -98,8 +184,50 @@
             });
         }
 
-        // Initial Load
-        fetchActiveTickets();
+        function startAutoRefresh() {
+            // Clear any existing interval
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+            
+            // Set up auto-refresh
+            refreshInterval = setInterval(() => {
+                fetchActiveTickets(true);
+            }, REFRESH_INTERVAL);
+        }
+
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+        }
+
+        // Event Listeners
+        manualRefreshBtn.addEventListener('click', function() {
+            fetchActiveTickets(false);
+        });
+
+        // Handle page visibility changes to pause/resume auto-refresh
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                stopAutoRefresh();
+            } else {
+                startAutoRefresh();
+                // Refresh immediately when page becomes visible
+                fetchActiveTickets(true);
+            }
+        });
+
+        // Initial Load and Setup
+        requestNotificationPermission();
+        fetchActiveTickets(false);
+        startAutoRefresh();
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            stopAutoRefresh();
+        });
     });
 </script>
 {% endblock %}
