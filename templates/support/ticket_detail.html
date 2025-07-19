@@ -58,11 +58,28 @@
                     <!-- JS will populate this -->
                 </div>
             </div>
+            <div class="custom-card">
+                <div class="card-header">
+                    <h3 class="card-title">Quick Actions</h3>
+                </div>
+                <div id="quick-actions-body" class="p-4 space-y-3">
+                    <button id="initiate-swap-btn" class="btn btn-secondary w-full">Initiate Phone Swap</button>
+                    <a id="email-manager-link" href="#" class="btn btn-secondary w-full text-center block">Email Manager</a>
+                </div>
+            </div>
             <div id="asset-card" class="custom-card">
                 <div class="card-header">
                     <h3 class="card-title">Asset Details</h3>
                 </div>
                 <div id="asset-body" class="p-4 space-y-2">
+                    <!-- JS will populate this -->
+                </div>
+            </div>
+            <div class="custom-card">
+                <div class="card-header">
+                    <h3 class="card-title">Worker History</h3>
+                </div>
+                <div id="worker-history-body" class="p-4 space-y-4">
                     <!-- JS will populate this -->
                 </div>
             </div>
@@ -87,6 +104,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const propertiesBody = document.getElementById('properties-body');
     const assetBody = document.getElementById('asset-body');
     const updateForm = document.getElementById('update-form');
+    const quickActionsBody = document.getElementById('quick-actions-body');
 
     const toast = document.getElementById('toast');
     const toastMessage = document.getElementById('toast-message');
@@ -114,6 +132,8 @@ document.addEventListener('DOMContentLoaded', function() {
             renderUpdates(data.updates, data.description);
             await renderProperties(data);
             renderAssetDetails(data);
+            renderQuickActions(data);
+            fetchWorkerHistory(data.worker_id); // <-- ADD THIS LINE
 
         } catch (error) {
             showToast(error.message, true);
@@ -122,20 +142,28 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderHeader(data) {
+        if (!ticketHeader) {
+            console.warn('Ticket header element not found');
+            return;
+        }
         ticketHeader.innerHTML = `
-            <p class="text-sm text-gray-500">Ticket #${data.id}</p>
-            <h1 class="text-2xl font-bold mt-1">${data.title}</h1>
+            <p class="text-sm text-gray-500">Ticket #${data.id || data.ticket_id || ''}</p>
+            <h1 class="text-2xl font-bold mt-1">${data.title || 'Untitled'}</h1>
             <p class="text-sm text-gray-600 mt-2">
-                Reported by <strong>${data.reported_by}</strong> for worker <strong>${data.worker_name || 'N/A'}</strong> on ${formatDateTime(data.created_at)}
+                Reported by <strong>${data.reported_by || 'Unknown'}</strong> for worker <strong>${data.worker_name || 'N/A'}</strong> on ${formatDateTime(data.created_at)}
             </p>
         `;
     }
 
     function renderUpdates(updates, initialDescription) {
+        if (!updatesList) {
+            console.warn('Updates list element not found');
+            return;
+        }
         updatesList.innerHTML = `
             <div class="p-4 bg-sky-50 border border-sky-200 rounded-lg">
                 <p class="font-semibold text-gray-800">Initial Description</p>
-                <p class="text-gray-700 whitespace-pre-wrap">${initialDescription}</p>
+                <p class="text-gray-700 whitespace-pre-wrap">${initialDescription || 'No description provided'}</p>
             </div>
         `;
         updates.forEach(update => {
@@ -155,6 +183,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function renderProperties(data) {
+        if (!propertiesBody) {
+            console.warn('Properties body element not found');
+            return;
+        }
+        
         if (allSupportUsers.length === 0) {
             try {
                 const usersRes = await fetch('/api/support/users');
@@ -223,11 +256,78 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderAssetDetails(data) {
+        if (!assetBody) {
+            console.warn('Asset body element not found');
+            return;
+        }
         assetBody.innerHTML = `
-            <p><strong class="custom-label">Asset Tag:</strong> ${data.asset_tag}</p>
-            <p><strong class="custom-label">Model:</strong> ${data.manufacturer} ${data.model}</p>
-            <p><strong class="custom-label">Serial:</strong> ${data.serial_number}</p>
+            <p><strong class="custom-label">Asset Tag:</strong> ${data.asset_tag || 'N/A'}</p>
+            <p><strong class="custom-label">Model:</strong> ${data.manufacturer || ''} ${data.model || ''}</p>
+            <p><strong class="custom-label">Serial:</strong> ${data.serial_number || 'N/A'}</p>
         `;
+    }
+
+    function renderQuickActions(ticket) {
+        // Check if the element exists before trying to use it
+        if (!quickActionsBody) {
+            console.warn('Quick actions body element not found');
+            return;
+        }
+        
+        let actionsHtml = '';
+        
+        // Show quick actions for specific statuses
+        if (ticket && (ticket.status === 'open' || ticket.status === 'in_progress')) {
+            const requestorEmail = ticket.requestor_email || ticket.reported_by_email || '';
+            const requestorName = ticket.requestor_name || ticket.reported_by || 'Manager';
+            const ticketId = ticket.id || ticket.ticket_id || '';
+            const ticketTitle = ticket.title || '';
+            const ticketDescription = ticket.description || '';
+            
+            actionsHtml = `
+                <button id="initiate-swap-btn" class="btn btn-primary btn-sm mb-2 w-full">
+                    Initiate Phone Swap
+                </button>
+                <a href="mailto:${requestorEmail}?subject=RE: Ticket ${ticketId} - ${ticketTitle}&body=Hi ${requestorName},%0A%0ARegarding your ticket ${ticketId}:%0A${ticketDescription}%0A%0ABest regards,%0AIT Support" class="btn btn-secondary btn-sm d-block w-full text-center">
+                    Email Manager
+                </a>
+            `;
+        } else {
+            actionsHtml = '<p class="text-muted">No quick actions available for this ticket status.</p>';
+        }
+        
+        quickActionsBody.innerHTML = actionsHtml;
+        
+        // Add event listener for phone swap
+        const initiateSwapBtn = document.getElementById('initiate-swap-btn');
+        if (initiateSwapBtn) {
+            initiateSwapBtn.addEventListener('click', function() {
+                initiatePhoneSwap(ticket);
+            });
+        }
+    }
+
+    async function initiatePhoneSwap(ticket) {
+        try {
+            const response = await fetch(`/api/support/tickets/${ticket.id}/initiate-phone-swap`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                showToast(result.message);
+                fetchAndRenderTicket(); // Refresh the view
+            } else {
+                const error = await response.json();
+                showToast(error.error || 'Failed to initiate phone swap', true);
+            }
+        } catch (error) {
+            console.error('Error initiating phone swap:', error);
+            showToast('Error initiating phone swap', true);
+        }
     }
 
     updateForm.addEventListener('submit', async function(e) {
@@ -253,6 +353,72 @@ document.addEventListener('DOMContentLoaded', function() {
             showToast(error.message, true);
         }
     });
+
+    async function fetchWorkerHistory(workerId) {
+        const historyElement = document.getElementById('worker-history-body');
+        if (!historyElement) {
+            console.warn('Worker history body element not found');
+            return;
+        }
+        
+        if (!workerId) {
+            historyElement.innerHTML = '<p class="text-sm text-gray-500">No worker assigned to this phone.</p>';
+            return;
+        }
+        try {
+            const response = await fetch(`/api/support/worker_history/${workerId}`);
+            if (!response.ok) throw new Error('Could not load worker history.');
+            const historyData = await response.json();
+            renderWorkerHistory(historyData);
+        } catch (error) {
+            console.error(error);
+            if (historyElement) {
+                historyElement.innerHTML = `<p class="text-sm text-red-500">${error.message}</p>`;
+            }
+        }
+    }
+
+    function renderWorkerHistory(data) {
+        const historyBody = document.getElementById('worker-history-body');
+        if (!historyBody) {
+            console.warn('Worker history body element not found');
+            return;
+        }
+        
+        historyBody.innerHTML = ''; // Clear previous content
+
+        // Render Ticket History
+        let ticketHtml = '<div><h4 class="custom-label">Previous Tickets</h4>';
+        if (data.ticket_history.length > 1) { // >1 to exclude the current ticket
+            ticketHtml += '<ul class="list-disc pl-5 space-y-1 mt-1">';
+            data.ticket_history.forEach(ticket => {
+                // Don't show the current ticket in the history list
+                if (ticket.id.toString() !== ticketId) {
+                    ticketHtml += `<li class="text-sm"><a href="/support/ticket/${ticket.id}" class="btn-link">${ticket.title} (${ticket.status})</a></li>`;
+                }
+            });
+            ticketHtml += '</ul>';
+        } else {
+            ticketHtml += '<p class="text-sm text-gray-500">No other tickets found for this worker.</p>';
+        }
+        ticketHtml += '</div>';
+        historyBody.innerHTML += ticketHtml;
+
+        // Render Assignment History
+        let assignmentHtml = '<div class="mt-4"><h4 class="custom-label">Phone Assignment History</h4>';
+        if (data.assignment_history.length > 0) {
+            assignmentHtml += '<ul class="space-y-1 mt-1">';
+            data.assignment_history.forEach(assignment => {
+                const returnDate = assignment.return_date ? ` to ${new Date(assignment.return_date).toLocaleDateString()}` : ' (Current)';
+                assignmentHtml += `<li class="text-sm">${assignment.model} (${assignment.asset_tag})<br><span class="text-xs text-gray-500">Assigned: ${new Date(assignment.assignment_date).toLocaleDateString()}${returnDate}</span></li>`;
+            });
+            assignmentHtml += '</ul>';
+        } else {
+            assignmentHtml += '<p class="text-sm text-gray-500">No assignment history found.</p>';
+        }
+        assignmentHtml += '</div>';
+        historyBody.innerHTML += assignmentHtml;
+    }
 
     fetchAndRenderTicket();
 });

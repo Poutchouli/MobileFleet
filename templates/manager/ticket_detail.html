@@ -124,6 +124,36 @@
                 </div>
             </div>
         </div>
+
+        <!-- Receipt Confirmation Section -->
+        <div id="receipt-confirmation-section" class="bg-white shadow rounded-lg hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Phone Swap Confirmation</h3>
+            </div>
+            <div class="px-6 py-4">
+                <div class="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-yellow-800">Confirmation Required</h3>
+                            <p class="mt-1 text-sm text-yellow-700">Please confirm receipt of the new phone to complete this ticket.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex space-x-3">
+                    <button id="confirm-receipt-btn" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                        Confirm Receipt
+                    </button>
+                    <button id="report-issue-btn" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Report Issue
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -179,6 +209,57 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Display updates
         displayUpdates(ticket.updates);
+        
+        // Show receipt confirmation section if needed
+        showReceiptConfirmationIfNeeded(ticket);
+    }
+
+    function showReceiptConfirmationIfNeeded(ticket) {
+        const receiptSection = document.getElementById('receipt-confirmation-section');
+        
+        // Show confirmation section if ticket has swap initiated status
+        if (ticket.status === 'swap_initiated' || ticket.swap_initiated) {
+            receiptSection.classList.remove('hidden');
+            setupReceiptConfirmationButtons(ticket.id);
+        }
+    }
+
+    function setupReceiptConfirmationButtons(ticketId) {
+        const confirmBtn = document.getElementById('confirm-receipt-btn');
+        const reportIssueBtn = document.getElementById('report-issue-btn');
+        
+        confirmBtn.addEventListener('click', function() {
+            confirmReceipt(ticketId);
+        });
+        
+        reportIssueBtn.addEventListener('click', function() {
+            // Could redirect to create a new ticket or open a modal
+            alert('This would open a form to report an issue with the phone swap.');
+        });
+    }
+
+    async function confirmReceipt(ticketId) {
+        try {
+            const response = await fetch(`/api/manager/tickets/${ticketId}/confirm-receipt`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                alert(result.message);
+                // Reload the page to reflect the updated status
+                location.reload();
+            } else {
+                const error = await response.json();
+                alert(error.error || 'Failed to confirm receipt');
+            }
+        } catch (error) {
+            console.error('Error confirming receipt:', error);
+            alert('Error confirming receipt');
+        }
     }
 
     function displayUpdates(updates) {

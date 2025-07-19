@@ -1609,6 +1609,14 @@ def support_ticket_detail(ticket_id):
     return render_template('support/ticket_detail.html', ticket_id=ticket_id)
 
 
+@app.route('/support/all_tickets')
+@login_required
+@role_required('Support')
+def support_all_tickets():
+    """Serves the page for viewing all tickets, including history."""
+    return render_template('support/all_tickets.html')
+
+
 @app.route('/admin/reports')
 @login_required
 @role_required('Administrator')
@@ -1635,8 +1643,10 @@ def get_ticket_details(ticket_id):
         SELECT 
             t.*,
             p.asset_tag, p.manufacturer, p.model, p.serial_number,
+            w.id AS worker_id,
             w.full_name AS worker_name,
             reporter.full_name AS reported_by,
+            reporter.email AS reporter_email,
             assignee.full_name AS assigned_to
         FROM tickets t
         JOIN phones p ON t.phone_id = p.id
@@ -2886,6 +2896,152 @@ def get_phone_history(phone_id):
             item['event_timestamp'] = item['event_timestamp'].isoformat()
 
     return jsonify(history)
+
+
+@app.route('/api/support/worker_history/<int:worker_id>', methods=['GET'])
+@login_required
+@role_required('Support')
+def get_worker_history(worker_id):
+    """
+    API endpoint to get the ticket and assignment history for a specific worker.
+    """
+    db = get_db()
+    cursor = db.cursor()
+    
+    # Query for all tickets associated with phones ever assigned to this worker
+    ticket_history_query = """
+        SELECT DISTINCT t.id, t.title, t.status, t.created_at
+        FROM tickets t
+        JOIN assignments a ON t.phone_id = a.phone_id
+        WHERE a.worker_id = %s
+        ORDER BY t.created_at DESC;
+    """
+    cursor.execute(ticket_history_query, (worker_id,))
+    ticket_history_raw = cursor.fetchall()
+    
+    # Query for all phone assignments (past and present) for this worker
+    assignment_history_query = """
+        SELECT p.asset_tag, p.model, a.assignment_date, a.return_date
+        FROM assignments a
+        JOIN phones p ON a.phone_id = p.id
+        WHERE a.worker_id = %s
+        ORDER BY a.assignment_date DESC;
+    """
+    cursor.execute(assignment_history_query, (worker_id,))
+    assignment_history_raw = cursor.fetchall()
+    
+    cursor.close()
+    
+    # Convert to list of dictionaries and format dates for JSON
+    ticket_history = []
+    for item in ticket_history_raw:
+        ticket_dict = dict(item)
+        if ticket_dict['created_at']:
+            ticket_dict['created_at'] = ticket_dict['created_at'].isoformat()
+        ticket_history.append(ticket_dict)
+        
+    assignment_history = []
+    for item in assignment_history_raw:
+        assignment_dict = dict(item)
+        if assignment_dict['assignment_date']:
+            assignment_dict['assignment_date'] = assignment_dict['assignment_date'].isoformat()
+        if assignment_dict['return_date']:
+            assignment_dict['return_date'] = assignment_dict['return_date'].isoformat()
+        assignment_history.append(assignment_dict)
+            
+    return jsonify({
+        "ticket_history": ticket_history,
+        "assignment_history": assignment_history
+    })
+
+
+# --- New API Endpoints for Advanced Ticket Features ---
+
+@app.route('/api/support/all_tickets', methods=['GET'])
+@login_required
+@role_required('Support')
+def get_all_tickets_history():
+    """API endpoint for Support to get ALL tickets, including solved and closed."""
+    db = get_db()
+    cursor = db.cursor()
+    query = """
+        SELECT 
+            t.id AS ticket_id, t.title, t.status, t.priority, t.created_at, t.resolved_at,
+            p.asset_tag AS phone_asset_tag, reporter.full_name AS reported_by,
+            assignee.full_name AS assigned_to
+        FROM tickets t
+        JOIN phones p ON t.phone_id = p.id
+        JOIN users reporter ON t.reported_by_manager_id = reporter.id
+        LEFT JOIN users assignee ON t.assigned_to_support_id = assignee.id
+        ORDER BY t.created_at DESC;
+    """
+    cursor.execute(query)
+    tickets_raw = cursor.fetchall()
+    cursor.close()
+    
+    # Convert to list of dictionaries and format dates for JSON
+    tickets = []
+    for item in tickets_raw:
+        ticket_dict = dict(item)
+        if ticket_dict['created_at']:
+            ticket_dict['created_at'] = ticket_dict['created_at'].isoformat()
+        if ticket_dict['resolved_at']:
+            ticket_dict['resolved_at'] = ticket_dict['resolved_at'].isoformat()
+        tickets.append(ticket_dict)
+        
+    return jsonify(tickets)
+
+
+@app.route('/api/support/ticket/<int:ticket_id>/initiate_swap', methods=['POST'])
+@login_required
+@role_required('Support')
+def initiate_phone_swap(ticket_id):
+    """Logs that a replacement phone is being sent and sets ticket to Pending."""
+    data = request.get_json()
+    note = data.get('note')
+    if not note:
+        return jsonify({"error": "A note for the manager is required."}), 400
+
+    update_text = f"PHONE SWAP INITIATED: A replacement device is en route. Details: {note}"
+    db = get_db()
+    cursor = db.cursor()
+    try:
+        cursor.execute("INSERT INTO ticket_updates (ticket_id, update_author_id, update_text, is_internal_note) VALUES (%s, %s, %s, FALSE)", (ticket_id, session['user_id'], update_text))
+        cursor.execute("UPDATE tickets SET status = 'Pending', updated_at = now() WHERE id = %s", (ticket_id,))
+        db.commit()
+        cursor.close()
+        return jsonify({"message": "Phone swap initiated and logged on the ticket."})
+    except Exception as e:
+        db.rollback(); cursor.close()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/manager/ticket/<int:ticket_id>/confirm_receipt', methods=['POST'])
+@login_required
+@role_required('Manager')
+def manager_confirm_receipt(ticket_id):
+    """Allows a Manager to confirm receipt of a new phone and provide return details."""
+    data = request.get_json()
+    return_method = data.get('return_method')
+    if not return_method:
+        return jsonify({"error": "Return method details are required."}), 400
+
+    update_text = f"MANAGER CONFIRMATION: New device received. The old device will be returned via: {return_method}"
+    db = get_db()
+    cursor = db.cursor()
+    try:
+        cursor.execute("SELECT id FROM tickets WHERE id = %s AND reported_by_manager_id = %s", (ticket_id, session['user_id']))
+        if cursor.fetchone() is None:
+            return jsonify({"error": "Ticket not found or not authorized."}), 404
+
+        cursor.execute("INSERT INTO ticket_updates (ticket_id, update_author_id, update_text, is_internal_note) VALUES (%s, %s, %s, FALSE)", (ticket_id, session['user_id'], update_text))
+        cursor.execute("UPDATE tickets SET status = 'Open', updated_at = now() WHERE id = %s", (ticket_id,))
+        db.commit()
+        cursor.close()
+        return jsonify({"message": "Receipt confirmed. Support has been notified."})
+    except Exception as e:
+        db.rollback(); cursor.close()
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":

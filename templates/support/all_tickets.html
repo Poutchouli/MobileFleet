@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}All Tickets - Support{% endblock %}
+{% block page_title %}Complete Ticket History{% endblock %}
+
+{% block content %}
+<div class="custom-card">
+    <div class="card-header">
+        <h2 class="card-title">All Tickets (Active & Resolved)</h2>
+        <input type="text" id="search-input" class="custom-input w-full md:w-1/3" placeholder="Search tickets...">
+    </div>
+    <div class="overflow-x-auto">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>ID</th><th>Status</th><th>Priority</th><th>Title</th>
+                    <th>Assigned To</th><th>Date Created</th><th class="text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="tickets-table-body"></tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tableBody = document.getElementById('tickets-table-body');
+        const searchInput = document.getElementById('search-input');
+        let allTickets = [];
+
+        function formatDateTime(isoString) {
+            if (!isoString) return 'N/A';
+            return new Date(isoString).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+        }
+
+        function getStatusBadgeClass(status) {
+            const statusClasses = {
+                'New': 'badge-blue',
+                'Open': 'badge-green',
+                'Pending': 'badge-yellow',
+                'On-Hold': 'badge-gray',
+                'Solved': 'badge-emerald',
+                'Closed': 'badge-gray'
+            };
+            return statusClasses[status] || 'badge-gray';
+        }
+
+        function getPriorityBadgeClass(priority) {
+            const priorityClasses = {
+                'Urgent': 'badge-red',
+                'High': 'badge-orange',
+                'Medium': 'badge-yellow',
+                'Low': 'badge-green'
+            };
+            return priorityClasses[priority] || 'badge-gray';
+        }
+
+        function renderTickets(tickets) {
+            tableBody.innerHTML = '';
+            tickets.forEach(ticket => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="font-medium">#${ticket.ticket_id}</td>
+                    <td><span class="badge ${getStatusBadgeClass(ticket.status)}">${ticket.status}</span></td>
+                    <td><span class="badge ${getPriorityBadgeClass(ticket.priority)}">${ticket.priority}</span></td>
+                    <td class="max-w-xs truncate" title="${ticket.title}">${ticket.title}</td>
+                    <td>${ticket.assigned_to || 'Unassigned'}</td>
+                    <td>${formatDateTime(ticket.created_at)}</td>
+                    <td class="text-right">
+                        <a href="/support/ticket/${ticket.ticket_id}" class="btn-link">View Details</a>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function filterTickets() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const filteredTickets = allTickets.filter(ticket => 
+                ticket.title.toLowerCase().includes(searchTerm) ||
+                ticket.status.toLowerCase().includes(searchTerm) ||
+                ticket.priority.toLowerCase().includes(searchTerm) ||
+                ticket.ticket_id.toString().includes(searchTerm) ||
+                (ticket.assigned_to && ticket.assigned_to.toLowerCase().includes(searchTerm)) ||
+                (ticket.reported_by && ticket.reported_by.toLowerCase().includes(searchTerm))
+            );
+            renderTickets(filteredTickets);
+        }
+
+        async function fetchAllTickets() {
+            try {
+                const response = await fetch('/api/support/all_tickets');
+                if (!response.ok) throw new Error('Failed to fetch tickets');
+                allTickets = await response.json();
+                renderTickets(allTickets);
+            } catch (error) {
+                console.error('Error fetching tickets:', error);
+                tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-red-500">Failed to load tickets</td></tr>';
+            }
+        }
+
+        searchInput.addEventListener('input', filterTickets);
+        fetchAllTickets();
+    });
+</script>
+{% endblock %}
