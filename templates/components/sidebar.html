@@ -9,5 +9,7 @@
         {% include 'components/nav/manager_nav.html' %}
     {% elif session.role == 'Support' %}
         {% include 'components/nav/support_nav.html' %}
+    {% elif session.role == 'Integration Manager' %}
+        {% include 'components/nav/integration_nav.html' %}
     {% endif %}
 </div>

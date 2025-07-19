@@ -1,0 +1,120 @@
+{% extends "integration/base.html" %}
+{% block title %}New Phone Request{% endblock %}
+{% block page_title %}New Phone Request{% endblock %}
+
+{% block content %}
+<div class="custom-card max-w-2xl mx-auto">
+    <div class="card-header">
+        <h2 class="card-title">Request a Phone for an Employee</h2>
+    </div>
+    <form id="request-form" class="p-4">
+        <div class="space-y-4">
+            <div class="custom-form-group">
+                <label for="employee-name" class="custom-label">Employee Full Name*</label>
+                <input type="text" id="employee-name" name="employee_name" required class="custom-input" placeholder="Enter employee's full name">
+            </div>
+            
+            <div class="custom-form-group">
+                <label for="department" class="custom-label">Department*</label>
+                <input type="text" id="department" name="department" required class="custom-input" placeholder="e.g., Sales, Engineering, Operations">
+            </div>
+            
+            <div class="custom-form-group">
+                <label for="position" class="custom-label">Position/Role*</label>
+                <input type="text" id="position" name="position" required class="custom-input" placeholder="e.g., Sales Representative, Software Developer">
+            </div>
+            
+            <div class="custom-form-group">
+                <label for="request-reason" class="custom-label">Reason for Request*</label>
+                <textarea id="request-reason" name="request_reason" required rows="3" class="custom-textarea" placeholder="Please explain why this employee needs a phone (e.g., new hire, replacement, upgrade)"></textarea>
+            </div>
+            
+            <div class="custom-form-group">
+                <label for="phone-type" class="custom-label">Phone Type Preference</label>
+                <select id="phone-type" name="phone_type_preference" class="custom-select">
+                    <option value="">No preference</option>
+                    <option value="iPhone">iPhone</option>
+                    <option value="Samsung Galaxy">Samsung Galaxy</option>
+                    <option value="Google Pixel">Google Pixel</option>
+                    <option value="Any Android">Any Android device</option>
+                    <option value="Basic Phone">Basic phone</option>
+                </select>
+            </div>
+            
+            <div class="custom-form-group">
+                <label for="urgency-level" class="custom-label">Urgency Level*</label>
+                <select id="urgency-level" name="urgency_level" required class="custom-select">
+                    <option value="">Select urgency level...</option>
+                    <option value="Low">Low - Can wait 2+ weeks</option>
+                    <option value="Medium">Medium - Needed within 1-2 weeks</option>
+                    <option value="High">High - Needed within a few days</option>
+                    <option value="Critical">Critical - Needed immediately</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="custom-modal-footer">
+            <button type="button" onclick="window.location.href='{{ url_for('integration_dashboard') }}'" class="btn btn-secondary">Cancel</button>
+            <button type="submit" class="btn btn-primary">Submit Request</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const requestForm = document.getElementById('request-form');
+        
+        requestForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(requestForm);
+            const requestData = Object.fromEntries(formData.entries());
+
+            // Basic validation
+            if (!requestData.employee_name.trim()) {
+                alert('Please enter the employee name.');
+                return;
+            }
+            
+            if (!requestData.department.trim()) {
+                alert('Please enter the department.');
+                return;
+            }
+            
+            if (!requestData.position.trim()) {
+                alert('Please enter the position.');
+                return;
+            }
+            
+            if (!requestData.request_reason.trim()) {
+                alert('Please provide a reason for the request.');
+                return;
+            }
+            
+            if (!requestData.urgency_level) {
+                alert('Please select an urgency level.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/integration/requests', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || 'Failed to submit request');
+                
+                alert('Phone request submitted successfully!');
+                window.location.href = "{{ url_for('integration_dashboard') }}";
+            } catch (error) {
+                console.error('Error submitting request:', error);
+                alert(`Error: ${error.message}`);
+            }
+        });
+    });
+</script>
+{% endblock %}

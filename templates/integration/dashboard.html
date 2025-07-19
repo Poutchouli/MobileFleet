@@ -1,0 +1,93 @@
+{% extends "integration/base.html" %}
+{% block title %}My Phone Requests{% endblock %}
+{% block page_title %}My Phone Requests{% endblock %}
+
+{% block content %}
+<div class="custom-card">
+    <div class="card-header">
+        <h2 class="card-title">My Phone Requests</h2>
+        <a href="{{ url_for('integration_new_request') }}" class="btn btn-primary">New Request</a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Employee Name</th>
+                    <th>Department</th>
+                    <th>Position</th>
+                    <th>Urgency</th>
+                    <th>Status</th>
+                    <th>Submitted</th>
+                </tr>
+            </thead>
+            <tbody id="requests-table-body"></tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tableBody = document.getElementById('requests-table-body');
+        
+        function getStatusBadgeClass(status) {
+            const statusClasses = {
+                'Pending': 'badge-yellow',
+                'Approved': 'badge-green',
+                'Denied': 'badge-red',
+                'Fulfilled': 'badge-emerald',
+                'Cancelled': 'badge-gray'
+            };
+            return statusClasses[status] || 'badge-gray';
+        }
+
+        function getUrgencyBadgeClass(urgency) {
+            const urgencyClasses = {
+                'Critical': 'badge-red',
+                'High': 'badge-orange',
+                'Medium': 'badge-yellow',
+                'Low': 'badge-green'
+            };
+            return urgencyClasses[urgency] || 'badge-gray';
+        }
+
+        function formatDateTime(isoString) {
+            if (!isoString) return 'N/A';
+            return new Date(isoString).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+        }
+        
+        async function fetchRequests() {
+            try {
+                const response = await fetch('/api/integration/requests');
+                if (!response.ok) throw new Error('Failed to fetch requests');
+                const requests = await response.json();
+                
+                tableBody.innerHTML = '';
+                if (requests.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4">You have no phone requests yet.</td></tr>';
+                    return;
+                }
+                
+                requests.forEach(req => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="font-medium">${req.employee_name}</td>
+                        <td>${req.department}</td>
+                        <td>${req.position}</td>
+                        <td><span class="badge ${getUrgencyBadgeClass(req.urgency_level)}">${req.urgency_level}</span></td>
+                        <td><span class="badge ${getStatusBadgeClass(req.status)}">${req.status}</span></td>
+                        <td>${formatDateTime(req.submitted_at)}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error fetching requests:', error);
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-red-500">Failed to load requests</td></tr>';
+            }
+        }
+        
+        fetchRequests();
+    });
+</script>
+{% endblock %}

@@ -138,6 +138,52 @@
 
 {% block scripts %}
 <script>
+// Global modal functions (accessible from inline onclick handlers)
+function closeSwapNoteModal() {
+    document.getElementById('swap-note-modal').classList.add('hidden');
+    document.getElementById('swap-note-input').value = '';
+}
+
+function submitSwapNote() {
+    const note = document.getElementById('swap-note-input').value.trim();
+    if (note === '') {
+        showToast('Please enter a note for the manager', true);
+        return;
+    }
+
+    // Get ticket ID from the page
+    const view = document.getElementById('ticket-detail-view');
+    const ticketId = view.dataset.ticketId;
+
+    fetch(`/api/support/ticket/${ticketId}/initiate_swap`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note: note })
+    })
+    .then(res => res.json().then(data => ({ ok: res.ok, data })))
+    .then(({ ok, data }) => {
+        if (!ok) throw new Error(data.error);
+        closeSwapNoteModal();
+        showToast(data.message);
+        // Refresh the page to show the new update
+        if (window.fetchAndRenderTicket) {
+            window.fetchAndRenderTicket();
+        }
+    })
+    .catch(error => {
+        showToast(error.message, true);
+    });
+}
+
+// Global toast function
+function showToast(message, isError = false) {
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toast-message');
+    toastMessage.textContent = message;
+    toast.className = `toast show ${isError ? 'error' : 'success'}`;
+    setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const view = document.getElementById('ticket-detail-view');
     const ticketId = view.dataset.ticketId;
@@ -149,23 +195,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const updateForm = document.getElementById('update-form');
     const quickActionsBody = document.getElementById('quick-actions-body');
 
-    const toast = document.getElementById('toast');
-    const toastMessage = document.getElementById('toast-message');
-
     let allSupportUsers = [];
-
-    function showToast(message, isError = false) {
-        toastMessage.textContent = message;
-        toast.className = `toast show ${isError ? 'error' : 'success'}`;
-        setTimeout(() => toast.classList.remove('show'), 3000);
-    }
 
     function formatDateTime(isoString) {
         if (!isoString) return 'N/A';
         return new Date(isoString).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
     }
 
-    async function fetchAndRenderTicket() {
+    // Make fetchAndRenderTicket globally accessible for modal functions
+    window.fetchAndRenderTicket = async function() {
         try {
             const response = await fetch(`/api/support/ticket/${ticketId}`);
             if (!response.ok) throw new Error('Ticket not found or access denied.');
@@ -339,35 +377,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('swap-note-input').focus();
     }
 
-    function closeSwapNoteModal() {
-        document.getElementById('swap-note-modal').classList.add('hidden');
-        document.getElementById('swap-note-input').value = '';
-    }
-
-    function submitSwapNote() {
-        const note = document.getElementById('swap-note-input').value.trim();
-        if (note === '') {
-            showToast('Please enter a note for the manager', true);
-            return;
-        }
-
-        fetch(`/api/support/ticket/${ticketId}/initiate_swap`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ note: note })
-        })
-        .then(res => res.json().then(data => ({ ok: res.ok, data })))
-        .then(({ ok, data }) => {
-            if (!ok) throw new Error(data.error);
-            closeSwapNoteModal();
-            showToast(data.message);
-            fetchAndRenderTicket(); // Refresh the page to show the new update
-        })
-        .catch(error => {
-            showToast(error.message, true);
-        });
-    }
-
     // Close modal when clicking outside
     document.addEventListener('click', function(e) {
         if (e.target.id === 'swap-note-modal') {
@@ -472,7 +481,7 @@ document.addEventListener('DOMContentLoaded', function() {
         historyBody.innerHTML += assignmentHtml;
     }
 
-    fetchAndRenderTicket();
+    window.fetchAndRenderTicket();
 });
 </script>
 {% endblock %}

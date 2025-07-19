@@ -264,6 +264,8 @@ def login():
                 return redirect(url_for('manager_dashboard'))
             elif user['role_name'] == 'Support':
                 return redirect(url_for('support_dashboard'))
+            elif user['role_name'] == 'Integration Manager':
+                return redirect(url_for('integration_dashboard'))
             else:
                 app.logger.warning("User %s has unrecognized role: %s", username, user['role_name'])
                 return redirect(url_for('login'))
@@ -293,6 +295,8 @@ def index():
         return redirect(url_for('manager_dashboard'))
     elif role == 'Support':
         return redirect(url_for('support_dashboard'))
+    elif role == 'Integration Manager':
+        return redirect(url_for('integration_dashboard'))
     return redirect(url_for('logout'))
 
 @app.route('/profile')
@@ -368,6 +372,20 @@ def admin_import_csv():
 def support_dashboard():
     """Serves the main helpdesk dashboard for Support staff."""
     return render_template('support/dashboard.html')
+
+@app.route('/integration/dashboard')
+@login_required
+@role_required('Integration Manager')
+def integration_dashboard():
+    """Serves the dashboard for Integration Managers to see their requests."""
+    return render_template('integration/dashboard.html')
+
+@app.route('/integration/new_request')
+@login_required
+@role_required('Integration Manager')
+def integration_new_request():
+    """Serves the form for an Integration Manager to request a new phone."""
+    return render_template('integration/new_request.html')
 
 # --- API Endpoints for Users and Roles ---
 @app.route('/api/roles', methods=['GET', 'POST'])
@@ -945,7 +963,8 @@ def get_manager_team_status():
     cursor = db.cursor()
     
     # This query securely fetches only the workers belonging to the manager's sectors.
-    # It also gets details of their currently assigned phone and a count of any open tickets.
+    # It also gets details of their currently assigned phone, a count of any open tickets,
+    # and information about pending phone swaps.
     query = """
         SELECT
             w.id AS worker_id,
@@ -955,18 +974,39 @@ def get_manager_team_status():
             p.manufacturer,
             p.model,
             p.status AS phone_status,
-            (SELECT COUNT(*)
-             FROM tickets t
-             WHERE t.phone_id = p.id AND t.status NOT IN ('Solved', 'Closed')) AS open_ticket_count
+            COALESCE(open_tickets.ticket_count, 0) AS open_ticket_count,
+            COALESCE(swap_info.pending_swaps, 0) AS pending_swaps,
+            swap_info.latest_swap_initiated,
+            swap_info.swap_ticket_id
         FROM workers w
         LEFT JOIN assignments a ON w.id = a.worker_id AND a.return_date IS NULL
         LEFT JOIN phones p ON a.phone_id = p.id
         JOIN secteurs s ON w.secteur_id = s.id
+        LEFT JOIN (
+            SELECT 
+                t.phone_id,
+                COUNT(*) AS ticket_count
+            FROM tickets t
+            WHERE t.status NOT IN ('Solved', 'Closed')
+            GROUP BY t.phone_id
+        ) open_tickets ON p.id = open_tickets.phone_id
+        LEFT JOIN (
+            SELECT 
+                t.phone_id,
+                COUNT(*) AS pending_swaps,
+                MAX(tu.created_at) AS latest_swap_initiated,
+                MAX(t.id) AS swap_ticket_id
+            FROM tickets t
+            JOIN ticket_updates tu ON t.id = tu.ticket_id
+            WHERE tu.update_text LIKE %s
+            AND t.status NOT IN ('Solved', 'Closed')
+            GROUP BY t.phone_id
+        ) swap_info ON p.id = swap_info.phone_id
         WHERE s.manager_id = %s
         ORDER BY w.full_name;
     """
     
-    cursor.execute(query, (manager_id,))
+    cursor.execute(query, ('%PHONE SWAP INITIATED%', manager_id))
     team_status = cursor.fetchall()
     cursor.close()
     
@@ -3041,6 +3081,82 @@ def manager_confirm_receipt(ticket_id):
         return jsonify({"message": "Receipt confirmed. Support has been notified."})
     except Exception as e:
         db.rollback(); cursor.close()
+        return jsonify({"error": str(e)}), 500
+
+
+# --- API Endpoints for Integration Manager ---
+
+@app.route('/api/integration/requests', methods=['GET'])
+@login_required
+@role_required('Integration Manager')
+def get_integration_requests():
+    """API endpoint to get all phone requests submitted by the current integration manager."""
+    user_id = session.get('user_id')
+    db = get_db()
+    cursor = db.cursor()
+    query = """
+        SELECT 
+            pr.id, pr.employee_name, pr.department, pr.position, 
+            pr.request_reason, pr.phone_type_preference, pr.urgency_level,
+            pr.status, pr.submitted_at, pr.reviewed_at, pr.review_notes,
+            pr.fulfilled_at, p.asset_tag as assigned_phone_asset_tag,
+            reviewer.full_name as reviewed_by_name,
+            fulfiller.full_name as fulfilled_by_name
+        FROM phone_requests pr
+        LEFT JOIN users reviewer ON pr.reviewed_by = reviewer.id
+        LEFT JOIN users fulfiller ON pr.fulfilled_by = fulfiller.id
+        LEFT JOIN phones p ON pr.assigned_phone_id = p.id
+        WHERE pr.requester_id = %s
+        ORDER BY pr.submitted_at DESC;
+    """
+    cursor.execute(query, (user_id,))
+    requests = cursor.fetchall()
+    cursor.close()
+    
+    # Convert datetime objects to ISO format for JSON serialization
+    result_requests = []
+    for req in requests:
+        req_dict = dict(req)
+        for key, value in req_dict.items():
+            if hasattr(value, 'isoformat'):
+                req_dict[key] = value.isoformat()
+        result_requests.append(req_dict)
+            
+    return jsonify(result_requests)
+
+@app.route('/api/integration/requests', methods=['POST'])
+@login_required
+@role_required('Integration Manager')
+def create_phone_request():
+    """API endpoint for an Integration Manager to submit a new phone request."""
+    data = request.get_json()
+    required_keys = ['employee_name', 'department', 'position', 'request_reason', 'urgency_level']
+    if not all(key in data and data[key] for key in required_keys):
+        return jsonify({"error": "Employee name, department, position, request reason, and urgency level are required fields."}), 400
+
+    # Validate urgency level
+    valid_urgency_levels = ['Low', 'Medium', 'High', 'Critical']
+    if data['urgency_level'] not in valid_urgency_levels:
+        return jsonify({"error": "Invalid urgency level. Must be one of: " + ", ".join(valid_urgency_levels)}), 400
+
+    user_id = session.get('user_id')
+    db = get_db()
+    cursor = db.cursor()
+    try:
+        cursor.execute(
+            """INSERT INTO phone_requests 
+               (requester_id, employee_name, department, position, request_reason, 
+                phone_type_preference, urgency_level) 
+               VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+            (user_id, data['employee_name'], data['department'], data['position'], 
+             data['request_reason'], data.get('phone_type_preference', ''), data['urgency_level'])
+        )
+        db.commit()
+        cursor.close()
+        return jsonify({"message": "Phone request submitted successfully."}), 201
+    except Exception as e:
+        db.rollback()
+        cursor.close()
         return jsonify({"error": str(e)}), 500
 
 

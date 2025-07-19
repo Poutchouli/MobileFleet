@@ -58,7 +58,7 @@ def create_schema(cursor):
         """
         CREATE TABLE roles (
             id SERIAL PRIMARY KEY,
-            role_name VARCHAR(50) NOT NULL UNIQUE CHECK (role_name IN ('Administrator', 'Manager', 'Support')),
+            role_name VARCHAR(50) NOT NULL UNIQUE CHECK (role_name IN ('Administrator', 'Manager', 'Support', 'Integration Manager')),
             description TEXT
         );
         """,
@@ -172,6 +172,26 @@ def create_schema(cursor):
         );
         """,
         """
+        CREATE TABLE phone_requests (
+            id SERIAL PRIMARY KEY,
+            requester_id INTEGER NOT NULL REFERENCES users(id),
+            employee_name VARCHAR(100) NOT NULL,
+            department VARCHAR(100) NOT NULL,
+            position VARCHAR(100) NOT NULL,
+            request_reason TEXT NOT NULL,
+            phone_type_preference VARCHAR(50),
+            urgency_level VARCHAR(20) NOT NULL CHECK (urgency_level IN ('Low', 'Medium', 'High', 'Critical')),
+            status VARCHAR(20) NOT NULL DEFAULT 'Pending' CHECK (status IN ('Pending', 'Approved', 'Denied', 'Fulfilled', 'Cancelled')),
+            submitted_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            reviewed_by INTEGER REFERENCES users(id),
+            reviewed_at TIMESTAMPTZ,
+            review_notes TEXT,
+            fulfilled_by INTEGER REFERENCES users(id),
+            fulfilled_at TIMESTAMPTZ,
+            assigned_phone_id INTEGER REFERENCES phones(id)
+        );
+        """,
+        """
         -- Function to update the updated_at timestamp
         CREATE OR REPLACE FUNCTION update_updated_at_column()
         RETURNS TRIGGER AS $$
@@ -201,13 +221,15 @@ def insert_sample_data(cursor):
     admin_pass = generate_password_hash("adminpass")
     manager_pass = generate_password_hash("managerpass")
     support_pass = generate_password_hash("supportpass")
+    integration_pass = generate_password_hash("integrationpass")
 
     # --- Define Data for Insertion ---
     # Using lists of tuples for clarity and organization
     roles_data = [
         ('Administrator', 'Full system access.'),
         ('Manager', 'Manages a secteur and its workers.'),
-        ('Support', 'Manages support tickets.')
+        ('Support', 'Manages support tickets.'),
+        ('Integration Manager', 'Manages phone requests and integrations.')
     ]
 
     users_data = [
@@ -218,10 +240,12 @@ def insert_sample_data(cursor):
         ('manager_south', manager_pass, 'Charlie Manager', 'charlie.manager@example.com', 2),
         # role_id 3: Support
         ('support_tech', support_pass, 'David Support', 'david.support@example.com', 3),
-        ('support_junior', support_pass, 'Fay Junior Support', 'fay.support@example.com', 3)
+        ('support_junior', support_pass, 'Fay Junior Support', 'fay.support@example.com', 3),
+        # role_id 4: Integration Manager
+        ('integration_mgr', integration_pass, 'Igor Integration', 'igor.integration@example.com', 4)
     ]
 
-    # Note: User IDs will be 1, 2, 3, 4, 5. Bob is 2, Charlie is 3.
+    # Note: User IDs will be 1, 2, 3, 4, 5, 6. Bob is 2, Charlie is 3, Igor is 6.
     secteurs_data = [
         ('Northern Sector', 2, 'Field agents in the northern region.'),
         ('Southern Sector', 3, 'Field agents in the southern region.'),
@@ -262,6 +286,13 @@ def insert_sample_data(cursor):
         (2, 2, 3)  # Phone 2, SIM 2, Worker 3 (Grace)
     ]
 
+    phone_requests_data = [
+        # (requester_id, employee_name, department, position, request_reason, phone_type_preference, urgency_level, status)
+        (2, 'John Doe', 'Sales', 'Sales Representative', 'New employee needs work phone', 'iPhone', 'Medium', 'Pending'),
+        (3, 'Jane Smith', 'Engineering', 'Software Developer', 'Phone damaged, replacement needed', 'Samsung Galaxy', 'High', 'Approved'),
+        (6, 'Mike Johnson', 'Operations', 'Field Technician', 'Current phone outdated, needs upgrade', 'Any Android', 'Low', 'Fulfilled')
+    ]
+
     # --- Execute Inserts ---
     # Using executemany for efficient bulk insertion
     cursor.executemany("INSERT INTO roles (role_name, description) VALUES (%s, %s);", roles_data)
@@ -272,6 +303,7 @@ def insert_sample_data(cursor):
     cursor.executemany("INSERT INTO sim_cards (iccid, carrier, status) VALUES (%s, %s, %s);", sim_cards_data)
     cursor.executemany("INSERT INTO phone_numbers (phone_number, sim_card_id, status) VALUES (%s, %s, %s);", phone_numbers_data)
     cursor.executemany("INSERT INTO assignments (phone_id, sim_card_id, worker_id) VALUES (%s, %s, %s);", assignments_data)
+    cursor.executemany("INSERT INTO phone_requests (requester_id, employee_name, department, position, request_reason, phone_type_preference, urgency_level, status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);", phone_requests_data)
 
     print("✅ Sample data inserted successfully.")
 

@@ -1,0 +1,24 @@
+<!-- templates/components/nav/integration_nav.html -->
+<nav class="space-y-1">
+    <!-- Dashboard -->
+    <a href="{{ url_for('integration_dashboard') }}" 
+       class="nav-link flex items-center px-4 py-2 text-sm rounded-md
+              {% if request.endpoint == 'integration_dashboard' %}active{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %}">
+        <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+        </svg>
+        My Requests
+    </a>
+
+    <!-- New Request -->
+    <a href="{{ url_for('integration_new_request') }}" 
+       class="nav-link flex items-center px-4 py-2 text-sm rounded-md
+              {% if request.endpoint == 'integration_new_request' %}active{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %}">
+        <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        </svg>
+        New Phone Request
+    </a>
+</nav>

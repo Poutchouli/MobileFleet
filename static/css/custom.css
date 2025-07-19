@@ -789,6 +789,69 @@ body {
     background-color: #059669;
 }
 
+/* === Phone Swap Notifications === */
+.phone-swap-notification {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    border: 1px solid #93c5fd;
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.phone-swap-notification .card-title {
+    color: #1e40af;
+}
+
+.phone-swap-tips {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 1px solid #f59e0b;
+}
+
+.phone-swap-tips h4 {
+    color: #92400e;
+}
+
+.phone-swap-tips ul li {
+    color: #78350f;
+}
+
+.phone-swap-indicator {
+    width: 8px;
+    height: 8px;
+    background-color: #3b82f6;
+    border-radius: 50%;
+    display: inline-block;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.swap-en-route-badge {
+    background-color: #dbeafe !important;
+    color: #1e40af !important;
+    border: 1px solid #93c5fd !important;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-weight: 500;
+}
+
+/* === Row highlighting for pending swaps === */
+tr.pending-swap-row {
+    background-color: #f0f9ff;
+    border-left: 3px solid #3b82f6;
+}
+
+tr.pending-swap-row:hover {
+    background-color: #e0f2fe;
+}
+
 /* === Dark Mode Support (Future) === */
 @media (prefers-color-scheme: dark) {
     /* Dark mode styles can be added here later */
