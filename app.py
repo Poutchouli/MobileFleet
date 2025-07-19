@@ -1143,6 +1143,118 @@ def get_manager_ticket_details(ticket_id):
             
     return jsonify(ticket_details)
 
+# --- Manager Ticket Management API Endpoints ---
+
+@app.route('/api/manager/ticket/<int:ticket_id>/comment', methods=['POST'])
+@login_required
+@role_required('Manager')
+def add_manager_comment(ticket_id):
+    """API endpoint for managers to add comments to their tickets."""
+    manager_id = session.get('user_id')
+    data = request.get_json()
+    
+    if not data or not data.get('comment'):
+        return jsonify({"error": "Comment text is required."}), 400
+    
+    comment_text = data['comment'].strip()
+    if not comment_text:
+        return jsonify({"error": "Comment cannot be empty."}), 400
+    
+    db = get_db()
+    cursor = db.cursor()
+    
+    try:
+        # Security check: Ensure the ticket was reported by this manager
+        cursor.execute("SELECT reported_by_manager_id FROM tickets WHERE id = %s", (ticket_id,))
+        ticket = cursor.fetchone()
+        if not ticket or ticket['reported_by_manager_id'] != manager_id:
+            cursor.close()
+            return jsonify({"error": "Ticket not found or you are not authorized to comment on it."}), 404
+        
+        # Add the comment as a public update
+        cursor.execute("""
+            INSERT INTO ticket_updates (ticket_id, update_author_id, update_text, is_internal_note)
+            VALUES (%s, %s, %s, FALSE)
+            RETURNING id, created_at
+        """, (ticket_id, manager_id, comment_text))
+        
+        new_update = cursor.fetchone()
+        
+        # Update the ticket's updated_at timestamp
+        cursor.execute("UPDATE tickets SET updated_at = NOW() WHERE id = %s", (ticket_id,))
+        
+        db.commit()
+        cursor.close()
+        
+        app.logger.info("Manager %s added comment to ticket %s", session.get('username'), ticket_id)
+        
+        return jsonify({
+            "message": "Comment added successfully.",
+            "update_id": new_update['id'],
+            "created_at": new_update['created_at'].isoformat()
+        }), 201
+        
+    except Exception as e:
+        db.rollback()
+        cursor.close()
+        app.logger.error("Error adding manager comment to ticket %s: %s", ticket_id, e, exc_info=True)
+        return jsonify({"error": "An error occurred while adding the comment."}), 500
+
+@app.route('/api/manager/ticket/<int:ticket_id>/resolve', methods=['PUT'])
+@login_required
+@role_required('Manager')
+def resolve_manager_ticket(ticket_id):
+    """API endpoint for managers to mark their tickets as resolved."""
+    manager_id = session.get('user_id')
+    data = request.get_json()
+    
+    resolution_comment = data.get('resolution_comment', '').strip() if data else ''
+    
+    db = get_db()
+    cursor = db.cursor()
+    
+    try:
+        # Security check: Ensure the ticket was reported by this manager
+        cursor.execute("SELECT reported_by_manager_id, status FROM tickets WHERE id = %s", (ticket_id,))
+        ticket = cursor.fetchone()
+        if not ticket or ticket['reported_by_manager_id'] != manager_id:
+            cursor.close()
+            return jsonify({"error": "Ticket not found or you are not authorized to resolve it."}), 404
+        
+        if ticket['status'] in ['Solved', 'Closed']:
+            cursor.close()
+            return jsonify({"error": "Ticket is already resolved."}), 400
+        
+        # Update ticket status to Solved
+        cursor.execute("""
+            UPDATE tickets 
+            SET status = 'Solved', resolved_at = NOW(), updated_at = NOW() 
+            WHERE id = %s
+        """, (ticket_id,))
+        
+        # Add resolution comment if provided
+        resolution_text = "TICKET RESOLVED BY MANAGER"
+        if resolution_comment:
+            resolution_text += f": {resolution_comment}"
+        
+        cursor.execute("""
+            INSERT INTO ticket_updates (ticket_id, update_author_id, update_text, is_internal_note)
+            VALUES (%s, %s, %s, FALSE)
+        """, (ticket_id, manager_id, resolution_text))
+        
+        db.commit()
+        cursor.close()
+        
+        app.logger.info("Manager %s resolved ticket %s", session.get('username'), ticket_id)
+        
+        return jsonify({"message": "Ticket has been marked as resolved."}), 200
+        
+    except Exception as e:
+        db.rollback()
+        cursor.close()
+        app.logger.error("Error resolving ticket %s by manager: %s", ticket_id, e, exc_info=True)
+        return jsonify({"error": "An error occurred while resolving the ticket."}), 500
+
 # --- API Endpoints ---
 
 # PHONES

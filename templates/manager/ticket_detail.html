@@ -125,6 +125,55 @@
             </div>
         </div>
 
+        <!-- Manager Actions (Comment & Resolve) -->
+        <div id="manager-actions" class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Manager Actions</h3>
+            </div>
+            <div class="px-6 py-4 space-y-4">
+                <!-- Add Comment Section -->
+                <div>
+                    <label for="comment-text" class="block text-sm font-medium text-gray-700 mb-2">Add Comment</label>
+                    <textarea 
+                        id="comment-text" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        rows="3"
+                        placeholder="Add a comment or update to this ticket..."
+                    ></textarea>
+                    <button 
+                        id="add-comment-btn"
+                        type="button" 
+                        class="mt-2 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                        </svg>
+                        Add Comment
+                    </button>
+                </div>
+
+                <!-- Resolve Ticket Section -->
+                <div id="resolve-section" class="pt-4 border-t border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-900">Mark as Resolved</h4>
+                            <p class="text-sm text-gray-500">Close this ticket if the issue has been resolved</p>
+                        </div>
+                        <button 
+                            id="resolve-ticket-btn"
+                            type="button" 
+                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                        >
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Mark as Resolved
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Action Required Section -->
         <div id="manager-actions-card" class="bg-white shadow rounded-lg hidden">
             <div class="px-6 py-4 border-b border-gray-200">
@@ -243,6 +292,16 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             managerActionsCard.classList.add('hidden');
         }
+
+        // Show/hide manager actions based on ticket status
+        const managerActions = document.getElementById('manager-actions');
+        const resolveSection = document.getElementById('resolve-section');
+        if (ticket.status === 'Solved' || ticket.status === 'Closed') {
+            managerActions.classList.add('hidden');
+        } else {
+            managerActions.classList.remove('hidden');
+            resolveSection.style.display = 'block';
+        }
     }
 
     // Enhanced confirm receipt event listener
@@ -250,6 +309,78 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target.id === 'confirm-receipt-btn') {
             openReturnMethodModal();
         }
+    });
+
+    // Add comment event listener
+    document.getElementById('add-comment-btn').addEventListener('click', function() {
+        const commentText = document.getElementById('comment-text').value.trim();
+        if (!commentText) {
+            alert('Please enter a comment before submitting.');
+            return;
+        }
+
+        const btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Adding...';
+
+        fetch(`/api/manager/ticket/${ticketId}/comment`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ comment: commentText })
+        })
+        .then(response => response.json().then(data => ({ ok: response.ok, data })))
+        .then(({ ok, data }) => {
+            if (!ok) throw new Error(data.error || 'Failed to add comment');
+            
+            // Clear the comment text
+            document.getElementById('comment-text').value = '';
+            
+            // Show success message
+            showSuccessMessage('Comment added successfully!');
+            
+            // Reload the page to show the new comment
+            setTimeout(() => location.reload(), 1000);
+        })
+        .catch(error => {
+            alert('Error adding comment: ' + error.message);
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>Add Comment';
+        });
+    });
+
+    // Resolve ticket event listener
+    document.getElementById('resolve-ticket-btn').addEventListener('click', function() {
+        if (!confirm('Are you sure you want to mark this ticket as resolved? This action cannot be undone.')) {
+            return;
+        }
+
+        const btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Resolving...';
+
+        fetch(`/api/manager/ticket/${ticketId}/resolve`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ resolution_comment: 'Resolved by manager' })
+        })
+        .then(response => response.json().then(data => ({ ok: response.ok, data })))
+        .then(({ ok, data }) => {
+            if (!ok) throw new Error(data.error || 'Failed to resolve ticket');
+            
+            showSuccessMessage('Ticket has been resolved successfully!');
+            
+            // Reload the page to show the updated status
+            setTimeout(() => location.reload(), 1000);
+        })
+        .catch(error => {
+            alert('Error resolving ticket: ' + error.message);
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Mark as Resolved';
+        });
     });
 
     // Modal functions for return method
@@ -333,9 +464,34 @@ document.addEventListener('DOMContentLoaded', function() {
             'Open': 'bg-blue-100 text-blue-800',
             'In Progress': 'bg-yellow-100 text-yellow-800',
             'Resolved': 'bg-green-100 text-green-800',
+            'Solved': 'bg-green-100 text-green-800',
             'Closed': 'bg-gray-100 text-gray-800'
         };
         return classes[status] || 'bg-gray-100 text-gray-800';
+    }
+
+    function showSuccessMessage(message) {
+        // Create a temporary success message
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'fixed top-4 right-4 bg-green-50 border border-green-200 rounded-md p-4 z-50';
+        messageDiv.innerHTML = `
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-green-800">${message}</p>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(messageDiv);
+        
+        // Remove the message after 3 seconds
+        setTimeout(() => {
+            messageDiv.remove();
+        }, 3000);
     }
 
     function formatDate(dateString) {
