@@ -13,14 +13,11 @@
             <!-- Language Switcher at top of login -->
             <div class="flex justify-center items-center gap-x-2 text-sm text-gray-500">
                 <span class="text-gray-400">{{ _('Language') }}:</span>
-                <a href="{{ url_for('set_language', lang='en') }}" 
-                   class="hover:underline {% if session.language == 'en' or not session.language %}font-bold text-blue-600{% endif %}">EN</a>
-                <span>|</span>
                 <a href="{{ url_for('set_language', lang='fr') }}" 
-                   class="hover:underline {% if session.language == 'fr' %}font-bold text-blue-600{% endif %}">FR</a>
+                   class="hover:underline {% if session.language == 'fr' or not session.language %}font-bold text-blue-600{% endif %}">FR</a>
                 <span>|</span>
-                <a href="{{ url_for('set_language', lang='nl') }}" 
-                   class="hover:underline {% if session.language == 'nl' %}font-bold text-blue-600{% endif %}">NL</a>
+                <a href="{{ url_for('set_language', lang='en') }}" 
+                   class="hover:underline {% if session.language == 'en' %}font-bold text-blue-600{% endif %}">EN</a>
             </div>
             <div>
                 <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">

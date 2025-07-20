@@ -97,7 +97,9 @@
                     showRefreshSpinner(true);
                 }
                 
-                const response = await fetch('/api/support/tickets');
+                const response = await fetch('/api/support/tickets', {
+                    credentials: 'same-origin'
+                });
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.error || 'Failed to fetch tickets');

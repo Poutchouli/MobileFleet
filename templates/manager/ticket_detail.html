@@ -238,14 +238,43 @@
 document.addEventListener('DOMContentLoaded', function() {
     const ticketId = {{ ticket_id }};
     
-    // Load ticket details
-    fetch(`/api/manager/ticket/${ticketId}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to load ticket details');
+    // Anti-flooding protection
+    let isRefreshing = false;
+    let refreshDebounceTimer = null;
+    let requestQueue = new Set();
+
+    // Debounced refresh function to prevent request flooding
+    function debouncedRefresh() {
+        if (refreshDebounceTimer) {
+            clearTimeout(refreshDebounceTimer);
+        }
+        refreshDebounceTimer = setTimeout(() => {
+            if (!isRefreshing) {
+                loadTicketDetails();
             }
-            return response.json();
+        }, 300); // Wait 300ms before executing
+    }
+    
+    // Load ticket details with anti-flooding protection
+    function loadTicketDetails() {
+        if (isRefreshing) {
+            console.log('Already refreshing, skipping duplicate request');
+            return;
+        }
+        
+        isRefreshing = true;
+        const requestId = `manager-ticket-${ticketId}-${Date.now()}`;
+        requestQueue.add(requestId);
+        
+        fetch(`/api/manager/ticket/${ticketId}`, {
+            credentials: 'same-origin'
         })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to load ticket details');
+                }
+                return response.json();
+            })
         .then(data => {
             displayTicketDetails(data);
             document.getElementById('loading').classList.add('hidden');
@@ -256,7 +285,15 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('error').classList.remove('hidden');
             document.getElementById('error-message').textContent = error.message;
+        })
+        .finally(() => {
+            isRefreshing = false;
+            requestQueue.delete(requestId);
         });
+    }
+
+    // Initial load
+    loadTicketDetails();
 
     function displayTicketDetails(ticket) {
         // Set ticket header information
@@ -326,6 +363,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch(`/api/manager/ticket/${ticketId}/comment`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
             body: JSON.stringify({ comment: commentText })
         })
         .then(response => response.json().then(data => ({ ok: response.ok, data })))
@@ -338,8 +376,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // Show success message
             showSuccessMessage('Comment added successfully!');
             
-            // Reload the page to show the new comment
-            setTimeout(() => location.reload(), 1000);
+            // Reload the page to show the new comment (debounced)
+            debouncedRefresh();
         })
         .catch(error => {
             alert('Error adding comment: ' + error.message);
@@ -363,6 +401,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch(`/api/manager/ticket/${ticketId}/resolve`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
             body: JSON.stringify({ resolution_comment: 'Resolved by manager' })
         })
         .then(response => response.json().then(data => ({ ok: response.ok, data })))
@@ -371,8 +410,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             showSuccessMessage('Ticket has been resolved successfully!');
             
-            // Reload the page to show the updated status
-            setTimeout(() => location.reload(), 1000);
+            // Reload the page to show the updated status (debounced)
+            debouncedRefresh();
         })
         .catch(error => {
             alert('Error resolving ticket: ' + error.message);
@@ -404,6 +443,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch(`/api/manager/ticket/${ticketId}/confirm_receipt`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
             body: JSON.stringify({ return_method: returnMethod })
         })
         .then(res => res.json().then(data => ({ ok: res.ok, data })))
@@ -411,7 +451,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!ok) throw new Error(data.error);
             closeReturnMethodModal();
             alert(data.message);
-            location.reload(); // Refresh page to show the manager's confirmation
+            debouncedRefresh(); // Refresh page to show the manager's confirmation (debounced)
         })
         .catch(error => {
             alert(error.message);

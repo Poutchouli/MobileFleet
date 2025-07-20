@@ -17,6 +17,68 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_babel import Babel
 from dotenv import load_dotenv
+import time
+from collections import defaultdict, deque
+
+# Rate Limiter Implementation (inline)
+class RateLimiter:
+    def __init__(self):
+        self.requests = defaultdict(lambda: defaultdict(deque))
+        self.limits = {
+            'default': (30, 60),
+            'ticket_details': (10, 30),
+            'ticket_updates': (5, 30),
+            'worker_history': (5, 30),
+        }
+    
+    def is_allowed(self, user_id, endpoint_key='default'):
+        now = time.time()
+        max_requests, window = self.limits.get(endpoint_key, self.limits['default'])
+        user_requests = self.requests[user_id][endpoint_key]
+        
+        while user_requests and user_requests[0] < now - window:
+            user_requests.popleft()
+        
+        if len(user_requests) >= max_requests:
+            return False
+        
+        user_requests.append(now)
+        return True
+
+rate_limiter = RateLimiter()
+
+def rate_limit(endpoint_key='default', error_message=None):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            user_id = session.get('user_id', request.remote_addr)
+            
+            if not rate_limiter.is_allowed(user_id, endpoint_key):
+                message = error_message or "Too many requests. Please wait before trying again."
+                return jsonify({'error': message}), 429
+            
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+def debounce_requests(cooldown_seconds=1):
+    last_requests = {}
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            user_id = session.get('user_id', request.remote_addr)
+            endpoint = f"{request.endpoint}:{user_id}"
+            now = time.time()
+            
+            if endpoint in last_requests:
+                time_since_last = now - last_requests[endpoint]
+                if time_since_last < cooldown_seconds:
+                    return jsonify({'error': f'Please wait {cooldown_seconds} second(s) between requests'}), 429
+            
+            last_requests[endpoint] = now
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
 
 # Load environment variables from .env file
 load_dotenv()
@@ -1964,6 +2026,7 @@ def admin_reports():
 @app.route('/api/support/ticket/<int:ticket_id>', methods=['GET'])
 @login_required
 @role_required('Support')
+@rate_limit('ticket_details', 'Too many requests for ticket details. Please wait.')
 def get_ticket_details(ticket_id):
     """
     API endpoint to get all details for a single ticket, including phone,
@@ -2092,6 +2155,8 @@ def update_ticket_properties(ticket_id):
 @app.route('/api/support/ticket/<int:ticket_id>/updates', methods=['POST'])
 @login_required
 @role_required('Support')
+@rate_limit('ticket_updates', 'Too many updates posted. Please wait before posting another update.')
+@debounce_requests(2)  # Minimum 2 seconds between updates
 def add_ticket_update(ticket_id):
     """
     API endpoint for Support to post a new update (comment) to a ticket.
@@ -3235,6 +3300,7 @@ def get_phone_history(phone_id):
 @app.route('/api/support/worker_history/<int:worker_id>', methods=['GET'])
 @login_required
 @role_required('Support')
+@rate_limit('worker_history', 'Too many requests for worker history. Please wait.')
 def get_worker_history(worker_id):
     """
     API endpoint to get the ticket and assignment history for a specific worker.

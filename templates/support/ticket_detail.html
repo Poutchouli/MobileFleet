@@ -158,6 +158,7 @@ function submitSwapNote() {
     fetch(`/api/support/ticket/${ticketId}/initiate_swap`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify({ note: note })
     })
     .then(res => res.json().then(data => ({ ok: res.ok, data })))
@@ -165,10 +166,8 @@ function submitSwapNote() {
         if (!ok) throw new Error(data.error);
         closeSwapNoteModal();
         showToast(data.message);
-        // Refresh the page to show the new update
-        if (window.fetchAndRenderTicket) {
-            window.fetchAndRenderTicket();
-        }
+        // Refresh the page to show the new update (debounced)
+        debouncedRefresh();
     })
     .catch(error => {
         showToast(error.message, true);
@@ -196,6 +195,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const quickActionsBody = document.getElementById('quick-actions-body');
 
     let allSupportUsers = [];
+    
+    // Anti-flooding protection
+    let isRefreshing = false;
+    let refreshDebounceTimer = null;
+    let requestQueue = new Set();
+
+    // Debounced refresh function to prevent request flooding
+    function debouncedRefresh() {
+        if (refreshDebounceTimer) {
+            clearTimeout(refreshDebounceTimer);
+        }
+        refreshDebounceTimer = setTimeout(() => {
+            if (!isRefreshing) {
+                fetchAndRenderTicket();
+            }
+        }, 300); // Wait 300ms before executing
+    }
 
     function formatDateTime(isoString) {
         if (!isoString) return 'N/A';
@@ -204,8 +220,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Make fetchAndRenderTicket globally accessible for modal functions
     window.fetchAndRenderTicket = async function() {
+        // Prevent concurrent requests
+        if (isRefreshing) {
+            console.log('Already refreshing, skipping duplicate request');
+            return;
+        }
+        
+        isRefreshing = true;
+        const requestId = `ticket-${ticketId}-${Date.now()}`;
+        requestQueue.add(requestId);
+        
         try {
-            const response = await fetch(`/api/support/ticket/${ticketId}`);
+            const response = await fetch(`/api/support/ticket/${ticketId}`, {
+                credentials: 'same-origin'
+            });
             if (!response.ok) throw new Error('Ticket not found or access denied.');
             const data = await response.json();
             
@@ -219,6 +247,9 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             showToast(error.message, true);
             ticketHeader.innerHTML = `<div class="text-center p-8 text-red-500">${error.message}</div>`;
+        } finally {
+            isRefreshing = false;
+            requestQueue.delete(requestId);
         }
     }
 
@@ -271,7 +302,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (allSupportUsers.length === 0) {
             try {
-                const usersRes = await fetch('/api/support/users');
+                const usersRes = await fetch('/api/support/users', {
+                    credentials: 'same-origin'
+                });
                 const allUsers = await usersRes.json();
                 allSupportUsers = allUsers; // Already filtered to Support role in API
             } catch (e) {
@@ -324,11 +357,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     const response = await fetch(`/api/support/ticket/${ticketId}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
+                        credentials: 'same-origin',
                         body: JSON.stringify(updatePayload)
                     });
                     if (!response.ok) throw new Error('Failed to update ticket properties.');
                     showToast('Ticket properties updated.');
-                    fetchAndRenderTicket();
+                    debouncedRefresh(); // Use debounced refresh instead of direct call
                 } catch (error) {
                     showToast(error.message, true);
                 }
@@ -403,13 +437,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch(`/api/support/ticket/${ticketId}/updates`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
                 body: JSON.stringify(updateData)
             });
             if (!response.ok) throw new Error('Failed to post update.');
             
             showToast('Update posted successfully!');
             updateForm.reset();
-            fetchAndRenderTicket(); // Refresh the whole view
+            debouncedRefresh(); // Use debounced refresh instead of direct call
         } catch (error) {
             showToast(error.message, true);
         }
@@ -426,8 +461,19 @@ document.addEventListener('DOMContentLoaded', function() {
             historyElement.innerHTML = '<p class="text-sm text-gray-500">No worker assigned to this phone.</p>';
             return;
         }
+        
+        // Prevent duplicate worker history requests
+        const requestKey = `worker-history-${workerId}`;
+        if (requestQueue.has(requestKey)) {
+            console.log('Worker history request already in progress, skipping');
+            return;
+        }
+        requestQueue.add(requestKey);
+        
         try {
-            const response = await fetch(`/api/support/worker_history/${workerId}`);
+            const response = await fetch(`/api/support/worker_history/${workerId}`, {
+                credentials: 'same-origin'
+            });
             if (!response.ok) throw new Error('Could not load worker history.');
             const historyData = await response.json();
             renderWorkerHistory(historyData);
@@ -436,6 +482,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (historyElement) {
                 historyElement.innerHTML = `<p class="text-sm text-red-500">${error.message}</p>`;
             }
+        } finally {
+            requestQueue.delete(requestKey);
         }
     }
 

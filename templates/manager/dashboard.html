@@ -103,7 +103,9 @@
 
         async function fetchTeamStatus() {
             try {
-                const response = await fetch('/api/manager/team_status');
+                const response = await fetch('/api/manager/team_status', {
+                    credentials: 'same-origin'
+                });
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.error || 'Failed to fetch team status');

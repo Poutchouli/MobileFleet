@@ -10,6 +10,7 @@ La vérification et l'amélioration des traductions de l'interface utilisateur p
 - ✅ **Dossier translations/nl/** supprimé
 - ✅ **Configuration dans main.py** mise à jour
 - ✅ **Sélecteur de langue dans base.html** nettoyé
+- ✅ **Sélecteur de langue dans login.html** nettoyé
 - ✅ **Configuration Babel** mise à jour
 
 ## 🔧 CONFIGURATION LINGUISTIQUE FINALE
@@ -28,7 +29,7 @@ def get_locale():
     return request.accept_languages.best_match(app.config['LANGUAGES']) or 'fr'
 ```
 
-### Sélecteur de Langue (base.html)
+### Sélecteur de Langue (base.html et login.html)
 ```html
 <div class="flex items-center gap-x-2 text-sm text-gray-500">
     <span class="text-gray-400">{{ _('Language') }}:</span>
@@ -152,6 +153,7 @@ docker-compose restart web
 - ✅ **Traductions compilées**: messages.mo générés
 - ✅ **Configuration**: Français par défaut, Anglais en option
 - ✅ **Interface**: Néerlandais complètement supprimé
+- ✅ **Page de login**: Sélecteur NL supprimé (FR|EN uniquement)
 
 ## 📈 AMÉLIORATION CONTINUE
 
