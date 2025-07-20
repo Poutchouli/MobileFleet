@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}CSV Import Wizard{% endblock %}
+{% block title %}{{ _('CSV Import Wizard') }}{% endblock %}
 
-{% block page_title %}CSV Import Wizard{% endblock %}
+{% block page_title %}{{ _('CSV Import Wizard') }}{% endblock %}
 
 {% block content %}
 <!-- Progress Indicator -->
@@ -10,58 +10,59 @@
     <div class="grid grid-cols-4 gap-4 text-center">
         <div class="step-indicator active" id="step1-indicator">
             <div class="step-number">1</div>
-            <div class="step-label">Upload File</div>
+            <div class="step-label">{{ _('Upload File') }}</div>
         </div>
         <div class="step-indicator" id="step2-indicator">
             <div class="step-number">2</div>
-            <div class="step-label">Preview & Select</div>
+            <div class="step-label">{{ _('Preview & Select') }}</div>
         </div>
         <div class="step-indicator" id="step3-indicator">
             <div class="step-number">3</div>
-            <div class="step-label">Map Columns</div>
+            <div class="step-label">{{ _('Map Columns') }}</div>
         </div>
         <div class="step-indicator" id="step4-indicator">
             <div class="step-number">4</div>
-            <div class="step-label">Import</div>
+            <div class="step-label">{{ _('Import') }}</div>
         </div>
     </div>
 </div>
 
 <!-- Step 1: File Upload -->
 <div class="custom-card" id="step1-section">
-    <h2 class="card-title mb-4">Step 1: Upload CSV File</h2>
+    <h2 class="card-title mb-4">{{ _('Step 1: Upload CSV File') }}</h2>
     <div class="upload-area border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-indigo-500 hover:bg-gray-50 transition-colors" id="upload-area">
-        <p class="text-gray-500 mb-4">Select or drag your CSV file here.</p>
+        <p class="text-gray-500 mb-4">{{ _('Select or drag your CSV file here.') }}</p>
         <input type="file" id="csv-file-input" class="hidden" accept=".csv">
-        <button type="button" class="btn btn-primary" onclick="document.getElementById('csv-file-input').click()">Choose File</button>
+        <button type="button" class="btn btn-primary" onclick="document.getElementById('csv-file-input').click()">{{ _('Choose File') }}</button>
     </div>
     <div class="mt-4 text-center hidden" id="upload-progress">
-        <p class="mt-2 text-gray-600">Processing file...</p>
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+        <p class="mt-2 text-gray-600">{{ _('Processing file...') }}</p>
     </div>
 </div>
 
 <!-- Step 2: Preview and Table Selection -->
 <div class="custom-card hidden" id="step2-section">
-    <h2 class="card-title mb-4">Step 2: Preview Data & Select Target Table</h2>
+    <h2 class="card-title mb-4">{{ _('Step 2: Preview Data & Select Target Table') }}</h2>
     <div class="mb-4">
-        <label for="target-table-select" class="custom-label">Select Target Table:</label>
+        <label for="target-table-select" class="custom-label">{{ _('Select Target Table:') }}</label>
         <select class="custom-select" id="target-table-select">
-            <option value="">-- Choose a table --</option>
+            <option value="">{{ _('-- Choose a table --') }}</option>
         </select>
     </div>
     
     <!-- Table Fields Information -->
     <div class="mb-6 hidden" id="table-fields-section">
-        <h3 class="text-lg font-medium mb-3">Target Table Fields:</h3>
+        <h3 class="text-lg font-medium mb-3">{{ _('Target Table Fields:') }}</h3>
         <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
             <div class="overflow-x-auto">
                 <table class="min-w-full table-auto">
                     <thead>
                         <tr class="bg-gray-100">
-                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Field Name</th>
-                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data Type</th>
-                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Required</th>
-                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Field Name') }}</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Data Type') }}</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Required') }}</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Notes') }}</th>
                         </tr>
                     </thead>
                     <tbody id="table-fields-body" class="bg-white divide-y divide-gray-200">
@@ -70,12 +71,12 @@
                 </table>
             </div>
             <div class="mt-3 text-sm text-gray-600">
-                <p><strong>Note:</strong> Primary key fields are automatically generated and don't need to be included in your CSV.</p>
+                <p><strong>{{ _('Note:') }}</strong> {{ _('Primary key fields are automatically generated and don\'t need to be included in your CSV.') }}</p>
             </div>
         </div>
     </div>
     
-    <h3 class="text-lg font-medium mb-3">Data Preview (First 5 rows):</h3>
+    <h3 class="text-lg font-medium mb-3">{{ _('Data Preview (First 5 rows):') }}</h3>
     <div class="overflow-x-auto max-h-96">
         <table class="custom-table" id="preview-table">
             <thead id="preview-headers"></thead>
@@ -83,15 +84,15 @@
         </table>
     </div>
     <div class="flex justify-between mt-6">
-        <button type="button" class="btn btn-secondary" onclick="resetWizard()">Back to Upload</button>
-        <button type="button" class="btn btn-primary" id="proceed-to-mapping" disabled>Proceed to Column Mapping</button>
+        <button type="button" class="btn btn-secondary" onclick="resetWizard()">{{ _('Back to Upload') }}</button>
+        <button type="button" class="btn btn-primary" id="proceed-to-mapping" disabled>{{ _('Proceed to Column Mapping') }}</button>
     </div>
 </div>
 
 <!-- Step 3: Column Mapping -->
 <div class="custom-card hidden" id="step3-section">
-    <h2 class="card-title mb-4">Step 3: Map CSV Columns to Database Fields</h2>
-    <p class="text-gray-600 mb-4">Map each CSV column to the corresponding database field. Select one column as the merge key for data updates.</p>
+    <h2 class="card-title mb-4">{{ _('Step 3: Map CSV Columns to Database Fields') }}</h2>
+    <p class="text-gray-600 mb-4">{{ _('Map each CSV column to the corresponding database field. Select one column as the merge key for data updates.') }}</p>
     
     <!-- Quick mapping suggestions -->
     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
@@ -99,11 +100,11 @@
             <svg class="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
-            <h4 class="text-sm font-medium text-blue-800">Auto-mapping Tips</h4>
+            <h4 class="text-sm font-medium text-blue-800">{{ _('Auto-mapping Tips') }}</h4>
         </div>
-        <p class="text-sm text-blue-700 mb-2">Columns with similar names have been automatically matched. Review and adjust as needed.</p>
+        <p class="text-sm text-blue-700 mb-2">{{ _('Columns with similar names have been automatically matched. Review and adjust as needed.') }}</p>
         <button type="button" id="auto-map-btn" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
-            Re-run Auto-mapping
+            {{ _('Re-run Auto-mapping') }}
         </button>
     </div>
     
@@ -111,26 +112,26 @@
         <table class="custom-table">
             <thead>
                 <tr>
-                    <th>CSV Column</th>
-                    <th>Database Field</th>
-                    <th>Field Info</th>
-                    <th>Use as Merge Key</th>
+                    <th>{{ _('CSV Column') }}</th>
+                    <th>{{ _('Database Field') }}</th>
+                    <th>{{ _('Field Info') }}</th>
+                    <th>{{ _('Use as Merge Key') }}</th>
                 </tr>
             </thead>
             <tbody id="column-mapping-body"></tbody>
         </table>
     </div>
     <div class="flex justify-between mt-6">
-        <button type="button" class="btn btn-secondary" onclick="showStep(2)">Back to Preview</button>
-        <button type="button" class="btn btn-primary" id="run-import-btn">Run Import</button>
+        <button type="button" class="btn btn-secondary" onclick="showStep(2)">{{ _('Back to Preview') }}</button>
+        <button type="button" class="btn btn-primary" id="run-import-btn">{{ _('Run Import') }}</button>
     </div>
 </div>
 
 <!-- Step 4: Import Progress and Results -->
 <div class="custom-card hidden" id="step4-section">
-    <h2 class="card-title mb-4">Step 4: Import Results</h2>
+    <h2 class="card-title mb-4">{{ _('Step 4: Import Results') }}</h2>
     <div id="import-progress" class="text-center">
-        <p class="mt-4 text-lg text-gray-600">Importing data, please wait...</p>
+        <p class="mt-4 text-lg text-gray-600">{{ _('Importing data, please wait...') }}</p>
     </div>
     <div class="hidden" id="import-results"></div>
 </div>
@@ -148,6 +149,40 @@
 
 {% block scripts %}
 <script>
+    // Translation variables for JavaScript
+    const translations = {
+        primaryKeyAutoGenerated: "{{ _('Primary Key (auto-generated)') }}",
+        hasDefaultValue: "{{ _('Has default value') }}",
+        required: "{{ _('Required') }}",
+        optional: "{{ _('Optional') }}",
+        chooseTable: "{{ _('-- Choose a table --') }}",
+        doNotImport: "{{ _('Do not import') }}",
+        autoGenerated: "{{ _('(auto-generated)') }}",
+        noFieldSelected: "{{ _('No field selected') }}",
+        errorPrefix: "{{ _('Error:') }}",
+        errorFetchingSchema: "{{ _('Error fetching schema:') }}",
+        duplicateColumn: "{{ _('Duplicate column mapping:') }}",
+        mustSelectMergeKey: "{{ _('The selected merge key must be mapped to a database column.') }}",
+        allColumnsIgnored: "{{ _('All columns are set to \"Do not import\". Please map at least one column.') }}",
+        errorDuringImport: "{{ _('Error during import:') }}",
+        importStarted: "{{ _('Import started...') }}",
+        importCompleted: "{{ _('Import completed!') }}",
+        processingRows: "{{ _('Processing rows...') }}",
+        importResults: "{{ _('Import Results') }}",
+        importSuccessful: "{{ _('Import was successful!') }}",
+        importPartiallySuccessful: "{{ _('Import was partially successful') }}",
+        importFailed: "{{ _('Import failed') }}",
+        rowsProcessed: "{{ _('Rows processed:') }}",
+        rowsInserted: "{{ _('Rows inserted:') }}",
+        rowsUpdated: "{{ _('Rows updated:') }}",
+        rowsSkipped: "{{ _('Rows skipped:') }}",
+        errors: "{{ _('Errors:') }}",
+        noErrors: "{{ _('No errors encountered.') }}",
+        errorDetails: "{{ _('Error Details:') }}",
+        startNewImport: "{{ _('Start New Import') }}",
+        goBack: "{{ _('Go Back') }}"
+    };
+
     let csvData = '';
     let csvHeaders = [];
     let selectedTable = '';
@@ -215,7 +250,7 @@
             };
             reader.readAsText(file);
         } catch (error) {
-            alert(`Error: ${error.message}`);
+            alert(`${translations.errorPrefix} ${error.message}`);
         } finally {
             document.getElementById('upload-progress').classList.add('hidden');
         }
@@ -230,7 +265,7 @@
 
     function populateTableSelect(tables) {
         const select = document.getElementById('target-table-select');
-        select.innerHTML = '<option value="">-- Choose a table --</option>';
+        select.innerHTML = `<option value="">${translations.chooseTable}</option>`;
         tables.forEach(table => select.innerHTML += `<option value="${table}">${table}</option>`);
     }
 
@@ -243,10 +278,10 @@
             const notes = [];
             
             if (column.primary_key) {
-                notes.push('Primary Key (auto-generated)');
+                notes.push(translations.primaryKeyAutoGenerated);
             }
             if (column.default) {
-                notes.push('Has default value');
+                notes.push(translations.hasDefaultValue);
             }
             
             const notesText = notes.length > 0 ? notes.join(', ') : '-';
@@ -263,7 +298,7 @@
                     <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                         isRequired ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
                     }">
-                        ${isRequired ? 'Required' : 'Optional'}
+                        ${isRequired ? translations.required : translations.optional}
                     </span>
                 </td>
                 <td class="px-3 py-2 text-sm text-gray-500">${notesText}</td>
@@ -300,7 +335,7 @@
             proceedBtn.disabled = false;
             fieldsSection.classList.remove('hidden');
         } catch (error) {
-            alert(`Error fetching schema: ${error.message}`);
+            alert(`${translations.errorFetchingSchema} ${error.message}`);
             proceedBtn.disabled = true;
             fieldsSection.classList.add('hidden');
         }
@@ -317,20 +352,20 @@
                 const columnInfo = dbColumnsInfo.find(info => info.name === col);
                 const isSelected = col === bestMatch ? 'selected' : '';
                 const disabled = columnInfo && columnInfo.primary_key ? 'disabled' : '';
-                const label = columnInfo && columnInfo.primary_key ? `${col} (auto-generated)` : col;
+                const label = columnInfo && columnInfo.primary_key ? `${col} ${translations.autoGenerated}` : col;
                 return `<option value="${col}" ${isSelected} ${disabled}>${label}</option>`;
             }).join('');
             
             // Get field info for the selected column
             const selectedColumnInfo = bestMatch ? dbColumnsInfo.find(info => info.name === bestMatch) : null;
-            const fieldInfoHtml = selectedColumnInfo ? getFieldInfoHtml(selectedColumnInfo) : '<span class="text-gray-400">No field selected</span>';
+            const fieldInfoHtml = selectedColumnInfo ? getFieldInfoHtml(selectedColumnInfo) : `<span class="text-gray-400">${translations.noFieldSelected}</span>`;
             
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td class="font-medium">${csvHeader}</td>
                 <td>
                     <select class="custom-select column-select" id="db-column-${index}" data-csv-header="${csvHeader}">
-                        <option value="">Do not import</option>
+                        <option value="">${translations.doNotImport}</option>
                         ${dbOptions}
                     </select>
                 </td>
@@ -379,14 +414,14 @@
         const badges = [];
         
         if (columnInfo.primary_key) {
-            badges.push('<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">Primary Key</span>');
+            badges.push(`<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">${translations.primaryKeyAutoGenerated}</span>`);
         }
         
         const isRequired = !columnInfo.nullable && !columnInfo.primary_key && !columnInfo.default;
         if (isRequired) {
-            badges.push('<span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded">Required</span>');
+            badges.push(`<span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded">${translations.required}</span>`);
         } else {
-            badges.push('<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">Optional</span>');
+            badges.push(`<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">${translations.optional}</span>`);
         }
         
         return `
@@ -408,7 +443,7 @@
                 fieldInfoContainer.innerHTML = getFieldInfoHtml(columnInfo);
             }
         } else {
-            fieldInfoContainer.innerHTML = '<span class="text-gray-400">No field selected</span>';
+            fieldInfoContainer.innerHTML = `<span class="text-gray-400">${translations.noFieldSelected}</span>`;
         }
     }
 
@@ -436,7 +471,7 @@
         });
 
         if (!mergeKeyDb) {
-            alert('The selected merge key must be mapped to a database column.');
+            alert(translations.mustSelectMergeKey);
             return;
         }
 
@@ -454,9 +489,9 @@
             const result = await response.json();
             if (!response.ok) throw new Error(result.error);
             
-            resultsDiv.innerHTML = `<p class="text-green-700">${result.message}</p><p>Inserted: ${result.inserted}, Updated: ${result.updated}</p><button class="btn btn-secondary mt-4" onclick="resetWizard()">Import Another File</button>`;
+            resultsDiv.innerHTML = `<p class="text-green-700">${result.message}</p><p>${translations.rowsInserted} ${result.inserted}, ${translations.rowsUpdated} ${result.updated}</p><button class="btn btn-secondary mt-4" onclick="resetWizard()">${translations.startNewImport}</button>`;
         } catch (error) {
-            resultsDiv.innerHTML = `<p class="text-red-700">Error: ${error.message}</p><button class="btn btn-secondary mt-4" onclick="showStep(3)">Go Back</button>`;
+            resultsDiv.innerHTML = `<p class="text-red-700">${translations.errorPrefix} ${error.message}</p><button class="btn btn-secondary mt-4" onclick="showStep(3)">${translations.goBack}</button>`;
         } finally {
             document.getElementById('import-progress').classList.add('hidden');
             resultsDiv.classList.remove('hidden');

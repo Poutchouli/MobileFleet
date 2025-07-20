@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Manage Phone Requests') }}{% endblock %}
+{% block page_title %}{{ _('Manage Phone Requests') }}{% endblock %}
+
+{% block content %}
+<div class="custom-card">
+    <div class="card-header">
+        <h2 class="card-title">{{ _('Incoming Phone Requests') }}</h2>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>{{ _('Worker') }}</th>
+                    <th>{{ _('Sector') }}</th>
+                    <th>{{ _('Date Required') }}</th>
+                    <th>{{ _('Requested By') }}</th>
+                    <th>{{ _('Status') }}</th>
+                    <th class="text-right">{{ _('Actions') }}</th>
+                </tr>
+            </thead>
+            <tbody id="requests-table-body"></tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Translation variables for JavaScript
+    const translations = {
+        noRequestsFound: "{{ _('No phone requests found.') }}",
+        noActionsAvailable: "{{ _('No actions available') }}",
+        approve: "{{ _('Approve') }}",
+        deny: "{{ _('Deny') }}",
+        fulfillViaProvisioning: "{{ _('Fulfill via Provisioning') }}",
+        confirmApprove: "{{ _('Are you sure you want to approve this request?') }}",
+        confirmDeny: "{{ _('Are you sure you want to deny this request?') }}",
+        errorPrefix: "{{ _('Error:') }}"
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const tableBody = document.getElementById('requests-table-body');
+
+        async function fetchRequests() {
+            try {
+                const response = await fetch('/api/admin/phone_requests');
+                const requests = await response.json();
+                renderTable(requests);
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        function renderTable(requests) {
+            tableBody.innerHTML = '';
+            if (requests.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4">${translations.noRequestsFound}</td></tr>`;
+                return;
+            }
+            requests.forEach(req => {
+                let actionsHtml = `<span class="text-gray-400">${translations.noActionsAvailable}</span>`;
+                if (req.status === 'Pending') {
+                    actionsHtml = `
+                        <button class="btn-link text-green-600 status-btn" data-id="${req.id}" data-status="Approved">${translations.approve}</button>
+                        <button class="btn-link text-red-600 ml-4 status-btn" data-id="${req.id}" data-status="Denied">${translations.deny}</button>
+                    `;
+                } else if (req.status === 'Approved') {
+                    actionsHtml = `<a href="/admin/provision?worker_id=${req.worker_id}" class="btn-link">${translations.fulfillViaProvisioning}</a>`;
+                }
+
+                const row = `
+                    <tr>
+                        <td class="font-medium">${req.worker_name}</td>
+                        <td>${req.secteur_name}</td>
+                        <td>${new Date(req.required_by_date).toLocaleDateString()}</td>
+                        <td>${req.requested_by}</td>
+                        <td><span class="status-badge ${req.status.toLowerCase()}">${req.status}</span></td>
+                        <td class="text-right">${actionsHtml}</td>
+                    </tr>
+                `;
+                tableBody.insertAdjacentHTML('beforeend', row);
+            });
+        }
+
+        tableBody.addEventListener('click', async function(e) {
+            if (e.target.classList.contains('status-btn')) {
+                const button = e.target;
+                const requestId = button.dataset.id;
+                const newStatus = button.dataset.status;
+                const confirmMessage = newStatus === 'Approved' ? translations.confirmApprove : translations.confirmDeny;
+
+                if (confirm(confirmMessage)) {
+                    try {
+                        const response = await fetch(`/api/admin/phone_requests/${requestId}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ status: newStatus })
+                        });
+                        const result = await response.json();
+                        if (!response.ok) throw new Error(result.error);
+                        fetchRequests(); // Refresh table
+                    } catch (error) {
+                        alert(`${translations.errorPrefix} ${error.message}`);
+                    }
+                }
+            }
+        });
+
+        fetchRequests();
+    });
+</script>
+{% endblock %}

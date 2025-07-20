@@ -1,26 +1,26 @@
 {% extends "base.html" %}
 
-{% block title %}Manage Phones - Admin{% endblock %}
+{% block title %}{{ _('Manage Phones') }} - {{ _('Admin') }}{% endblock %}
 
-{% block page_title %}Manage Phones{% endblock %}
+{% block page_title %}{{ _('Manage Phones') }}{% endblock %}
 
 {% block content %}
 <div class="custom-card">
     <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-semibold">Phone Inventory</h2>
+        <h2 class="text-xl font-semibold">{{ _('Phone Inventory') }}</h2>
         <div class="flex items-center gap-x-4">
-            <a href="{{ url_for('admin_provision_wizard') }}" class="btn btn-secondary">Provision Phone</a>
-            <button id="add-phone-btn" class="btn btn-primary">Add New Phone</button>
+            <a href="{{ url_for('admin_provision_wizard') }}" class="btn btn-secondary">{{ _('Provision Phone') }}</a>
+            <button id="add-phone-btn" class="btn btn-primary">{{ _('Add New Phone') }}</button>
         </div>
     </div>
     <table class="custom-table">
         <thead>
             <tr>
-                <th>Asset Tag</th>
-                <th>Model</th>
-                <th>IMEI</th>
-                <th>Status</th>
-                <th class="text-right">Actions</th>
+                <th>{{ _('Asset Tag') }}</th>
+                <th>{{ _('Model') }}</th>
+                <th>{{ _('IMEI') }}</th>
+                <th>{{ _('Status') }}</th>
+                <th class="text-right">{{ _('Actions') }}</th>
             </tr>
         </thead>
         <tbody id="phones-table-body">

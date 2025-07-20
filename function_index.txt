@@ -1,0 +1,404 @@
+====================================================================================================
+FLASK APPLICATION FUNCTION INDEX
+====================================================================================================
+Generated: 2025-07-20 01:03:55
+Total Functions: 86
+
+
+ADMIN FUNCTIONS (25 functions)
+--------------------------------------------------------------------------------
+📍 admin_dashboard() [Lines 332-333]
+   📄 Description: No description available
+   📤 Returns: HTML
+
+📍 admin_import() [Lines 2740-2742]
+   📄 Description: Serves the CSV import wizard page.
+   📤 Returns: HTML
+
+📍 admin_import_csv() [Lines 385-387]
+   📄 Description: Serves the CSV data import page.
+   📤 Returns: HTML
+
+📍 admin_phone_numbers() [Lines 350-352]
+   📄 Description: Serves the page for managing phone numbers.
+   📤 Returns: HTML
+
+📍 admin_phones() [Lines 338-339]
+   📄 Description: No description available
+   📤 Returns: HTML
+
+📍 admin_provision_wizard() [Lines 378-380]
+   📄 Description: Serves the multi-step phone provisioning wizard page.
+   📤 Returns: HTML
+
+📍 admin_reports() [Lines 1795-1798]
+   📄 Description: Serves the main reporting page for Administrators.
+   📤 Returns: HTML
+
+📍 admin_roles() [Lines 371-373]
+   📄 Description: Serves the page for managing roles.
+   📤 Returns: HTML
+
+📍 admin_sims() [Lines 344-345]
+   📄 Description: No description available
+   📤 Returns: HTML
+
+📍 admin_users() [Lines 364-366]
+   📄 Description: Serves the page for managing users.
+   📤 Returns: HTML
+
+📍 admin_workers() [Lines 357-359]
+   📄 Description: Serves the page for managing workers.
+   📤 Returns: HTML
+
+📍 handle_phone() [Lines 1310-1335]
+   📝 Params: item_id
+   📄 Description: No description available
+   📤 Returns: JSON
+
+📍 handle_phone_number() [Lines 1478-1550]
+   📝 Params: number_id
+   📄 Description: API endpoint to get, update, or delete a specific phone number.
+   📤 Returns: Unknown
+
+📍 handle_phone_numbers() [Lines 1404-1473]
+   📄 Description: API endpoint to get all phone numbers or create a new one.
+   📤 Returns: Unknown
+
+📍 handle_phones() [Lines 1284-1305]
+   📄 Description: No description available
+   📤 Returns: JSON
+
+📍 handle_role() [Lines 593-635]
+   📝 Params: role_id
+   📄 Description: API endpoint to get or update a specific role.
+   📤 Returns: JSON
+
+📍 handle_sim() [Lines 1369-1397]
+   📝 Params: item_id
+   📄 Description: No description available
+   📤 Returns: JSON
+
+📍 handle_sims() [Lines 1341-1364]
+   📄 Description: No description available
+   📤 Returns: JSON
+
+📍 import_csv() [Lines 826-941]
+   📄 Description: API endpoint to handle CSV file upload and database processing.
+   📤 Returns: JSON
+
+📍 import_get_schema() [Lines 2796-2856]
+   📄 Description: Returns the column names and details for a given table.
+   📤 Returns: JSON
+
+📍 import_preview() [Lines 2747-2791]
+   📄 Description: Handles CSV upload, reads headers and first 5 rows for preview.
+   📤 Returns: JSON
+
+📍 import_process() [Lines 2861-2957]
+   📄 Description: Processes the CSV data based on user-defined mappings.
+   📤 Returns: JSON
+
+📍 provision_finalize() [Lines 772-819]
+   📄 Description: Finalizes the provisioning process, creating the assignment and logs.
+   📤 Returns: JSON
+
+📍 provision_get_available_assets() [Lines 747-767]
+   📄 Description: Gets lists of available SIMs and Workers for assignment.
+   📤 Returns: JSON
+
+📍 provision_validate_phone() [Lines 719-742]
+   📄 Description: Validates that a phone exists and is in stock for provisioning.
+   📤 Returns: JSON
+
+
+API FUNCTIONS (21 functions)
+--------------------------------------------------------------------------------
+📍 create_ticket() [Lines 1706-1772]
+   📄 Description: API endpoint for Managers to create new support tickets.
+   📤 Returns: JSON
+
+📍 create_user() [Lines 478-520]
+   📄 Description: API endpoint to create a new user.
+   📤 Returns: JSON
+
+📍 create_worker() [Lines 1587-1616]
+   📄 Description: API endpoint to create a new worker.
+   📤 Returns: JSON
+
+📍 delete_worker() [Lines 1643-1650]
+   📝 Params: worker_id
+   📄 Description: API endpoint to 'delete' a worker by setting their status to 'Inactive'.
+   📤 Returns: JSON
+
+📍 get_asset_lifecycle() [Lines 2428-2689]
+   📝 Params: identifier
+   📄 Description: Get complete lifecycle history for a phone by asset tag or serial number. This provides a chronological timeline of all events for auditing and tracking.
+   📤 Returns: Unknown
+
+📍 get_assignment_overview() [Lines 1988-2025]
+   📄 Description: Provides a comprehensive overview of all current assignments, joining workers, phones, SIMs, and phone numbers.
+   📤 Returns: Unknown
+
+📍 get_dashboard_charts() [Lines 2263-2376]
+   📄 Description: Provides chart data for interactive dashboard visualizations.
+   📤 Returns: Unknown
+
+📍 get_db() [Lines 194-205]
+   📄 Description: No description available
+   📤 Returns: Unknown
+
+📍 get_inventory_summary() [Lines 2163-2233]
+   📄 Description: Provides a comprehensive inventory summary with counts and availability.
+   📤 Returns: Unknown
+
+📍 get_locale() [Lines 31-36]
+   📄 Description: No description available
+   📤 Returns: Unknown
+
+📍 get_missing_data_report() [Lines 2032-2158]
+   📄 Description: Comprehensive report to identify missing or incomplete data across the system.
+   📤 Returns: Unknown
+
+📍 get_phone_history() [Lines 3047-3071]
+   📝 Params: phone_id
+   📄 Description: API endpoint to get the asset history log for a specific phone.
+   📤 Returns: Unknown
+
+📍 get_secteurs() [Lines 1557-1564]
+   📄 Description: API endpoint to get a list of all secteurs.
+   📤 Returns: JSON
+
+📍 get_summary_stats() [Lines 2240-2258]
+   📄 Description: Provides key summary statistics for the admin dashboard.
+   📤 Returns: JSON
+
+📍 get_users() [Lines 461-473]
+   📄 Description: API endpoint to get all users with role information.
+   📤 Returns: JSON
+
+📍 get_worker_assignments() [Lines 2381-2423]
+   📄 Description: Provides a list of all active workers and their currently assigned assets.
+   📤 Returns: Unknown
+
+📍 get_worker_history() [Lines 3076-3128]
+   📝 Params: worker_id
+   📄 Description: API endpoint to get the ticket and assignment history for a specific worker.
+   📤 Returns: Unknown
+
+📍 get_workers() [Lines 1569-1582]
+   📄 Description: API endpoint to get a list of all active workers with their sector name.
+   📤 Returns: JSON
+
+📍 update_ticket_properties() [Lines 1870-1928]
+   📝 Params: ticket_id
+   📄 Description: API endpoint for Support to update a ticket's core properties like status, priority, or assignment.
+   📤 Returns: Unknown
+
+📍 update_user() [Lines 525-588]
+   📝 Params: user_id
+   📄 Description: API endpoint to update an existing user.
+   📤 Returns: Unknown
+
+📍 update_worker() [Lines 1621-1638]
+   📝 Params: worker_id
+   📄 Description: API endpoint to update an existing worker.
+   📤 Returns: JSON
+
+
+AUTH FUNCTIONS (5 functions)
+--------------------------------------------------------------------------------
+📍 change_password() [Lines 641-712]
+   📄 Description: Allows users to change their own password. Requires current password validation for security.
+   📤 Returns: JSON
+
+📍 login() [Lines 245-291]
+   📄 Description: No description available
+   📤 Returns: HTML
+
+📍 login_required() [Lines 222-231]
+   📝 Params: f
+   📄 Description: No description available
+   📤 Returns: JSON
+
+📍 logout() [Lines 294-299]
+   📄 Description: No description available
+   📤 Returns: Redirect
+
+📍 profile() [Lines 324-326]
+   📄 Description: Serves the user profile page for password management.
+   📤 Returns: HTML
+
+
+INTEGRATION FUNCTIONS (4 functions)
+--------------------------------------------------------------------------------
+📍 create_phone_request() [Lines 3262-3293]
+   📄 Description: API endpoint for an Integration Manager to submit a new phone request.
+   📤 Returns: JSON
+
+📍 get_integration_requests() [Lines 3224-3257]
+   📄 Description: API endpoint to get all phone requests submitted by the current integration manager.
+   📤 Returns: Unknown
+
+📍 integration_dashboard() [Lines 399-401]
+   📄 Description: Serves the dashboard for Integration Managers to see their requests.
+   📤 Returns: HTML
+
+📍 integration_new_request() [Lines 406-408]
+   📄 Description: Serves the form for an Integration Manager to request a new phone.
+   📤 Returns: HTML
+
+
+MANAGER FUNCTIONS (11 functions)
+--------------------------------------------------------------------------------
+📍 add_manager_comment() [Lines 1171-1221]
+   📝 Params: ticket_id
+   📄 Description: API endpoint for managers to add comments to their tickets.
+   📤 Returns: JSON
+
+📍 get_manager_selectable_phones() [Lines 1038-1067]
+   📄 Description: API endpoint to get all phones assigned to workers under the current manager, formatted for ticket creation dropdown.
+   📤 Returns: Unknown
+
+📍 get_manager_team_status() [Lines 976-1033]
+   📄 Description: API endpoint to get the status of all workers and their assigned assets for the currently logged-in manager.
+   📤 Returns: Unknown
+
+📍 get_manager_ticket_details() [Lines 1112-1164]
+   📝 Params: ticket_id
+   📄 Description: API endpoint for a manager to get details for a specific ticket they reported. Internal notes are filtered out for security.
+   📤 Returns: JSON
+
+📍 get_manager_tickets() [Lines 1072-1107]
+   📄 Description: API endpoint to get all tickets submitted by the current manager.
+   📤 Returns: Unknown
+
+📍 manager_confirm_receipt() [Lines 3194-3217]
+   📝 Params: ticket_id
+   📄 Description: Allows a Manager to confirm receipt of a new phone and provide return details.
+   📤 Returns: JSON
+
+📍 manager_create_ticket() [Lines 967-969]
+   📄 Description: Serves the create ticket page for a manager.
+   📤 Returns: HTML
+
+📍 manager_dashboard() [Lines 946-948]
+   📄 Description: Serves the main dashboard for Managers.
+   📤 Returns: HTML
+
+📍 manager_ticket_detail() [Lines 960-962]
+   📝 Params: ticket_id
+   📄 Description: Serves the detailed ticket view page for a manager.
+   📤 Returns: HTML
+
+📍 manager_tickets() [Lines 953-955]
+   📄 Description: Serves the page for a manager to view their submitted tickets.
+   📤 Returns: HTML
+
+📍 resolve_manager_ticket() [Lines 1226-1276]
+   📝 Params: ticket_id
+   📄 Description: API endpoint for managers to mark their tickets as resolved.
+   📤 Returns: JSON
+
+
+OTHER FUNCTIONS (10 functions)
+--------------------------------------------------------------------------------
+📍 close_db() [Lines 208-212]
+   📝 Params: e=None
+   📄 Description: No description available
+   📤 Returns: Unknown
+
+📍 configure_logging() [Lines 159-188]
+   📄 Description: Configure structured logging for production use.
+   📤 Returns: Unknown
+
+📍 decorated_function() [Lines 236-238]
+   📄 Description: No description available
+   📤 Returns: JSON
+
+📍 decorator() [Lines 234-239]
+   📄 Description: No description available
+   📤 Returns: JSON
+
+📍 index() [Lines 310-320]
+   📄 Description: No description available
+   📤 Returns: Redirect
+
+📍 initiate_phone_swap() [Lines 3170-3189]
+   📝 Params: ticket_id
+   📄 Description: Logs that a replacement phone is being sent and sets ticket to Pending.
+   📤 Returns: JSON
+
+📍 manage_roles() [Lines 414-456]
+   📄 Description: API endpoint to get all roles or create a new role.
+   📤 Returns: JSON
+
+📍 migrate_timestamps() [Lines 2962-3042]
+   📄 Description: Migration endpoint to add timestamp columns to phones table.
+   📤 Returns: JSON
+
+📍 return_assignment() [Lines 2694-2733]
+   📝 Params: assignment_id
+   📄 Description: Handles the return of an asset from a worker. Sets the assignment's return_date, updates asset statuses, and logs the event.
+   📤 Returns: JSON
+
+📍 set_language() [Lines 302-306]
+   📝 Params: lang
+   📄 Description: No description available
+   📤 Returns: Redirect
+
+
+SUPPORT FUNCTIONS (8 functions)
+--------------------------------------------------------------------------------
+📍 add_ticket_update() [Lines 1933-1960]
+   📝 Params: ticket_id
+   📄 Description: API endpoint for Support to post a new update (comment) to a ticket.
+   📤 Returns: JSON
+
+📍 get_all_active_tickets() [Lines 1657-1699]
+   📄 Description: API endpoint for Support to get all tickets that are not yet solved or closed.
+   📤 Returns: Unknown
+
+📍 get_all_tickets_history() [Lines 3135-3165]
+   📄 Description: API endpoint for Support to get ALL tickets, including solved and closed.
+   📤 Returns: Unknown
+
+📍 get_support_users() [Lines 1965-1981]
+   📄 Description: API endpoint for Support role to get list of all support users for ticket assignment.
+   📤 Returns: JSON
+
+📍 get_ticket_details() [Lines 1805-1865]
+   📝 Params: ticket_id
+   📄 Description: API endpoint to get all details for a single ticket, including phone, worker, and all historical updates.
+   📤 Returns: Unknown
+
+📍 support_all_tickets() [Lines 1787-1790]
+   📄 Description: Serves the page for viewing all tickets, including history.
+   📤 Returns: HTML
+
+📍 support_dashboard() [Lines 392-394]
+   📄 Description: Serves the main helpdesk dashboard for Support staff.
+   📤 Returns: HTML
+
+📍 support_ticket_detail() [Lines 1779-1782]
+   📝 Params: ticket_id
+   📄 Description: Serves the detailed view page for a single support ticket.
+   📤 Returns: HTML
+
+
+UTILS FUNCTIONS (2 functions)
+--------------------------------------------------------------------------------
+📍 log_event() [Lines 215-219]
+   📝 Params: cursor, asset_type, asset_id, event_type, details
+   📄 Description: No description available
+   📤 Returns: Unknown
+
+📍 role_required() [Lines 233-241]
+   📝 Params: required_role
+   📄 Description: No description available
+   📤 Returns: JSON
+
+
+QUICK REFERENCE
+--------------------------------------------------------------------------------
+Route Functions:

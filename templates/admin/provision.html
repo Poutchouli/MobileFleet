@@ -91,6 +91,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const steps = Array.from(wizard.querySelectorAll('.wizard-step'));
     let currentStep = 0;
     let provisionData = {}; // To store data across steps
+    
+    // Check for URL parameters to pre-fill worker info
+    const urlParams = new URLSearchParams(window.location.search);
+    const prefillWorkerId = urlParams.get('worker_id');
 
     const toast = document.getElementById('toast');
     const toastMessage = document.getElementById('toast-message');
@@ -159,7 +163,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const workerSelect = document.getElementById('worker-select');
             workerSelect.innerHTML = '<option value="">Select a Worker...</option>';
             data.workers.forEach(worker => {
-                workerSelect.innerHTML += `<option value="${worker.id}">${worker.full_name} (${worker.worker_id})</option>`;
+                // Pre-select the worker if their ID was passed in the URL
+                const isSelected = worker.id.toString() === prefillWorkerId ? 'selected' : '';
+                workerSelect.innerHTML += `<option value="${worker.id}" ${isSelected}>${worker.full_name} (${worker.worker_id})</option>`;
             });
         } catch (error) {
             showToast('Could not load available assets.', true);

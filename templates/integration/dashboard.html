@@ -1,23 +1,23 @@
 {% extends "integration/base.html" %}
-{% block title %}My Phone Requests{% endblock %}
-{% block page_title %}My Phone Requests{% endblock %}
+{% block title %}{{ _('My Phone Requests') }}{% endblock %}
+{% block page_title %}{{ _('My Phone Requests') }}{% endblock %}
 
 {% block content %}
 <div class="custom-card">
     <div class="card-header">
-        <h2 class="card-title">My Phone Requests</h2>
-        <a href="{{ url_for('integration_new_request') }}" class="btn btn-primary">New Request</a>
+        <h2 class="card-title">{{ _('My Phone Requests') }}</h2>
+        <a href="{{ url_for('integration_new_request') }}" class="btn btn-primary">{{ _('New Request') }}</a>
     </div>
     <div class="overflow-x-auto">
         <table class="custom-table">
             <thead>
                 <tr>
-                    <th>Employee Name</th>
-                    <th>Department</th>
-                    <th>Position</th>
-                    <th>Urgency</th>
-                    <th>Status</th>
-                    <th>Submitted</th>
+                    <th>{{ _('Employee Name') }}</th>
+                    <th>{{ _('Department') }}</th>
+                    <th>{{ _('Position') }}</th>
+                    <th>{{ _('Urgency') }}</th>
+                    <th>{{ _('Status') }}</th>
+                    <th>{{ _('Submitted') }}</th>
                 </tr>
             </thead>
             <tbody id="requests-table-body"></tbody>

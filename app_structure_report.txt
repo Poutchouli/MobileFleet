@@ -1,0 +1,357 @@
+================================================================================
+FLASK APPLICATION STRUCTURE ANALYSIS
+================================================================================
+
+IMPORTS:
+----------------------------------------
+  import os
+  import csv
+  import io
+  import logging
+  from logging.handlers import RotatingFileHandler
+  import psycopg2
+  from psycopg2.extras import RealDictCursor
+  from functools import wraps
+  from werkzeug.security import check_password_hash
+  from flask import (
+  ... and 4 more imports
+
+ROUTES:
+----------------------------------------
+  /login ['GET', 'POST']
+    Function: login() [Line 244]
+    Preview: ...
+
+  /logout [['GET']]
+    Function: logout() [Line 293]
+    Preview: ...
+
+  /set_language/<lang> [['GET']]
+    Function: set_language() [Line 301]
+    Preview: ...
+
+  / [['GET']]
+    Function: index() [Line 308]
+    Preview: ...
+
+  /profile [['GET']]
+    Function: profile() [Line 322]
+    Preview: ...
+
+  /admin/dashboard [['GET']]
+    Function: admin_dashboard() [Line 329]
+    Preview: ...
+
+  /admin/phones [['GET']]
+    Function: admin_phones() [Line 335]
+    Preview: ...
+
+  /admin/sims [['GET']]
+    Function: admin_sims() [Line 341]
+    Preview: ...
+
+  /admin/phone-numbers [['GET']]
+    Function: admin_phone_numbers() [Line 347]
+    Preview: ...
+
+  /admin/workers [['GET']]
+    Function: admin_workers() [Line 354]
+    Preview: ...
+
+  /admin/users [['GET']]
+    Function: admin_users() [Line 361]
+    Preview: ...
+
+  /admin/roles [['GET']]
+    Function: admin_roles() [Line 368]
+    Preview: ...
+
+  /admin/provision [['GET']]
+    Function: admin_provision_wizard() [Line 375]
+    Preview: ...
+
+  /admin/import [['GET']]
+    Function: admin_import_csv() [Line 382]
+    Preview: ...
+
+  /support/dashboard [['GET']]
+    Function: support_dashboard() [Line 389]
+    Preview: ...
+
+  /integration/dashboard [['GET']]
+    Function: integration_dashboard() [Line 396]
+    Preview: ...
+
+  /integration/new_request [['GET']]
+    Function: integration_new_request() [Line 403]
+    Preview: ...
+
+  /api/roles ['GET', 'POST']
+    Function: manage_roles() [Line 411]
+    Preview: ...
+
+  /api/users ['GET']
+    Function: get_users() [Line 458]
+    Preview: ...
+
+  /api/users ['POST']
+    Function: create_user() [Line 475]
+    Preview: ...
+
+  /api/users/<int:user_id> ['PUT']
+    Function: update_user() [Line 522]
+    Preview: ...
+
+  /api/roles/<int:role_id> ['GET', 'PUT']
+    Function: handle_role() [Line 590]
+    Preview: ...
+
+  /api/profile/change_password ['POST']
+    Function: change_password() [Line 639]
+    Preview: ...
+
+  /api/provision/validate_phone ['POST']
+    Function: provision_validate_phone() [Line 716]
+    Preview: ...
+
+  /api/provision/available_assets ['GET']
+    Function: provision_get_available_assets() [Line 744]
+    Preview: ...
+
+  /api/provision/finalize ['POST']
+    Function: provision_finalize() [Line 769]
+    Preview: ...
+
+  /api/admin/import_csv ['POST']
+    Function: import_csv() [Line 823]
+    Preview: ...
+
+  /manager/dashboard [['GET']]
+    Function: manager_dashboard() [Line 943]
+    Preview: ...
+
+  /manager/tickets [['GET']]
+    Function: manager_tickets() [Line 950]
+    Preview: ...
+
+  /manager/ticket/<int:ticket_id> [['GET']]
+    Function: manager_ticket_detail() [Line 957]
+    Preview: ...
+
+  /manager/create_ticket [['GET']]
+    Function: manager_create_ticket() [Line 964]
+    Preview: ...
+
+  /api/manager/team_status ['GET']
+    Function: get_manager_team_status() [Line 973]
+    Preview: ...
+
+  /api/manager/selectable_phones ['GET']
+    Function: get_manager_selectable_phones() [Line 1035]
+    Preview: ...
+
+  /api/manager/tickets ['GET']
+    Function: get_manager_tickets() [Line 1069]
+    Preview: ...
+
+  /api/manager/ticket/<int:ticket_id> ['GET']
+    Function: get_manager_ticket_details() [Line 1109]
+    Preview: ...
+
+  /api/manager/ticket/<int:ticket_id>/comment ['POST']
+    Function: add_manager_comment() [Line 1168]
+    Preview: ...
+
+  /api/manager/ticket/<int:ticket_id>/resolve ['PUT']
+    Function: resolve_manager_ticket() [Line 1223]
+    Preview: ...
+
+  /api/phones ['GET', 'POST']
+    Function: handle_phones() [Line 1281]
+    Preview: ...
+
+  /api/phones/<int:item_id> ['GET', 'PUT', 'DELETE']
+    Function: handle_phone() [Line 1307]
+    Preview: ...
+
+  /api/sims ['GET', 'POST']
+    Function: handle_sims() [Line 1338]
+    Preview: ...
+
+  /api/sims/<int:item_id> ['GET', 'PUT', 'DELETE']
+    Function: handle_sim() [Line 1366]
+    Preview: ...
+
+  /api/phone-numbers ['GET', 'POST']
+    Function: handle_phone_numbers() [Line 1401]
+    Preview: ...
+
+  /api/phone-numbers/<int:number_id> ['GET', 'PUT', 'DELETE']
+    Function: handle_phone_number() [Line 1475]
+    Preview: ...
+
+  /api/secteurs ['GET']
+    Function: get_secteurs() [Line 1554]
+    Preview: ...
+
+  /api/workers ['GET']
+    Function: get_workers() [Line 1566]
+    Preview: ...
+
+  /api/workers ['POST']
+    Function: create_worker() [Line 1584]
+    Preview: ...
+
+  /api/workers/<int:worker_id> ['PUT']
+    Function: update_worker() [Line 1618]
+    Preview: ...
+
+  /api/workers/<int:worker_id> ['DELETE']
+    Function: delete_worker() [Line 1640]
+    Preview: ...
+
+  /api/support/tickets ['GET']
+    Function: get_all_active_tickets() [Line 1654]
+    Preview: ...
+
+  /api/tickets ['POST']
+    Function: create_ticket() [Line 1703]
+    Preview: ...
+
+  /support/ticket/<int:ticket_id> [['GET']]
+    Function: support_ticket_detail() [Line 1776]
+    Preview: ...
+
+  /support/all_tickets [['GET']]
+    Function: support_all_tickets() [Line 1784]
+    Preview: ...
+
+  /admin/reports [['GET']]
+    Function: admin_reports() [Line 1792]
+    Preview: ...
+
+  /api/support/ticket/<int:ticket_id> ['GET']
+    Function: get_ticket_details() [Line 1802]
+    Preview: ...
+
+  /api/support/ticket/<int:ticket_id> ['PUT']
+    Function: update_ticket_properties() [Line 1867]
+    Preview: ...
+
+  /api/support/ticket/<int:ticket_id>/updates ['POST']
+    Function: add_ticket_update() [Line 1930]
+    Preview: ...
+
+  /api/support/users ['GET']
+    Function: get_support_users() [Line 1962]
+    Preview: ...
+
+  /api/reports/assignment_overview ['GET']
+    Function: get_assignment_overview() [Line 1985]
+    Preview: ...
+
+  /api/reports/missing_data ['GET']
+    Function: get_missing_data_report() [Line 2029]
+    Preview: ...
+
+  /api/reports/inventory_summary ['GET']
+    Function: get_inventory_summary() [Line 2160]
+    Preview: ...
+
+  /api/reports/summary_stats ['GET']
+    Function: get_summary_stats() [Line 2237]
+    Preview: ...
+
+  /api/reports/dashboard_charts ['GET']
+    Function: get_dashboard_charts() [Line 2260]
+    Preview: ...
+
+  /api/reports/worker_assignments ['GET']
+    Function: get_worker_assignments() [Line 2378]
+    Preview: ...
+
+  /api/reports/asset_lifecycle/<identifier> ['GET']
+    Function: get_asset_lifecycle() [Line 2425]
+    Preview: ...
+
+  /api/admin/assignments/<int:assignment_id> ['DELETE']
+    Function: return_assignment() [Line 2691]
+    Preview: ...
+
+  /admin/import [['GET']]
+    Function: admin_import() [Line 2737]
+    Preview: ...
+
+  /api/import/preview ['POST']
+    Function: import_preview() [Line 2744]
+    Preview: ...
+
+  /api/import/schema ['POST']
+    Function: import_get_schema() [Line 2793]
+    Preview: ...
+
+  /api/import/process ['POST']
+    Function: import_process() [Line 2858]
+    Preview: ...
+
+  /api/admin/migrate_timestamps ['POST']
+    Function: migrate_timestamps() [Line 2959]
+    Preview: ...
+
+  /api/phones/<int:phone_id>/history ['GET']
+    Function: get_phone_history() [Line 3044]
+    Preview: ...
+
+  /api/support/worker_history/<int:worker_id> ['GET']
+    Function: get_worker_history() [Line 3073]
+    Preview: ...
+
+  /api/support/all_tickets ['GET']
+    Function: get_all_tickets_history() [Line 3132]
+    Preview: ...
+
+  /api/support/ticket/<int:ticket_id>/initiate_swap ['POST']
+    Function: initiate_phone_swap() [Line 3167]
+    Preview: ...
+
+  /api/manager/ticket/<int:ticket_id>/confirm_receipt ['POST']
+    Function: manager_confirm_receipt() [Line 3191]
+    Preview: ...
+
+  /api/integration/requests ['GET']
+    Function: get_integration_requests() [Line 3221]
+    Preview: ...
+
+  /api/integration/requests ['POST']
+    Function: create_phone_request() [Line 3259]
+    Preview: ...
+
+UTILITY FUNCTIONS:
+----------------------------------------
+  get_locale() [Line 31]
+    Preview: ...
+
+  configure_logging() [Line 159]
+    Preview: ...
+
+  get_db() [Line 194]
+    Preview: ...
+
+  close_db() [Line 208]
+    Preview: ...
+
+  log_event() [Line 215]
+    Preview: ...
+
+  login_required() [Line 222]
+    Preview: ...
+
+  role_required() [Line 233]
+    Preview: ...
+
+SUMMARY:
+----------------------------------------
+  Total Routes: 77
+  Total Functions: 7
+  Total Imports: 14
+  Total Global Configs: 5

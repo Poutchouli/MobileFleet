@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% block title %}Manager Dashboard{% endblock %}
+{% block title %}{{ _('Manager Dashboard') }}{% endblock %}
 
-{% block page_title %}Team Dashboard{% endblock %}
+{% block page_title %}{{ _('Team Dashboard') }}{% endblock %}
 
 {% block content %}
 <!-- Notifications Section -->
@@ -11,18 +11,18 @@
 
 <div class="custom-card">
     <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-semibold">My Team's Status</h2>
-        <button id="create-ticket-btn" class="btn btn-primary">Create New Ticket</button>
+        <h2 class="text-xl font-semibold">{{ _("My Team's Status") }}</h2>
+        <button id="create-ticket-btn" class="btn btn-primary">{{ _('Create New Ticket') }}</button>
     </div>
     <div class="overflow-x-auto">
         <table class="custom-table">
             <thead>
                 <tr>
-                    <th>Worker Name</th>
-                    <th>Assigned Phone</th>
-                    <th>Phone Status</th>
-                    <th>Support Status</th>
-                    <th>Actions</th>
+                    <th>{{ _('Worker Name') }}</th>
+                    <th>{{ _('Assigned Phone') }}</th>
+                    <th>{{ _('Phone Status') }}</th>
+                    <th>{{ _('Support Status') }}</th>
+                    <th>{{ _('Actions') }}</th>
                 </tr>
             </thead>
             <tbody id="team-status-table-body">
@@ -269,7 +269,18 @@
         ticketForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             const formData = new FormData(ticketForm);
-            const ticketData = Object.fromEntries(formData.entries());
+            const ticketData = {
+                phone_id: parseInt(formData.get('phone_id')) || null,
+                title: formData.get('title'),
+                description: formData.get('description'),
+                priority: formData.get('priority')
+            };
+
+            // Validate required fields on client side
+            if (!ticketData.phone_id) {
+                showToast('Please select a worker/phone before submitting the ticket.', true);
+                return;
+            }
 
             try {
                 const response = await fetch('/api/tickets', {

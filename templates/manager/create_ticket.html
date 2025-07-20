@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Create New Ticket{% endblock %}
+{% block title %}{{ _('Create New Ticket') }}{% endblock %}
 
-{% block page_title %}Create New Ticket{% endblock %}
+{% block page_title %}{{ _('Create New Ticket') }}{% endblock %}
 
 {% block content %}
 <div class="space-y-6">
@@ -13,41 +13,41 @@
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
             </svg>
-            Back to My Tickets
+            {{ _('Back to My Tickets') }}
         </a>
     </div>
 
     <!-- Create Ticket Form -->
     <div class="bg-white shadow rounded-lg">
         <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-medium text-gray-900">Submit New Support Ticket</h3>
-            <p class="mt-1 text-sm text-gray-500">Provide details about the issue you're experiencing with a device.</p>
+            <h3 class="text-lg font-medium text-gray-900">{{ _('Submit New Support Ticket') }}</h3>
+            <p class="mt-1 text-sm text-gray-500">{{ _('Provide details about the issue you\'re experiencing with a device.') }}</p>
         </div>
         
         <form id="create-ticket-form" class="px-6 py-4 space-y-6">
             <!-- Device Selection -->
             <div>
-                <label for="phone_id" class="block text-sm font-medium text-gray-700">Select Device</label>
+                <label for="phone_id" class="block text-sm font-medium text-gray-700">{{ _('Select Device') }}</label>
                 <select id="phone_id" name="phone_id" required 
                         class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                    <option value="">Choose a device...</option>
+                    <option value="">{{ _('Choose a device...') }}</option>
                     <!-- Options will be loaded dynamically -->
                 </select>
-                <p class="mt-1 text-sm text-gray-500">Select the device that is experiencing issues.</p>
+                <p class="mt-1 text-sm text-gray-500">{{ _('Select the device that is experiencing issues.') }}</p>
             </div>
 
             <!-- Ticket Title -->
             <div>
-                <label for="title" class="block text-sm font-medium text-gray-700">Ticket Title</label>
+                <label for="title" class="block text-sm font-medium text-gray-700">{{ _('Ticket Title') }}</label>
                 <input type="text" id="title" name="title" required maxlength="200"
                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                       placeholder="Brief description of the issue">
-                <p class="mt-1 text-sm text-gray-500">Provide a clear, concise title for the issue.</p>
+                       placeholder="{{ _('Brief description of the issue') }}">
+                <p class="mt-1 text-sm text-gray-500">{{ _('Provide a clear, concise title for the issue.') }}</p>
             </div>
 
             <!-- Priority -->
             <div>
-                <label for="priority" class="block text-sm font-medium text-gray-700">Priority</label>
+                <label for="priority" class="block text-sm font-medium text-gray-700">{{ _('Priority') }}</label>
                 <select id="priority" name="priority" required
                         class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                     <option value="">Select priority...</option>
@@ -175,12 +175,25 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
             const formData = new FormData(e.target);
+            const phoneValue = formData.get('phone_id');
+            
             const data = {
-                phone_id: parseInt(formData.get('phone_id')),
+                phone_id: phoneValue && phoneValue !== '' ? parseInt(phoneValue) : null,
                 title: formData.get('title'),
                 description: formData.get('description'),
                 priority: formData.get('priority')
             };
+
+            // Validate required fields on client side
+            if (!data.phone_id || isNaN(data.phone_id)) {
+                showError('Please select a device before submitting the ticket.');
+                
+                // Reset button state
+                submitButton.disabled = false;
+                submitText.textContent = 'Create Ticket';
+                submitSpinner.classList.add('hidden');
+                return;
+            }
             
             const response = await fetch('/api/tickets', {
                 method: 'POST',

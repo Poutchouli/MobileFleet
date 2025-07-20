@@ -1,0 +1,1094 @@
+{
+  "generated": "2025-07-20T01:03:55.122556",
+  "total_functions": 86,
+  "functions": {
+    "get_locale": {
+      "name": "get_locale",
+      "route_path": null,
+      "methods": [],
+      "line_start": 31,
+      "line_end": 36,
+      "category": "api",
+      "role_required": null,
+      "description": "No description available",
+      "parameters": [],
+      "returns": "Unknown"
+    },
+    "configure_logging": {
+      "name": "configure_logging",
+      "route_path": null,
+      "methods": [],
+      "line_start": 159,
+      "line_end": 188,
+      "category": "other",
+      "role_required": null,
+      "description": "Configure structured logging for production use.",
+      "parameters": [],
+      "returns": "Unknown"
+    },
+    "get_db": {
+      "name": "get_db",
+      "route_path": null,
+      "methods": [],
+      "line_start": 194,
+      "line_end": 205,
+      "category": "api",
+      "role_required": null,
+      "description": "No description available",
+      "parameters": [],
+      "returns": "Unknown"
+    },
+    "close_db": {
+      "name": "close_db",
+      "route_path": null,
+      "methods": [],
+      "line_start": 208,
+      "line_end": 212,
+      "category": "other",
+      "role_required": null,
+      "description": "No description available",
+      "parameters": [
+        "e=None"
+      ],
+      "returns": "Unknown"
+    },
+    "log_event": {
+      "name": "log_event",
+      "route_path": null,
+      "methods": [],
+      "line_start": 215,
+      "line_end": 219,
+      "category": "utils",
+      "role_required": null,
+      "description": "No description available",
+      "parameters": [
+        "cursor",
+        "asset_type",
+        "asset_id",
+        "event_type",
+        "details"
+      ],
+      "returns": "Unknown"
+    },
+    "login_required": {
+      "name": "login_required",
+      "route_path": null,
+      "methods": [],
+      "line_start": 222,
+      "line_end": 231,
+      "category": "auth",
+      "role_required": null,
+      "description": "No description available",
+      "parameters": [
+        "f"
+      ],
+      "returns": "JSON"
+    },
+    "decorated_function": {
+      "name": "decorated_function",
+      "route_path": null,
+      "methods": [],
+      "line_start": 236,
+      "line_end": 238,
+      "category": "other",
+      "role_required": null,
+      "description": "No description available",
+      "parameters": [],
+      "returns": "JSON"
+    },
+    "role_required": {
+      "name": "role_required",
+      "route_path": null,
+      "methods": [],
+      "line_start": 233,
+      "line_end": 241,
+      "category": "utils",
+      "role_required": null,
+      "description": "No description available",
+      "parameters": [
+        "required_role"
+      ],
+      "returns": "JSON"
+    },
+    "decorator": {
+      "name": "decorator",
+      "route_path": null,
+      "methods": [],
+      "line_start": 234,
+      "line_end": 239,
+      "category": "other",
+      "role_required": null,
+      "description": "No description available",
+      "parameters": [],
+      "returns": "JSON"
+    },
+    "login": {
+      "name": "login",
+      "route_path": null,
+      "methods": [],
+      "line_start": 245,
+      "line_end": 291,
+      "category": "auth",
+      "role_required": null,
+      "description": "No description available",
+      "parameters": [],
+      "returns": "HTML"
+    },
+    "logout": {
+      "name": "logout",
+      "route_path": null,
+      "methods": [],
+      "line_start": 294,
+      "line_end": 299,
+      "category": "auth",
+      "role_required": null,
+      "description": "No description available",
+      "parameters": [],
+      "returns": "Redirect"
+    },
+    "set_language": {
+      "name": "set_language",
+      "route_path": null,
+      "methods": [],
+      "line_start": 302,
+      "line_end": 306,
+      "category": "other",
+      "role_required": null,
+      "description": "No description available",
+      "parameters": [
+        "lang"
+      ],
+      "returns": "Redirect"
+    },
+    "index": {
+      "name": "index",
+      "route_path": null,
+      "methods": [],
+      "line_start": 310,
+      "line_end": 320,
+      "category": "other",
+      "role_required": null,
+      "description": "No description available",
+      "parameters": [],
+      "returns": "Redirect"
+    },
+    "profile": {
+      "name": "profile",
+      "route_path": null,
+      "methods": [],
+      "line_start": 324,
+      "line_end": 326,
+      "category": "auth",
+      "role_required": null,
+      "description": "Serves the user profile page for password management.",
+      "parameters": [],
+      "returns": "HTML"
+    },
+    "admin_dashboard": {
+      "name": "admin_dashboard",
+      "route_path": null,
+      "methods": [],
+      "line_start": 332,
+      "line_end": 333,
+      "category": "admin",
+      "role_required": null,
+      "description": "No description available",
+      "parameters": [],
+      "returns": "HTML"
+    },
+    "admin_phones": {
+      "name": "admin_phones",
+      "route_path": null,
+      "methods": [],
+      "line_start": 338,
+      "line_end": 339,
+      "category": "admin",
+      "role_required": null,
+      "description": "No description available",
+      "parameters": [],
+      "returns": "HTML"
+    },
+    "admin_sims": {
+      "name": "admin_sims",
+      "route_path": null,
+      "methods": [],
+      "line_start": 344,
+      "line_end": 345,
+      "category": "admin",
+      "role_required": null,
+      "description": "No description available",
+      "parameters": [],
+      "returns": "HTML"
+    },
+    "admin_phone_numbers": {
+      "name": "admin_phone_numbers",
+      "route_path": null,
+      "methods": [],
+      "line_start": 350,
+      "line_end": 352,
+      "category": "admin",
+      "role_required": null,
+      "description": "Serves the page for managing phone numbers.",
+      "parameters": [],
+      "returns": "HTML"
+    },
+    "admin_workers": {
+      "name": "admin_workers",
+      "route_path": null,
+      "methods": [],
+      "line_start": 357,
+      "line_end": 359,
+      "category": "admin",
+      "role_required": null,
+      "description": "Serves the page for managing workers.",
+      "parameters": [],
+      "returns": "HTML"
+    },
+    "admin_users": {
+      "name": "admin_users",
+      "route_path": null,
+      "methods": [],
+      "line_start": 364,
+      "line_end": 366,
+      "category": "admin",
+      "role_required": null,
+      "description": "Serves the page for managing users.",
+      "parameters": [],
+      "returns": "HTML"
+    },
+    "admin_roles": {
+      "name": "admin_roles",
+      "route_path": null,
+      "methods": [],
+      "line_start": 371,
+      "line_end": 373,
+      "category": "admin",
+      "role_required": null,
+      "description": "Serves the page for managing roles.",
+      "parameters": [],
+      "returns": "HTML"
+    },
+    "admin_provision_wizard": {
+      "name": "admin_provision_wizard",
+      "route_path": null,
+      "methods": [],
+      "line_start": 378,
+      "line_end": 380,
+      "category": "admin",
+      "role_required": null,
+      "description": "Serves the multi-step phone provisioning wizard page.",
+      "parameters": [],
+      "returns": "HTML"
+    },
+    "admin_import_csv": {
+      "name": "admin_import_csv",
+      "route_path": null,
+      "methods": [],
+      "line_start": 385,
+      "line_end": 387,
+      "category": "admin",
+      "role_required": null,
+      "description": "Serves the CSV data import page.",
+      "parameters": [],
+      "returns": "HTML"
+    },
+    "support_dashboard": {
+      "name": "support_dashboard",
+      "route_path": null,
+      "methods": [],
+      "line_start": 392,
+      "line_end": 394,
+      "category": "support",
+      "role_required": null,
+      "description": "Serves the main helpdesk dashboard for Support staff.",
+      "parameters": [],
+      "returns": "HTML"
+    },
+    "integration_dashboard": {
+      "name": "integration_dashboard",
+      "route_path": null,
+      "methods": [],
+      "line_start": 399,
+      "line_end": 401,
+      "category": "integration",
+      "role_required": null,
+      "description": "Serves the dashboard for Integration Managers to see their requests.",
+      "parameters": [],
+      "returns": "HTML"
+    },
+    "integration_new_request": {
+      "name": "integration_new_request",
+      "route_path": null,
+      "methods": [],
+      "line_start": 406,
+      "line_end": 408,
+      "category": "integration",
+      "role_required": null,
+      "description": "Serves the form for an Integration Manager to request a new phone.",
+      "parameters": [],
+      "returns": "HTML"
+    },
+    "manage_roles": {
+      "name": "manage_roles",
+      "route_path": null,
+      "methods": [],
+      "line_start": 414,
+      "line_end": 456,
+      "category": "other",
+      "role_required": null,
+      "description": "API endpoint to get all roles or create a new role.",
+      "parameters": [],
+      "returns": "JSON"
+    },
+    "get_users": {
+      "name": "get_users",
+      "route_path": null,
+      "methods": [],
+      "line_start": 461,
+      "line_end": 473,
+      "category": "api",
+      "role_required": null,
+      "description": "API endpoint to get all users with role information.",
+      "parameters": [],
+      "returns": "JSON"
+    },
+    "create_user": {
+      "name": "create_user",
+      "route_path": null,
+      "methods": [],
+      "line_start": 478,
+      "line_end": 520,
+      "category": "api",
+      "role_required": null,
+      "description": "API endpoint to create a new user.",
+      "parameters": [],
+      "returns": "JSON"
+    },
+    "update_user": {
+      "name": "update_user",
+      "route_path": null,
+      "methods": [],
+      "line_start": 525,
+      "line_end": 588,
+      "category": "api",
+      "role_required": null,
+      "description": "API endpoint to update an existing user.",
+      "parameters": [
+        "user_id"
+      ],
+      "returns": "Unknown"
+    },
+    "handle_role": {
+      "name": "handle_role",
+      "route_path": null,
+      "methods": [],
+      "line_start": 593,
+      "line_end": 635,
+      "category": "admin",
+      "role_required": null,
+      "description": "API endpoint to get or update a specific role.",
+      "parameters": [
+        "role_id"
+      ],
+      "returns": "JSON"
+    },
+    "change_password": {
+      "name": "change_password",
+      "route_path": null,
+      "methods": [],
+      "line_start": 641,
+      "line_end": 712,
+      "category": "auth",
+      "role_required": null,
+      "description": "Allows users to change their own password. Requires current password validation for security.",
+      "parameters": [],
+      "returns": "JSON"
+    },
+    "provision_validate_phone": {
+      "name": "provision_validate_phone",
+      "route_path": null,
+      "methods": [],
+      "line_start": 719,
+      "line_end": 742,
+      "category": "admin",
+      "role_required": null,
+      "description": "Validates that a phone exists and is in stock for provisioning.",
+      "parameters": [],
+      "returns": "JSON"
+    },
+    "provision_get_available_assets": {
+      "name": "provision_get_available_assets",
+      "route_path": null,
+      "methods": [],
+      "line_start": 747,
+      "line_end": 767,
+      "category": "admin",
+      "role_required": null,
+      "description": "Gets lists of available SIMs and Workers for assignment.",
+      "parameters": [],
+      "returns": "JSON"
+    },
+    "provision_finalize": {
+      "name": "provision_finalize",
+      "route_path": null,
+      "methods": [],
+      "line_start": 772,
+      "line_end": 819,
+      "category": "admin",
+      "role_required": null,
+      "description": "Finalizes the provisioning process, creating the assignment and logs.",
+      "parameters": [],
+      "returns": "JSON"
+    },
+    "import_csv": {
+      "name": "import_csv",
+      "route_path": null,
+      "methods": [],
+      "line_start": 826,
+      "line_end": 941,
+      "category": "admin",
+      "role_required": null,
+      "description": "API endpoint to handle CSV file upload and database processing.",
+      "parameters": [],
+      "returns": "JSON"
+    },
+    "manager_dashboard": {
+      "name": "manager_dashboard",
+      "route_path": null,
+      "methods": [],
+      "line_start": 946,
+      "line_end": 948,
+      "category": "manager",
+      "role_required": null,
+      "description": "Serves the main dashboard for Managers.",
+      "parameters": [],
+      "returns": "HTML"
+    },
+    "manager_tickets": {
+      "name": "manager_tickets",
+      "route_path": null,
+      "methods": [],
+      "line_start": 953,
+      "line_end": 955,
+      "category": "manager",
+      "role_required": null,
+      "description": "Serves the page for a manager to view their submitted tickets.",
+      "parameters": [],
+      "returns": "HTML"
+    },
+    "manager_ticket_detail": {
+      "name": "manager_ticket_detail",
+      "route_path": null,
+      "methods": [],
+      "line_start": 960,
+      "line_end": 962,
+      "category": "manager",
+      "role_required": null,
+      "description": "Serves the detailed ticket view page for a manager.",
+      "parameters": [
+        "ticket_id"
+      ],
+      "returns": "HTML"
+    },
+    "manager_create_ticket": {
+      "name": "manager_create_ticket",
+      "route_path": null,
+      "methods": [],
+      "line_start": 967,
+      "line_end": 969,
+      "category": "manager",
+      "role_required": null,
+      "description": "Serves the create ticket page for a manager.",
+      "parameters": [],
+      "returns": "HTML"
+    },
+    "get_manager_team_status": {
+      "name": "get_manager_team_status",
+      "route_path": null,
+      "methods": [],
+      "line_start": 976,
+      "line_end": 1033,
+      "category": "manager",
+      "role_required": null,
+      "description": "API endpoint to get the status of all workers and their assigned assets for the currently logged-in manager.",
+      "parameters": [],
+      "returns": "Unknown"
+    },
+    "get_manager_selectable_phones": {
+      "name": "get_manager_selectable_phones",
+      "route_path": null,
+      "methods": [],
+      "line_start": 1038,
+      "line_end": 1067,
+      "category": "manager",
+      "role_required": null,
+      "description": "API endpoint to get all phones assigned to workers under the current manager, formatted for ticket creation dropdown.",
+      "parameters": [],
+      "returns": "Unknown"
+    },
+    "get_manager_tickets": {
+      "name": "get_manager_tickets",
+      "route_path": null,
+      "methods": [],
+      "line_start": 1072,
+      "line_end": 1107,
+      "category": "manager",
+      "role_required": null,
+      "description": "API endpoint to get all tickets submitted by the current manager.",
+      "parameters": [],
+      "returns": "Unknown"
+    },
+    "get_manager_ticket_details": {
+      "name": "get_manager_ticket_details",
+      "route_path": null,
+      "methods": [],
+      "line_start": 1112,
+      "line_end": 1164,
+      "category": "manager",
+      "role_required": null,
+      "description": "API endpoint for a manager to get details for a specific ticket they reported. Internal notes are filtered out for security.",
+      "parameters": [
+        "ticket_id"
+      ],
+      "returns": "JSON"
+    },
+    "add_manager_comment": {
+      "name": "add_manager_comment",
+      "route_path": null,
+      "methods": [],
+      "line_start": 1171,
+      "line_end": 1221,
+      "category": "manager",
+      "role_required": null,
+      "description": "API endpoint for managers to add comments to their tickets.",
+      "parameters": [
+        "ticket_id"
+      ],
+      "returns": "JSON"
+    },
+    "resolve_manager_ticket": {
+      "name": "resolve_manager_ticket",
+      "route_path": null,
+      "methods": [],
+      "line_start": 1226,
+      "line_end": 1276,
+      "category": "manager",
+      "role_required": null,
+      "description": "API endpoint for managers to mark their tickets as resolved.",
+      "parameters": [
+        "ticket_id"
+      ],
+      "returns": "JSON"
+    },
+    "handle_phones": {
+      "name": "handle_phones",
+      "route_path": null,
+      "methods": [],
+      "line_start": 1284,
+      "line_end": 1305,
+      "category": "admin",
+      "role_required": null,
+      "description": "No description available",
+      "parameters": [],
+      "returns": "JSON"
+    },
+    "handle_phone": {
+      "name": "handle_phone",
+      "route_path": null,
+      "methods": [],
+      "line_start": 1310,
+      "line_end": 1335,
+      "category": "admin",
+      "role_required": null,
+      "description": "No description available",
+      "parameters": [
+        "item_id"
+      ],
+      "returns": "JSON"
+    },
+    "handle_sims": {
+      "name": "handle_sims",
+      "route_path": null,
+      "methods": [],
+      "line_start": 1341,
+      "line_end": 1364,
+      "category": "admin",
+      "role_required": null,
+      "description": "No description available",
+      "parameters": [],
+      "returns": "JSON"
+    },
+    "handle_sim": {
+      "name": "handle_sim",
+      "route_path": null,
+      "methods": [],
+      "line_start": 1369,
+      "line_end": 1397,
+      "category": "admin",
+      "role_required": null,
+      "description": "No description available",
+      "parameters": [
+        "item_id"
+      ],
+      "returns": "JSON"
+    },
+    "handle_phone_numbers": {
+      "name": "handle_phone_numbers",
+      "route_path": null,
+      "methods": [],
+      "line_start": 1404,
+      "line_end": 1473,
+      "category": "admin",
+      "role_required": null,
+      "description": "API endpoint to get all phone numbers or create a new one.",
+      "parameters": [],
+      "returns": "Unknown"
+    },
+    "handle_phone_number": {
+      "name": "handle_phone_number",
+      "route_path": null,
+      "methods": [],
+      "line_start": 1478,
+      "line_end": 1550,
+      "category": "admin",
+      "role_required": null,
+      "description": "API endpoint to get, update, or delete a specific phone number.",
+      "parameters": [
+        "number_id"
+      ],
+      "returns": "Unknown"
+    },
+    "get_secteurs": {
+      "name": "get_secteurs",
+      "route_path": null,
+      "methods": [],
+      "line_start": 1557,
+      "line_end": 1564,
+      "category": "api",
+      "role_required": null,
+      "description": "API endpoint to get a list of all secteurs.",
+      "parameters": [],
+      "returns": "JSON"
+    },
+    "get_workers": {
+      "name": "get_workers",
+      "route_path": null,
+      "methods": [],
+      "line_start": 1569,
+      "line_end": 1582,
+      "category": "api",
+      "role_required": null,
+      "description": "API endpoint to get a list of all active workers with their sector name.",
+      "parameters": [],
+      "returns": "JSON"
+    },
+    "create_worker": {
+      "name": "create_worker",
+      "route_path": null,
+      "methods": [],
+      "line_start": 1587,
+      "line_end": 1616,
+      "category": "api",
+      "role_required": null,
+      "description": "API endpoint to create a new worker.",
+      "parameters": [],
+      "returns": "JSON"
+    },
+    "update_worker": {
+      "name": "update_worker",
+      "route_path": null,
+      "methods": [],
+      "line_start": 1621,
+      "line_end": 1638,
+      "category": "api",
+      "role_required": null,
+      "description": "API endpoint to update an existing worker.",
+      "parameters": [
+        "worker_id"
+      ],
+      "returns": "JSON"
+    },
+    "delete_worker": {
+      "name": "delete_worker",
+      "route_path": null,
+      "methods": [],
+      "line_start": 1643,
+      "line_end": 1650,
+      "category": "api",
+      "role_required": null,
+      "description": "API endpoint to 'delete' a worker by setting their status to 'Inactive'.",
+      "parameters": [
+        "worker_id"
+      ],
+      "returns": "JSON"
+    },
+    "get_all_active_tickets": {
+      "name": "get_all_active_tickets",
+      "route_path": null,
+      "methods": [],
+      "line_start": 1657,
+      "line_end": 1699,
+      "category": "support",
+      "role_required": null,
+      "description": "API endpoint for Support to get all tickets that are not yet solved or closed.",
+      "parameters": [],
+      "returns": "Unknown"
+    },
+    "create_ticket": {
+      "name": "create_ticket",
+      "route_path": null,
+      "methods": [],
+      "line_start": 1706,
+      "line_end": 1772,
+      "category": "api",
+      "role_required": null,
+      "description": "API endpoint for Managers to create new support tickets.",
+      "parameters": [],
+      "returns": "JSON"
+    },
+    "support_ticket_detail": {
+      "name": "support_ticket_detail",
+      "route_path": null,
+      "methods": [],
+      "line_start": 1779,
+      "line_end": 1782,
+      "category": "support",
+      "role_required": null,
+      "description": "Serves the detailed view page for a single support ticket.",
+      "parameters": [
+        "ticket_id"
+      ],
+      "returns": "HTML"
+    },
+    "support_all_tickets": {
+      "name": "support_all_tickets",
+      "route_path": null,
+      "methods": [],
+      "line_start": 1787,
+      "line_end": 1790,
+      "category": "support",
+      "role_required": null,
+      "description": "Serves the page for viewing all tickets, including history.",
+      "parameters": [],
+      "returns": "HTML"
+    },
+    "admin_reports": {
+      "name": "admin_reports",
+      "route_path": null,
+      "methods": [],
+      "line_start": 1795,
+      "line_end": 1798,
+      "category": "admin",
+      "role_required": null,
+      "description": "Serves the main reporting page for Administrators.",
+      "parameters": [],
+      "returns": "HTML"
+    },
+    "get_ticket_details": {
+      "name": "get_ticket_details",
+      "route_path": null,
+      "methods": [],
+      "line_start": 1805,
+      "line_end": 1865,
+      "category": "support",
+      "role_required": null,
+      "description": "API endpoint to get all details for a single ticket, including phone, worker, and all historical updates.",
+      "parameters": [
+        "ticket_id"
+      ],
+      "returns": "Unknown"
+    },
+    "update_ticket_properties": {
+      "name": "update_ticket_properties",
+      "route_path": null,
+      "methods": [],
+      "line_start": 1870,
+      "line_end": 1928,
+      "category": "api",
+      "role_required": null,
+      "description": "API endpoint for Support to update a ticket's core properties like status, priority, or assignment.",
+      "parameters": [
+        "ticket_id"
+      ],
+      "returns": "Unknown"
+    },
+    "add_ticket_update": {
+      "name": "add_ticket_update",
+      "route_path": null,
+      "methods": [],
+      "line_start": 1933,
+      "line_end": 1960,
+      "category": "support",
+      "role_required": null,
+      "description": "API endpoint for Support to post a new update (comment) to a ticket.",
+      "parameters": [
+        "ticket_id"
+      ],
+      "returns": "JSON"
+    },
+    "get_support_users": {
+      "name": "get_support_users",
+      "route_path": null,
+      "methods": [],
+      "line_start": 1965,
+      "line_end": 1981,
+      "category": "support",
+      "role_required": null,
+      "description": "API endpoint for Support role to get list of all support users for ticket assignment.",
+      "parameters": [],
+      "returns": "JSON"
+    },
+    "get_assignment_overview": {
+      "name": "get_assignment_overview",
+      "route_path": null,
+      "methods": [],
+      "line_start": 1988,
+      "line_end": 2025,
+      "category": "api",
+      "role_required": null,
+      "description": "Provides a comprehensive overview of all current assignments, joining workers, phones, SIMs, and phone numbers.",
+      "parameters": [],
+      "returns": "Unknown"
+    },
+    "get_missing_data_report": {
+      "name": "get_missing_data_report",
+      "route_path": null,
+      "methods": [],
+      "line_start": 2032,
+      "line_end": 2158,
+      "category": "api",
+      "role_required": null,
+      "description": "Comprehensive report to identify missing or incomplete data across the system.",
+      "parameters": [],
+      "returns": "Unknown"
+    },
+    "get_inventory_summary": {
+      "name": "get_inventory_summary",
+      "route_path": null,
+      "methods": [],
+      "line_start": 2163,
+      "line_end": 2233,
+      "category": "api",
+      "role_required": null,
+      "description": "Provides a comprehensive inventory summary with counts and availability.",
+      "parameters": [],
+      "returns": "Unknown"
+    },
+    "get_summary_stats": {
+      "name": "get_summary_stats",
+      "route_path": null,
+      "methods": [],
+      "line_start": 2240,
+      "line_end": 2258,
+      "category": "api",
+      "role_required": null,
+      "description": "Provides key summary statistics for the admin dashboard.",
+      "parameters": [],
+      "returns": "JSON"
+    },
+    "get_dashboard_charts": {
+      "name": "get_dashboard_charts",
+      "route_path": null,
+      "methods": [],
+      "line_start": 2263,
+      "line_end": 2376,
+      "category": "api",
+      "role_required": null,
+      "description": "Provides chart data for interactive dashboard visualizations.",
+      "parameters": [],
+      "returns": "Unknown"
+    },
+    "get_worker_assignments": {
+      "name": "get_worker_assignments",
+      "route_path": null,
+      "methods": [],
+      "line_start": 2381,
+      "line_end": 2423,
+      "category": "api",
+      "role_required": null,
+      "description": "Provides a list of all active workers and their currently assigned assets.",
+      "parameters": [],
+      "returns": "Unknown"
+    },
+    "get_asset_lifecycle": {
+      "name": "get_asset_lifecycle",
+      "route_path": null,
+      "methods": [],
+      "line_start": 2428,
+      "line_end": 2689,
+      "category": "api",
+      "role_required": null,
+      "description": "Get complete lifecycle history for a phone by asset tag or serial number. This provides a chronological timeline of all events for auditing and tracking.",
+      "parameters": [
+        "identifier"
+      ],
+      "returns": "Unknown"
+    },
+    "return_assignment": {
+      "name": "return_assignment",
+      "route_path": null,
+      "methods": [],
+      "line_start": 2694,
+      "line_end": 2733,
+      "category": "other",
+      "role_required": null,
+      "description": "Handles the return of an asset from a worker. Sets the assignment's return_date, updates asset statuses, and logs the event.",
+      "parameters": [
+        "assignment_id"
+      ],
+      "returns": "JSON"
+    },
+    "admin_import": {
+      "name": "admin_import",
+      "route_path": null,
+      "methods": [],
+      "line_start": 2740,
+      "line_end": 2742,
+      "category": "admin",
+      "role_required": null,
+      "description": "Serves the CSV import wizard page.",
+      "parameters": [],
+      "returns": "HTML"
+    },
+    "import_preview": {
+      "name": "import_preview",
+      "route_path": null,
+      "methods": [],
+      "line_start": 2747,
+      "line_end": 2791,
+      "category": "admin",
+      "role_required": null,
+      "description": "Handles CSV upload, reads headers and first 5 rows for preview.",
+      "parameters": [],
+      "returns": "JSON"
+    },
+    "import_get_schema": {
+      "name": "import_get_schema",
+      "route_path": null,
+      "methods": [],
+      "line_start": 2796,
+      "line_end": 2856,
+      "category": "admin",
+      "role_required": null,
+      "description": "Returns the column names and details for a given table.",
+      "parameters": [],
+      "returns": "JSON"
+    },
+    "import_process": {
+      "name": "import_process",
+      "route_path": null,
+      "methods": [],
+      "line_start": 2861,
+      "line_end": 2957,
+      "category": "admin",
+      "role_required": null,
+      "description": "Processes the CSV data based on user-defined mappings.",
+      "parameters": [],
+      "returns": "JSON"
+    },
+    "migrate_timestamps": {
+      "name": "migrate_timestamps",
+      "route_path": null,
+      "methods": [],
+      "line_start": 2962,
+      "line_end": 3042,
+      "category": "other",
+      "role_required": null,
+      "description": "Migration endpoint to add timestamp columns to phones table.",
+      "parameters": [],
+      "returns": "JSON"
+    },
+    "get_phone_history": {
+      "name": "get_phone_history",
+      "route_path": null,
+      "methods": [],
+      "line_start": 3047,
+      "line_end": 3071,
+      "category": "api",
+      "role_required": null,
+      "description": "API endpoint to get the asset history log for a specific phone.",
+      "parameters": [
+        "phone_id"
+      ],
+      "returns": "Unknown"
+    },
+    "get_worker_history": {
+      "name": "get_worker_history",
+      "route_path": null,
+      "methods": [],
+      "line_start": 3076,
+      "line_end": 3128,
+      "category": "api",
+      "role_required": null,
+      "description": "API endpoint to get the ticket and assignment history for a specific worker.",
+      "parameters": [
+        "worker_id"
+      ],
+      "returns": "Unknown"
+    },
+    "get_all_tickets_history": {
+      "name": "get_all_tickets_history",
+      "route_path": null,
+      "methods": [],
+      "line_start": 3135,
+      "line_end": 3165,
+      "category": "support",
+      "role_required": null,
+      "description": "API endpoint for Support to get ALL tickets, including solved and closed.",
+      "parameters": [],
+      "returns": "Unknown"
+    },
+    "initiate_phone_swap": {
+      "name": "initiate_phone_swap",
+      "route_path": null,
+      "methods": [],
+      "line_start": 3170,
+      "line_end": 3189,
+      "category": "other",
+      "role_required": null,
+      "description": "Logs that a replacement phone is being sent and sets ticket to Pending.",
+      "parameters": [
+        "ticket_id"
+      ],
+      "returns": "JSON"
+    },
+    "manager_confirm_receipt": {
+      "name": "manager_confirm_receipt",
+      "route_path": null,
+      "methods": [],
+      "line_start": 3194,
+      "line_end": 3217,
+      "category": "manager",
+      "role_required": null,
+      "description": "Allows a Manager to confirm receipt of a new phone and provide return details.",
+      "parameters": [
+        "ticket_id"
+      ],
+      "returns": "JSON"
+    },
+    "get_integration_requests": {
+      "name": "get_integration_requests",
+      "route_path": null,
+      "methods": [],
+      "line_start": 3224,
+      "line_end": 3257,
+      "category": "integration",
+      "role_required": null,
+      "description": "API endpoint to get all phone requests submitted by the current integration manager.",
+      "parameters": [],
+      "returns": "Unknown"
+    },
+    "create_phone_request": {
+      "name": "create_phone_request",
+      "route_path": null,
+      "methods": [],
+      "line_start": 3262,
+      "line_end": 3293,
+      "category": "integration",
+      "role_required": null,
+      "description": "API endpoint for an Integration Manager to submit a new phone request.",
+      "parameters": [],
+      "returns": "JSON"
+    }
+  }
+}

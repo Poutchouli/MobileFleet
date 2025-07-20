@@ -12,7 +12,7 @@ services:
     # Here, we ensure the database is ready before starting the app.
     # `sh -c "..."` runs the commands in a shell.
     # `python init_database.py &&` runs the database initialization script first.
-    # `gunicorn --bind 0.0.0.0:5000 app:app` starts the web server.
+    # `gunicorn --bind 0.0.0.0:5000 main:app` starts the web server.
     command: >
       sh -c "
         echo 'Waiting for PostgreSQL to be ready...' &&
@@ -21,7 +21,7 @@ services:
         done;
         echo 'PostgreSQL is ready.' &&
         python init_database.py &&
-        gunicorn --bind 0.0.0.0:5000 app:app
+        gunicorn --bind 0.0.0.0:5000 main:app
       "
     # Map port 5000 inside the container to port 5000 on the host machine.
     ports:

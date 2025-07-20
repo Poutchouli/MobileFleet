@@ -1,25 +1,25 @@
 {% extends "base.html" %}
 
-{% block title %}Manage Users - Admin{% endblock %}
+{% block title %}{{ _('Manage Users') }} - {{ _('Admin') }}{% endblock %}
 
-{% block page_title %}Manage System Users{% endblock %}
+{% block page_title %}{{ _('Manage System Users') }}{% endblock %}
 
 {% block content %}
 <div class="custom-card">
     <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-semibold">User Accounts</h2>
+        <h2 class="text-xl font-semibold">{{ _('User Accounts') }}</h2>
         <button id="add-user-btn" class="btn btn-primary">
-            Add New User
+            {{ _('Add New User') }}
         </button>
     </div>
     <table class="custom-table">
         <thead>
             <tr>
-                <th>Username</th>
-                <th>Full Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th class="text-right">Actions</th>
+                <th>{{ _('Username') }}</th>
+                <th>{{ _('Full Name') }}</th>
+                <th>{{ _('Email') }}</th>
+                <th>{{ _('Role') }}</th>
+                <th class="text-right">{{ _('Actions') }}</th>
             </tr>
         </thead>
         <tbody id="users-table-body">
@@ -33,39 +33,39 @@
     <div class="custom-modal-backdrop"></div>
     <div class="custom-modal-content">
         <div class="custom-modal-header">
-            <h3 id="modal-title" class="custom-modal-title">Add New User</h3>
+            <h3 id="modal-title" class="custom-modal-title">{{ _('Add New User') }}</h3>
         </div>
         <form id="user-form" class="custom-form">
             <div class="custom-modal-body">
                 <input type="hidden" id="user-db-id" name="id">
                 <div class="custom-form-grid">
                     <div class="custom-form-group">
-                        <label for="username" class="custom-label">Username*</label>
+                        <label for="username" class="custom-label">{{ _('Username') }}*</label>
                         <input type="text" name="username" id="username" required class="custom-input">
                     </div>
                     <div class="custom-form-group">
-                        <label for="full_name" class="custom-label">Full Name*</label>
+                        <label for="full_name" class="custom-label">{{ _('Full Name') }}*</label>
                         <input type="text" name="full_name" id="full_name" required class="custom-input">
                     </div>
                     <div class="custom-form-group custom-form-group-full">
-                        <label for="email" class="custom-label">Email*</label>
+                        <label for="email" class="custom-label">{{ _('Email') }}*</label>
                         <input type="email" name="email" id="email" required class="custom-input">
                     </div>
                     <div class="custom-form-group">
-                        <label for="role_id" class="custom-label">Role*</label>
+                        <label for="role_id" class="custom-label">{{ _('Role') }}*</label>
                         <select id="role_id" name="role_id" required class="custom-select">
                             <!-- Options populated by JS -->
                         </select>
                     </div>
                     <div id="password-field-container" class="custom-form-group">
-                        <label for="password" class="custom-label">Password*</label>
+                        <label for="password" class="custom-label">{{ _('Password') }}*</label>
                         <input type="password" name="password" id="password" required class="custom-input">
                     </div>
                 </div>
             </div>
             <div class="custom-modal-footer">
-                <button type="submit" class="btn btn-primary">Save</button>
-                <button type="button" id="cancel-btn" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn btn-primary">{{ _('Save') }}</button>
+                <button type="button" id="cancel-btn" class="btn btn-secondary">{{ _('Cancel') }}</button>
             </div>
         </form>
     </div>

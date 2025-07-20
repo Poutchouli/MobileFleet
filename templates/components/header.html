@@ -2,7 +2,7 @@
 <div class="flex justify-between items-center mb-8">
     <h1 class="text-3xl font-bold">{% block page_title %}{% endblock %}</h1>
     <div>
-        <span>Welcome, {{ session.username }}</span>
-        <a href="{{ url_for('logout') }}" class="ml-4 text-indigo-600 hover:text-indigo-900">Logout</a>
+        <span>{{ _('Welcome') }}, {{ session.username }}</span>
+        <a href="{{ url_for('logout') }}" class="ml-4 text-indigo-600 hover:text-indigo-900">{{ _('Logout') }}</a>
     </div>
 </div>

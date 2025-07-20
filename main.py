@@ -23,7 +23,20 @@ load_dotenv()
 
 # --- App Initialization ---
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.urandom(24)
+
+# --- Session Configuration ---
+# Use a fixed secret key from environment variable or generate one for development
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+
+# Configure session settings for better security and persistence
+session_timeout_hours = int(os.environ.get('SESSION_TIMEOUT_HOURS', 8))
+app.config['PERMANENT_SESSION_LIFETIME'] = 60 * 60 * session_timeout_hours  # Configurable timeout
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get('FLASK_ENV') == 'production'  # HTTPS only in production
+app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent XSS attacks
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # CSRF protection
+
+# Remember me configuration
+app.config['REMEMBER_ME_DAYS'] = int(os.environ.get('REMEMBER_ME_DAYS', 30))
 
 # --- Babel Configuration ---
 app.config['LANGUAGES'] = ['en', 'fr', 'nl']  # Supported: English, French, Dutch
@@ -64,6 +77,7 @@ class User(db.Model):
     full_name = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(255), nullable=False, unique=True)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), nullable=False)
+    language_preference = db.Column(db.String(5), nullable=True, default='en')
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=db.func.now())
     updated_at = db.Column(db.DateTime(timezone=True), nullable=False, default=db.func.now())
 
@@ -190,6 +204,34 @@ def configure_logging():
 # Initialize logging
 configure_logging()
 
+# --- Security Headers ---
+@app.after_request
+def add_security_headers(response):
+    """Add security headers to all responses"""
+    # Prevent clickjacking
+    response.headers['X-Frame-Options'] = 'DENY'
+    
+    # Prevent content type sniffing
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    
+    # XSS protection
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    
+    # Referrer policy
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    
+    # Content Security Policy (basic)
+    if not app.config.get('DEBUG'):
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; "
+            "font-src 'self'"
+        )
+    
+    return response
+
 # --- Database Connection ---
 def get_db():
     if 'db' not in g:
@@ -227,6 +269,28 @@ def login_required(f):
             if request.path.startswith('/api/'):
                 return jsonify({'error': 'Authentication required'}), 401
             return redirect(url_for('login', next=request.url))
+        
+        # Check if session has expired
+        from datetime import datetime, timedelta
+        if 'last_activity' in session:
+            last_activity = datetime.fromisoformat(session['last_activity'])
+            session_timeout = app.config['PERMANENT_SESSION_LIFETIME']
+            
+            # Check if remember_me extends the session
+            if session.get('remember_me'):
+                remember_me_days = app.config.get('REMEMBER_ME_DAYS', 30)
+                session_timeout = 60 * 60 * 24 * remember_me_days  # Configurable remember me duration
+            
+            if datetime.now() - last_activity > timedelta(seconds=session_timeout):
+                session.clear()
+                if request.path.startswith('/api/'):
+                    return jsonify({'error': 'Session expired'}), 401
+                return redirect(url_for('login', next=request.url))
+        
+        # Update last activity timestamp for session renewal
+        session['last_activity'] = datetime.now().isoformat()
+        session.permanent = True
+        
         return f(*args, **kwargs)
     return decorated_function
 
@@ -263,13 +327,52 @@ def login():
                 return render_template('login.html', error=error)
                 
             # Successful login
+            # Preserve language preference before clearing session
+            current_language = session.get('language')
+            
             session.clear()
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['role'] = user['role_name']
             
-            app.logger.info("Successful login for user: %s (ID: %s) with role: %s from IP: %s", 
-                          user['username'], user['id'], user['role_name'], request.remote_addr)
+            # Restore or set default language preference
+            if current_language and current_language in app.config['LANGUAGES']:
+                session['language'] = current_language
+            else:
+                # Try to get user's previously saved language preference from database
+                try:
+                    cursor = db.cursor()
+                    cursor.execute("SELECT language_preference FROM users WHERE id = %s", (user['id'],))
+                    user_lang = cursor.fetchone()
+                    cursor.close()
+                    
+                    if user_lang and user_lang['language_preference'] and user_lang['language_preference'] in app.config['LANGUAGES']:
+                        session['language'] = user_lang['language_preference']
+                    else:
+                        # Default to browser preference or English
+                        session['language'] = request.accept_languages.best_match(app.config['LANGUAGES']) or 'en'
+                except Exception as e:
+                    # Fallback to English if database query fails
+                    session['language'] = 'en'
+                    app.logger.debug("Could not retrieve language preference for user %s: %s", user['username'], e)
+            
+            # Session management - set activity tracking and remember me
+            from datetime import datetime
+            session['last_activity'] = datetime.now().isoformat()
+            session['login_timestamp'] = datetime.now().isoformat()
+            
+            # Check for remember me option
+            remember_me = request.form.get('remember_me')
+            if remember_me:
+                session['remember_me'] = True
+                session.permanent = True
+                # Remember me sessions last 30 days, configured in login_required decorator
+            else:
+                session['remember_me'] = False
+                session.permanent = True  # Still permanent but uses regular timeout
+            
+            app.logger.info("Successful login for user: %s (ID: %s) with role: %s from IP: %s (Remember Me: %s)", 
+                          user['username'], user['id'], user['role_name'], request.remote_addr, bool(remember_me))
             
             if user['role_name'] == 'Administrator':
                 return redirect(url_for('admin_dashboard'))
@@ -302,6 +405,33 @@ def logout():
 def set_language(lang):
     if lang in app.config['LANGUAGES']:
         session['language'] = lang
+        
+        # If user is logged in, save language preference to database
+        if 'user_id' in session:
+            try:
+                db = get_db()
+                cursor = db.cursor()
+                
+                # Try to update the language preference
+                cursor.execute("""
+                    UPDATE users 
+                    SET language_preference = %s, updated_at = NOW() 
+                    WHERE id = %s
+                """, (lang, session['user_id']))
+                
+                db.commit()
+                cursor.close()
+                
+                app.logger.info("Language preference updated to %s for user %s", 
+                              lang, session.get('username', 'Unknown'))
+                
+            except Exception as e:
+                # If the column doesn't exist, we'll handle it gracefully
+                app.logger.debug("Could not save language preference for user %s: %s", 
+                               session.get('username', 'Unknown'), e)
+                if 'cursor' in locals():
+                    cursor.close()
+    
     # Redirect back to the previous page, or to the dashboard as a fallback
     return redirect(request.referrer or url_for('index'))
 
@@ -1718,10 +1848,19 @@ def create_ticket():
         data = request.get_json()
         
         # Validate required fields
-        required_fields = ['phone_id', 'title', 'description', 'priority']
+        required_fields = ['title', 'description', 'priority']
         for field in required_fields:
             if field not in data or not data[field]:
                 return jsonify({'error': f'Missing required field: {field}'}), 400
+        
+        # Validate phone_id specifically
+        if 'phone_id' not in data or not data['phone_id'] or data['phone_id'] == '' or data['phone_id'] == 0:
+            return jsonify({'error': 'Missing required field: phone_id. Please select a worker/phone.'}), 400
+        
+        try:
+            phone_id = int(data['phone_id'])
+        except (ValueError, TypeError):
+            return jsonify({'error': 'Invalid phone_id format. Please select a valid phone.'}), 400
         
         # Validate priority
         valid_priorities = ['Low', 'Medium', 'High', 'Urgent']
@@ -1740,7 +1879,7 @@ def create_ticket():
             JOIN secteurs s ON w.secteur_id = s.id
             WHERE p.id = %s AND s.manager_id = %s
         """
-        cursor.execute(phone_check_query, (data['phone_id'], session.get('user_id')))
+        cursor.execute(phone_check_query, (phone_id, session.get('user_id')))
         phone_info = cursor.fetchone()
         
         if not phone_info:
@@ -1756,7 +1895,7 @@ def create_ticket():
         cursor.execute(insert_query, (
             data['title'],
             data['description'],
-            data['phone_id'],
+            phone_id,
             session.get('user_id'),
             data['priority']
         ))
@@ -3306,29 +3445,34 @@ def create_phone_request():
 def get_all_phone_requests():
     """API endpoint for an admin to get all phone requests."""
     db = get_db()
-    cursor = db.cursor()
+    cursor = db.cursor()  # This should use RealDictCursor from the connection
     query = """
         SELECT 
-            pr.id, pr.status, pr.required_by_date,
-            w.full_name AS worker_name, w.id as worker_id,
-            s.secteur_name,
+            pr.id, pr.status, pr.submitted_at, pr.employee_name, pr.department, 
+            pr.position, pr.request_reason, pr.phone_type_preference, pr.urgency_level,
+            pr.reviewed_by, pr.reviewed_at, pr.review_notes, pr.fulfilled_by, pr.fulfilled_at,
+            pr.assigned_phone_id,
             requester.full_name AS requested_by
         FROM phone_requests pr
-        JOIN workers w ON pr.worker_id = w.id
-        JOIN secteurs s ON pr.secteur_id = s.id
-        JOIN users requester ON pr.requested_by_user_id = requester.id
+        JOIN users requester ON pr.requester_id = requester.id
         ORDER BY
             CASE pr.status WHEN 'Pending' THEN 1 WHEN 'Approved' THEN 2 ELSE 3 END,
-            pr.required_by_date ASC;
+            pr.submitted_at DESC;
     """
     cursor.execute(query)
     requests = cursor.fetchall()
     cursor.close()
     
+    # Convert datetime objects to ISO format strings for JSON serialization
+    result = []
     for req in requests:
-        if req.get('required_by_date'): req['required_by_date'] = req['required_by_date'].isoformat()
+        req_dict = dict(req)  # Convert RealDictRow to regular dict
+        for key, value in req_dict.items():
+            if hasattr(value, 'isoformat'):  # Check if it's a datetime object
+                req_dict[key] = value.isoformat()
+        result.append(req_dict)
             
-    return jsonify(requests)
+    return jsonify(result)
 
 @app.route('/api/admin/phone_requests/<int:request_id>', methods=['PUT'])
 @login_required
@@ -3345,7 +3489,18 @@ def update_phone_request_status(request_id):
     db = get_db()
     cursor = db.cursor()
     try:
-        cursor.execute("UPDATE phone_requests SET status = %s, updated_at = now() WHERE id = %s", (new_status, request_id))
+        # Update status and appropriate timestamp based on the new status
+        if new_status in ['Approved', 'Denied']:
+            cursor.execute(
+                "UPDATE phone_requests SET status = %s, reviewed_by = %s, reviewed_at = now() WHERE id = %s", 
+                (new_status, session.get('user_id'), request_id)
+            )
+        elif new_status == 'Fulfilled':
+            cursor.execute(
+                "UPDATE phone_requests SET status = %s, fulfilled_by = %s, fulfilled_at = now() WHERE id = %s", 
+                (new_status, session.get('user_id'), request_id)
+            )
+        
         db.commit()
         cursor.close()
         return jsonify({"message": f"Request #{request_id} has been {new_status}."})

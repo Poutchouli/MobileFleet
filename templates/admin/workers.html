@@ -1,25 +1,25 @@
 {% extends "base.html" %}
 
-{% block title %}Manage Workers - Admin{% endblock %}
+{% block title %}{{ _('Manage Workers') }} - {{ _('Admin') }}{% endblock %}
 
-{% block page_title %}Manage Workers{% endblock %}
+{% block page_title %}{{ _('Manage Workers') }}{% endblock %}
 
 {% block content %}
 <div class="custom-card">
     <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-semibold">Active Workers</h2>
+        <h2 class="text-xl font-semibold">{{ _('Active Workers') }}</h2>
         <button id="add-worker-btn" class="btn btn-primary">
-            Add New Worker
+            {{ _('Add New Worker') }}
         </button>
     </div>
     <table class="custom-table">
         <thead>
             <tr>
-                <th>Worker ID</th>
-                <th>Full Name</th>
-                <th>Sector</th>
-                <th>Status</th>
-                <th class="text-right">Actions</th>
+                <th>{{ _('Worker ID') }}</th>
+                <th>{{ _('Full Name') }}</th>
+                <th>{{ _('Sector') }}</th>
+                <th>{{ _('Status') }}</th>
+                <th class="text-right">{{ _('Actions') }}</th>
             </tr>
         </thead>
         <tbody id="workers-table-body">

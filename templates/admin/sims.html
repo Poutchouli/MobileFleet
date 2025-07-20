@@ -1,25 +1,25 @@
 {% extends "base.html" %}
 
-{% block title %}Manage SIM Cards - Admin{% endblock %}
+{% block title %}{{ _('Manage SIM Cards') }} - {{ _('Admin') }}{% endblock %}
 
-{% block page_title %}Manage SIM Cards{% endblock %}
+{% block page_title %}{{ _('Manage SIM Cards') }}{% endblock %}
 
 {% block content %}
 <div class="custom-card">
     <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-semibold">SIM Card Inventory</h2>
+        <h2 class="text-xl font-semibold">{{ _('SIM Card Inventory') }}</h2>
         <button id="add-sim-btn" class="btn btn-primary">
-            Add New SIM
+            {{ _('Add New SIM') }}
         </button>
     </div>
     <table class="custom-table">
         <thead>
             <tr>
-                <th>ICCID</th>
-                <th>Phone Number</th>
-                <th>Carrier</th>
-                <th>Status</th>
-                <th class="text-right">Actions</th>
+                <th>{{ _('ICCID') }}</th>
+                <th>{{ _('Phone Number') }}</th>
+                <th>{{ _('Carrier') }}</th>
+                <th>{{ _('Status') }}</th>
+                <th class="text-right">{{ _('Actions') }}</th>
             </tr>
         </thead>
         <tbody id="sims-table-body">
