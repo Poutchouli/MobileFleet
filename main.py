@@ -39,14 +39,14 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # CSRF protection
 app.config['REMEMBER_ME_DAYS'] = int(os.environ.get('REMEMBER_ME_DAYS', 30))
 
 # --- Babel Configuration ---
-app.config['LANGUAGES'] = ['en', 'fr', 'nl']  # Supported: English, French, Dutch
+app.config['LANGUAGES'] = ['fr', 'en']  # Supported: French (default), English
 
 def get_locale():
     # Check if the user has a language stored in their session
     if 'language' in session and session['language'] in app.config['LANGUAGES']:
         return session['language']
-    # Otherwise, try to match the language from their browser's settings
-    return request.accept_languages.best_match(app.config['LANGUAGES'])
+    # Otherwise, return French as default language
+    return request.accept_languages.best_match(app.config['LANGUAGES']) or 'fr'
 
 babel = Babel(app, locale_selector=get_locale)
 

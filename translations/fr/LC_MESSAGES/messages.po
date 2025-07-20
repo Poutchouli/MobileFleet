@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-07-20 01:50+0200\n"
+"POT-Creation-Date: 2025-07-20 20:24+0000\n"
 "PO-Revision-Date: 2025-07-19 05:31+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -36,15 +36,15 @@ msgstr "Bienvenue"
 msgid "Language"
 msgstr "Langue"
 
-#: templates/base.html:48
+#: templates/base.html:45
 msgid "Account"
 msgstr "Compte"
 
-#: templates/base.html:67 templates/profile.html:9
+#: templates/base.html:64 templates/profile.html:9
 msgid "Profile Settings"
 msgstr "Paramètres du Profil"
 
-#: templates/base.html:75
+#: templates/base.html:72
 msgid "Sign out"
 msgstr "Se Déconnecter"
 
@@ -84,6 +84,7 @@ msgid "Phone Inventory"
 msgstr "Numéros de Téléphone"
 
 #: templates/admin/phones.html:19 templates/dashboard.html:39
+#: templates/manager/ticket_detail.html:66
 msgid "Asset Tag"
 msgstr "Étiquette d'Actif"
 
@@ -120,7 +121,11 @@ msgstr "Nom d'utilisateur"
 msgid "Password"
 msgstr "Mot de passe"
 
-#: templates/login.html:50
+#: templates/login.html:52
+msgid "Remember me for 30 days"
+msgstr "Se souvenir de moi pendant 30 jours"
+
+#: templates/login.html:59
 msgid "Sign in"
 msgstr "Se Connecter"
 
@@ -185,7 +190,7 @@ msgstr "Conseils de Sécurité"
 
 #: templates/profile.html:111
 msgid "Use a unique password that you don't use elsewhere"
-msgstr ""
+msgstr "Utilisez un mot de passe unique que vous n'utilisez nulle part ailleurs"
 
 #: templates/profile.html:112
 msgid "Include a mix of uppercase, lowercase, numbers, and symbols"
@@ -255,7 +260,7 @@ msgstr "Rechercher par nom de travailleur, ID, actif..."
 
 #: templates/admin/import.html:3 templates/admin/import.html:5
 msgid "CSV Import Wizard"
-msgstr ""
+msgstr "Assistant d'Importation CSV"
 
 #: templates/admin/import.html:13
 #, fuzzy
@@ -444,7 +449,7 @@ msgstr "Erreur lors de la récupération du schéma :"
 
 #: templates/admin/import.html:164
 msgid "Duplicate column mapping:"
-msgstr ""
+msgstr "Mappage de colonne en double :"
 
 #: templates/admin/import.html:165
 msgid "The selected merge key must be mapped to a database column."
@@ -458,31 +463,31 @@ msgstr ""
 
 #: templates/admin/import.html:167
 msgid "Error during import:"
-msgstr ""
+msgstr "Erreur pendant l'importation :"
 
 #: templates/admin/import.html:168
 msgid "Import started..."
-msgstr ""
+msgstr "Importation démarrée..."
 
 #: templates/admin/import.html:169
 msgid "Import completed!"
-msgstr ""
+msgstr "Importation terminée !"
 
 #: templates/admin/import.html:170
 msgid "Processing rows..."
-msgstr ""
+msgstr "Traitement des lignes..."
 
 #: templates/admin/import.html:171
 msgid "Import Results"
-msgstr ""
+msgstr "Résultats de l'Importation"
 
 #: templates/admin/import.html:172
 msgid "Import was successful!"
-msgstr ""
+msgstr "L'importation a réussi !"
 
 #: templates/admin/import.html:173
 msgid "Import was partially successful"
-msgstr ""
+msgstr "L'importation a partiellement réussi"
 
 #: templates/admin/import.html:174
 #, fuzzy
@@ -503,19 +508,19 @@ msgstr "Lignes mises à jour :"
 
 #: templates/admin/import.html:178
 msgid "Rows skipped:"
-msgstr ""
+msgstr "Lignes ignorées :"
 
 #: templates/admin/import.html:179
 msgid "Errors:"
-msgstr ""
+msgstr "Erreurs :"
 
 #: templates/admin/import.html:180
 msgid "No errors encountered."
-msgstr ""
+msgstr "Aucune erreur rencontrée."
 
 #: templates/admin/import.html:181
 msgid "Error Details:"
-msgstr ""
+msgstr "Détails de l'erreur :"
 
 #: templates/admin/import.html:182
 #, fuzzy
@@ -661,6 +666,7 @@ msgid "Save"
 msgstr "Enregistrer"
 
 #: templates/admin/users.html:68 templates/integration/new_request.html:57
+#: templates/support/ticket_detail.html:124
 msgid "Cancel"
 msgstr "Annuler"
 
@@ -753,7 +759,7 @@ msgstr "Nom Complet de l'Employé"
 
 #: templates/integration/new_request.html:14
 msgid "Enter employee's full name"
-msgstr ""
+msgstr "Entrez le nom complet de l'employé"
 
 #: templates/integration/new_request.html:19
 msgid "e.g., Sales, Engineering, Operations"
@@ -829,6 +835,7 @@ msgid "Create New Ticket"
 msgstr "Créer un Nouveau Ticket"
 
 #: templates/manager/create_ticket.html:16
+#: templates/manager/ticket_detail.html:16
 #, fuzzy
 msgid "Back to My Tickets"
 msgstr "Mes Tickets"
@@ -840,6 +847,8 @@ msgstr "Soumettre un Nouveau Ticket de Support"
 #: templates/manager/create_ticket.html:24
 msgid "Provide details about the issue you're experiencing with a device."
 msgstr ""
+"Fournissez des détails sur le problème que vous rencontrez avec un "
+"appareil."
 
 #: templates/manager/create_ticket.html:30
 msgid "Select Device"
@@ -897,6 +906,59 @@ msgstr "Statut du Téléphone"
 msgid "Support Status"
 msgstr "Statut du Support"
 
+#: templates/manager/ticket_detail.html:3
+#: templates/manager/ticket_detail.html:5
+#: templates/support/ticket_detail.html:3
+#: templates/support/ticket_detail.html:5
+#, fuzzy
+msgid "Ticket Details"
+msgstr "Titre du Ticket"
+
+#: templates/manager/ticket_detail.html:23
+#: templates/support/ticket_detail.html:14
+#, fuzzy
+msgid "Loading ticket details..."
+msgstr "Chargement..."
+
+#: templates/manager/ticket_detail.html:35
+#, fuzzy
+msgid "Error Loading Ticket"
+msgstr "Chargement..."
+
+#: templates/manager/ticket_detail.html:63
+#, fuzzy
+msgid "Device Information"
+msgstr "Informations du Compte"
+
+#: templates/manager/ticket_detail.html:70
+#, fuzzy
+msgid "Device"
+msgstr "Sélectionner l'Appareil"
+
+#: templates/manager/ticket_detail.html:74
+#: templates/manager/ticket_detail.html:89
+#, fuzzy
+msgid "Assigned To"
+msgstr "Téléphone Assigné"
+
+#: templates/manager/ticket_detail.html:82
+#, fuzzy
+msgid "Ticket Information"
+msgstr "Informations du Compte"
+
+#: templates/manager/ticket_detail.html:85
+msgid "Created"
+msgstr "Créé"
+
+#: templates/manager/ticket_detail.html:93
+#, fuzzy
+msgid "Last Updated"
+msgstr "Lignes mises à jour :"
+
+#: templates/manager/ticket_detail.html:101
+msgid "Description"
+msgstr "Description"
+
 #: templates/manager/tickets.html:24
 #, fuzzy
 msgid "Loading your tickets..."
@@ -931,4 +993,84 @@ msgstr "Titre"
 #, fuzzy
 msgid "Phone Asset"
 msgstr "Téléphones"
+
+#: templates/support/ticket_detail.html:11
+#, fuzzy
+msgid "Back to Helpdesk"
+msgstr "Retour au Téléchargement"
+
+#: templates/support/ticket_detail.html:24
+#, fuzzy
+msgid "Conversation"
+msgstr "Poste"
+
+#: templates/support/ticket_detail.html:33
+#, fuzzy
+msgid "Add an Update"
+msgstr "Ajouter un Nouvel Utilisateur"
+
+#: templates/support/ticket_detail.html:37
+msgid "Your Message"
+msgstr "Votre Message"
+
+#: templates/support/ticket_detail.html:38
+msgid "Type your public reply or internal note here..."
+msgstr "Tapez votre réponse publique ou note interne ici..."
+
+#: templates/support/ticket_detail.html:43
+msgid "Make this an internal note"
+msgstr "Faire de ceci une note interne"
+
+#: templates/support/ticket_detail.html:45
+#, fuzzy
+msgid "Post Update"
+msgstr "Lignes mises à jour :"
+
+#: templates/support/ticket_detail.html:55
+#, fuzzy
+msgid "Properties"
+msgstr "Mes Tickets"
+
+#: templates/support/ticket_detail.html:63
+#, fuzzy
+msgid "Quick Actions"
+msgstr "Actions"
+
+#: templates/support/ticket_detail.html:66
+msgid "Log Phone Swap/Pickup"
+msgstr "Enregistrer Échange/Récupération de Téléphone"
+
+#: templates/support/ticket_detail.html:67
+msgid "Email Manager"
+msgstr "Envoyer Email au Manager"
+
+#: templates/support/ticket_detail.html:72
+#, fuzzy
+msgid "Asset Details"
+msgstr "Étiquette d'Actif"
+
+#: templates/support/ticket_detail.html:80
+#, fuzzy
+msgid "Worker History"
+msgstr "Travailleurs"
+
+#: templates/support/ticket_detail.html:100
+msgid "Phone Swap/Pickup Details"
+msgstr "Détails Échange/Récupération de Téléphone"
+
+#: templates/support/ticket_detail.html:109
+msgid "Enter details about the phone swap or pickup for the manager:"
+msgstr ""
+"Entrez les détails sur l'échange ou la récupération de téléphone pour le "
+"manager :"
+
+#: templates/support/ticket_detail.html:115
+msgid ""
+"e.g., Replacement phone sent via courier XYZ-123 or Phone picked up by "
+"John D."
+msgstr ""
+
+#: templates/support/ticket_detail.html:131
+msgid "Log Swap"
+msgstr "Enregistrer l'Échange"
 
