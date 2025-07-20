@@ -198,7 +198,7 @@ def configure_logging():
     
     # Add handler to app logger
     app.logger.addHandler(file_handler)
-    app.logger.setLevel(logging.INFO)
+    app.logger.setLevel(logging.DEBUG)  # Enable debug logging temporarily
     app.logger.info("Fleet Management application started")
 
 # Initialize logging
@@ -264,7 +264,12 @@ def log_event(cursor, asset_type, asset_id, event_type, details):
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        # Debug logging for session state
+        app.logger.debug("login_required check for %s - user_id in session: %s, path: %s", 
+                        request.endpoint, 'user_id' in session, request.path)
+        
         if 'user_id' not in session:
+            app.logger.warning("Authentication required - no user_id in session for %s", request.path)
             # Return JSON error for API endpoints
             if request.path.startswith('/api/'):
                 return jsonify({'error': 'Authentication required'}), 401
@@ -273,19 +278,30 @@ def login_required(f):
         # Check if session has expired
         from datetime import datetime, timedelta
         if 'last_activity' in session:
-            last_activity = datetime.fromisoformat(session['last_activity'])
-            session_timeout = app.config['PERMANENT_SESSION_LIFETIME']
-            
-            # Check if remember_me extends the session
-            if session.get('remember_me'):
-                remember_me_days = app.config.get('REMEMBER_ME_DAYS', 30)
-                session_timeout = 60 * 60 * 24 * remember_me_days  # Configurable remember me duration
-            
-            if datetime.now() - last_activity > timedelta(seconds=session_timeout):
-                session.clear()
-                if request.path.startswith('/api/'):
-                    return jsonify({'error': 'Session expired'}), 401
-                return redirect(url_for('login', next=request.url))
+            try:
+                last_activity = datetime.fromisoformat(session['last_activity'])
+                session_timeout = app.config['PERMANENT_SESSION_LIFETIME']
+                
+                # Check if remember_me extends the session
+                if session.get('remember_me'):
+                    remember_me_days = app.config.get('REMEMBER_ME_DAYS', 30)
+                    session_timeout = 60 * 60 * 24 * remember_me_days  # Configurable remember me duration
+                
+                if datetime.now() - last_activity > timedelta(seconds=session_timeout):
+                    app.logger.info("Session expired for user %s (last activity: %s)", 
+                                   session.get('username', 'Unknown'), session['last_activity'])
+                    session.clear()
+                    if request.path.startswith('/api/'):
+                        return jsonify({'error': 'Session expired'}), 401
+                    return redirect(url_for('login', next=request.url))
+            except (ValueError, TypeError) as e:
+                # If there's an issue with the datetime format, reset the timestamp
+                app.logger.debug("Invalid last_activity timestamp for user %s: %s", 
+                               session.get('username', 'Unknown'), e)
+                session['last_activity'] = datetime.now().isoformat()
+        else:
+            # First time accessing after login - set initial timestamp
+            session['last_activity'] = datetime.now().isoformat()
         
         # Update last activity timestamp for session renewal
         session['last_activity'] = datetime.now().isoformat()

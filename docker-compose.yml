@@ -37,6 +37,13 @@ services:
       - DATABASE_URL=postgresql://postgres:password@db:5432/fleet_db
       # Flask environment settings.
       - FLASK_ENV=development
+      # Session Management - Use our secure SECRET_KEY
+      - SECRET_KEY=41e139476c7ccc329e6ec1d6203c4d91ba31e968339ca88658f0694a1c8d54cd
+      # Session timeout configuration
+      - SESSION_TIMEOUT_HOURS=8
+      - REMEMBER_ME_DAYS=30
+      # Logging configuration
+      - LOG_LEVEL=INFO
     # This service depends on the 'db' service. Docker Compose will start the 'db'
     # service before it starts the 'web' service.
     depends_on:
