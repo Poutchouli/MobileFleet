@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Import Wizard - Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .step { border: 1px solid #ddd; padding: 20px; margin: 20px 0; border-radius: 8px; }
+        .hidden { display: none; }
+        .step-active { background: #f0f9ff; border-color: #0ea5e9; }
+        button { background: #0ea5e9; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        select, input[type="file"], input[type="number"], input[type="text"] { padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #f9f9f9; }
+        .upload-area { border: 2px dashed #ddd; padding: 40px; text-align: center; cursor: pointer; }
+        .upload-area:hover { border-color: #0ea5e9; background: #f9f9f9; }
+        
+        /* Styles pour les options de formatage */
+        .format-section { margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 5px; }
+        .format-section h4 { margin-top: 0; color: #333; }
+        .separator-options { display: flex; flex-wrap: wrap; gap: 15px; margin: 10px 0; }
+        .separator-options label { display: flex; align-items: center; gap: 5px; }
+        .custom-separator { display: flex; align-items: center; gap: 5px; }
+        .preview-box { 
+            max-height: 200px; 
+            overflow: auto; 
+            border: 1px solid #ccc; 
+            padding: 10px; 
+            background: white; 
+            font-family: 'Courier New', monospace; 
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .preview-line {
+            margin: 3px 0;
+            padding: 3px 5px;
+            background: #f5f5f5;
+            border-radius: 3px;
+            border-left: 3px solid #0ea5e9;
+        }
+        .option-row {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            gap: 10px;
+        }
+        .option-row label {
+            min-width: 150px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Assistant d'Import CSV - Test</h1>
+    
+    <!-- Étape 1: Upload du fichier et options de formatage -->
+    <div id="step1" class="step step-active">
+        <h2>Étape 1: Sélection du fichier et options d'import</h2>
+        
+        <!-- Upload du fichier -->
+        <div class="upload-area" onclick="document.getElementById('csvFile').click()">
+            <p>Cliquez ici pour sélectionner votre fichier CSV</p>
+            <input type="file" id="csvFile" accept=".csv,.txt" style="display: none;">
+        </div>
+        
+        <!-- Options de formatage -->
+        <div id="formatOptions" class="hidden" style="margin-top: 20px; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9;">
+            <h3>Options d'import</h3>
+            
+            <!-- Jeu de caractères et langue -->
+            <div class="format-section">
+                <div class="option-row">
+                    <label>Jeu de caractères :</label>
+                    <select id="encoding">
+                        <option value="UTF-8">Unicode (UTF-8)</option>
+                        <option value="UTF-16">Unicode (UTF-16)</option>
+                        <option value="ISO-8859-1">Western (ISO-8859-1)</option>
+                        <option value="Windows-1252">Windows-1252</option>
+                    </select>
+                </div>
+                
+                <div class="option-row">
+                    <label>Langue :</label>
+                    <select id="language">
+                        <option value="fr">Français (France)</option>
+                        <option value="en">English (US)</option>
+                        <option value="en-GB">English (UK)</option>
+                    </select>
+                </div>
+                
+                <div class="option-row">
+                    <label>À partir de la ligne :</label>
+                    <input type="number" id="startLine" value="1" min="1" style="width: 60px;">
+                </div>
+            </div>
+            
+            <!-- Options de séparateur -->
+            <div class="format-section">
+                <h4>Options de séparateur</h4>
+                <div style="margin: 10px 0;">
+                    <label><input type="radio" name="separatorType" value="fixed" id="fixedWidth"> Largeur fixe</label>
+                    <label style="margin-left: 30px;"><input type="radio" name="separatorType" value="separated" id="separated" checked> Séparé par</label>
+                </div>
+                
+                <div id="separatorOptions" style="margin-left: 20px; margin-top: 15px;">
+                    <div class="separator-options">
+                        <label><input type="checkbox" id="tabSeparator"> Tabulation</label>
+                        <label><input type="checkbox" id="semicolonSeparator" checked> Point-virgule</label>
+                        <label><input type="checkbox" id="commaSeparator"> Virgule</label>
+                        <label><input type="checkbox" id="spaceSeparator"> Espace</label>
+                    </div>
+                    
+                    <div class="custom-separator" style="margin-top: 10px;">
+                        <label><input type="checkbox" id="customSeparator"> Autre :</label>
+                        <input type="text" id="customSeparatorValue" placeholder="|" maxlength="1" style="width: 40px;">
+                    </div>
+                    
+                    <div style="margin-top: 15px;">
+                        <label><input type="checkbox" id="mergeSeparators"> Fusionner les séparateurs</label>
+                    </div>
+                    
+                    <div class="option-row" style="margin-top: 15px;">
+                        <label>Séparateur de chaîne de caractères :</label>
+                        <select id="textDelimiter">
+                            <option value='"'>" (guillemets)</option>
+                            <option value="'">' (apostrophe)</option>
+                            <option value="">Aucun</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Autres options -->
+            <div class="format-section">
+                <h4>Autres options</h4>
+                <div style="margin: 10px 0;">
+                    <label><input type="checkbox" id="formatFields"> Formater les champs entre guillemets comme texte</label>
+                </div>
+                <div style="margin: 10px 0;">
+                    <label><input type="checkbox" id="detectNumbers" checked> Détecter les nombres spéciaux</label>
+                </div>
+            </div>
+            
+            <!-- Aperçu du parsing -->
+            <div class="format-section">
+                <h4>Aperçu du parsing :</h4>
+                <div id="parsePreview" class="preview-box"></div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <button onclick="parseWithOptions()" style="font-size: 16px; padding: 12px 24px;">📊 Analyser et continuer</button>
+            </div>
+        </div>
+        
+        <div id="uploadStatus"></div>
+    </div>
+
+    <!-- Étape 2: Preview & Select Table -->
+    <div id="step2" class="step hidden">
+        <h2>Étape 2: Aperçu des données et sélection de table</h2>
+        <div>
+            <label>Table de destination:</label>
+            <select id="targetTable">
+                <option value="">-- Choisir une table --</option>
+            </select>
+        </div>
+        <h3>Aperçu des données (5 premières lignes):</h3>
+        <div id="previewContainer"></div>
+        <button onclick="showStep(3)" id="nextToMapping" disabled>Continuer vers le mapping</button>
+    </div>
+
+    <!-- Étape 3: Map Columns -->
+    <div id="step3" class="step hidden">
+        <h2>Étape 3: Association des colonnes</h2>
+        <p>Associez chaque colonne CSV avec un champ de la base de données:</p>
+        <div id="mappingContainer"></div>
+        <button onclick="showStep(4)" id="nextToValidate" disabled>Valider l'import</button>
+    </div>
+
+    <!-- Étape 4: Validate & Import -->
+    <div id="step4" class="step hidden">
+        <h2>Étape 4: Validation et import</h2>
+        <div id="validationSummary"></div>
+        <button onclick="executeImport()" id="executeBtn">Exécuter l'import</button>
+        <div id="importResults"></div>
+    </div>
+
+    <script>
+        let csvData = '';
+        let csvHeaders = [];
+        let previewData = [];
+        let availableTables = [];
+        let targetTable = '';
+        let dbColumns = [];
+        let columnMapping = {};
+        let rawFileContent = '';
+
+        // Étape 1: Upload du fichier
+        document.getElementById('csvFile').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            document.getElementById('uploadStatus').innerHTML = '<p>📤 Fichier chargé, configurez les options de formatage...</p>';
+            
+            // Lire le contenu brut du fichier
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                rawFileContent = e.target.result;
+                document.getElementById('formatOptions').classList.remove('hidden');
+                showParsePreview();
+            };
+            reader.readAsText(file);
+        });
+
+        // Gestionnaires d'événements pour les options
+        document.addEventListener('DOMContentLoaded', function() {
+            // Événements pour les séparateurs
+            document.getElementById('tabSeparator').addEventListener('change', showParsePreview);
+            document.getElementById('semicolonSeparator').addEventListener('change', showParsePreview);
+            document.getElementById('commaSeparator').addEventListener('change', showParsePreview);
+            document.getElementById('spaceSeparator').addEventListener('change', showParsePreview);
+            document.getElementById('customSeparator').addEventListener('change', showParsePreview);
+            document.getElementById('customSeparatorValue').addEventListener('input', showParsePreview);
+            document.getElementById('textDelimiter').addEventListener('change', showParsePreview);
+            document.getElementById('startLine').addEventListener('change', showParsePreview);
+            document.getElementById('mergeSeparators').addEventListener('change', showParsePreview);
+        });
+
+        function getSelectedSeparators() {
+            let separators = [];
+            if (document.getElementById('tabSeparator').checked) separators.push('\t');
+            if (document.getElementById('semicolonSeparator').checked) separators.push(';');
+            if (document.getElementById('commaSeparator').checked) separators.push(',');
+            if (document.getElementById('spaceSeparator').checked) separators.push(' ');
+            if (document.getElementById('customSeparator').checked) {
+                const customSep = document.getElementById('customSeparatorValue').value;
+                if (customSep) separators.push(customSep);
+            }
+            return separators.length > 0 ? separators : [';']; // Par défaut point-virgule
+        }
+
+        function parseCSV(content, separators, textDelimiter, startLine, mergeSeparators) {
+            const lines = content.split('\n').slice(startLine - 1);
+            const result = [];
+            
+            for (let line of lines) {
+                if (line.trim() === '') continue;
+                
+                const row = [];
+                let currentField = '';
+                let inQuotes = false;
+                let i = 0;
+                
+                while (i < line.length) {
+                    const char = line[i];
+                    
+                    if (char === textDelimiter && !inQuotes) {
+                        inQuotes = true;
+                    } else if (char === textDelimiter && inQuotes) {
+                        inQuotes = false;
+                    } else if (!inQuotes && separators.includes(char)) {
+                        row.push(currentField.trim());
+                        currentField = '';
+                        
+                        // Fusionner les séparateurs consécutifs si l'option est activée
+                        if (mergeSeparators) {
+                            while (i + 1 < line.length && separators.includes(line[i + 1])) {
+                                i++;
+                            }
+                        }
+                    } else {
+                        currentField += char;
+                    }
+                    i++;
+                }
+                
+                row.push(currentField.trim());
+                if (row.some(field => field !== '')) {
+                    result.push(row);
+                }
+            }
+            
+            return result;
+        }
+
+        function showParsePreview() {
+            if (!rawFileContent) return;
+            
+            const separators = getSelectedSeparators();
+            const textDelimiter = document.getElementById('textDelimiter').value;
+            const startLine = parseInt(document.getElementById('startLine').value) || 1;
+            const mergeSeparators = document.getElementById('mergeSeparators').checked;
+            
+            const parsed = parseCSV(rawFileContent, separators, textDelimiter, startLine, mergeSeparators);
+            
+            let previewHtml = '<strong>Aperçu des ' + Math.min(5, parsed.length) + ' premières lignes:</strong><br><br>';
+            
+            for (let i = 0; i < Math.min(5, parsed.length); i++) {
+                previewHtml += `<div style="margin: 5px 0; padding: 5px; background: #f0f0f0; border-radius: 3px;">`;
+                previewHtml += `Ligne ${i + startLine}: [${parsed[i].map(field => `"${field}"`).join(', ')}]`;
+                previewHtml += `</div>`;
+            }
+            
+            if (parsed.length === 0) {
+                previewHtml += '<div style="color: red;">Aucune donnée détectée avec ces paramètres</div>';
+            }
+            
+            document.getElementById('parsePreview').innerHTML = previewHtml;
+        }
+
+        async function parseWithOptions() {
+            if (!rawFileContent) {
+                alert('Veuillez d\'abord sélectionner un fichier');
+                return;
+            }
+            
+            const separators = getSelectedSeparators();
+            const textDelimiter = document.getElementById('textDelimiter').value;
+            const startLine = parseInt(document.getElementById('startLine').value) || 1;
+            const mergeSeparators = document.getElementById('mergeSeparators').checked;
+            
+            const parsed = parseCSV(rawFileContent, separators, textDelimiter, startLine, mergeSeparators);
+            
+            if (parsed.length === 0) {
+                alert('Aucune donnée n\'a pu être parsée avec ces paramètres');
+                return;
+            }
+            
+            // Première ligne = headers
+            csvHeaders = parsed[0];
+            previewData = parsed.slice(1, 6).map(row => {
+                const obj = {};
+                csvHeaders.forEach((header, index) => {
+                    obj[header] = row[index] || '';
+                });
+                return obj;
+            });
+            
+            // Reconstituer le CSV avec le bon formatage
+            csvData = parsed.map(row => row.join(',')).join('\n');
+            
+            // Récupérer la liste des tables disponibles
+            try {
+                const response = await fetch('/api/import/preview', {
+                    method: 'POST',
+                    body: new FormData(),
+                    credentials: 'same-origin'
+                });
+                
+                const data = await response.json();
+                if (response.ok && data.tables) {
+                    availableTables = data.tables;
+                } else {
+                    // Fallback avec tables par défaut
+                    availableTables = ['phones', 'sim_cards', 'workers', 'users', 'secteurs', 'phone_numbers'];
+                }
+            } catch (error) {
+                availableTables = ['phones', 'sim_cards', 'workers', 'users', 'secteurs', 'phone_numbers'];
+            }
+            
+            populateStep2();
+            showStep(2);
+        }
+
+        function populateStep2() {
+            // Populer la liste des tables
+            const tableSelect = document.getElementById('targetTable');
+            tableSelect.innerHTML = '<option value="">-- Choisir une table --</option>';
+            availableTables.forEach(table => {
+                tableSelect.innerHTML += `<option value="${table}">${table}</option>`;
+            });
+            
+            // Afficher l'aperçu des données
+            let previewHtml = '<table><thead><tr>';
+            csvHeaders.forEach(header => {
+                previewHtml += `<th>${header}</th>`;
+            });
+            previewHtml += '</tr></thead><tbody>';
+            
+            previewData.forEach(row => {
+                previewHtml += '<tr>';
+                csvHeaders.forEach(header => {
+                    previewHtml += `<td>${row[header] || ''}</td>`;
+                });
+                previewHtml += '</tr>';
+            });
+            previewHtml += '</tbody></table>';
+            
+            document.getElementById('previewContainer').innerHTML = previewHtml;
+        }
+
+        // Sélection de table
+        document.getElementById('targetTable').addEventListener('change', async function() {
+            targetTable = this.value;
+            const nextBtn = document.getElementById('nextToMapping');
+            
+            if (!targetTable) {
+                nextBtn.disabled = true;
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/import/schema', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ table_name: targetTable }),
+                    credentials: 'same-origin'
+                });
+                
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error);
+                
+                dbColumns = data.columns;
+                nextBtn.disabled = false;
+                
+            } catch (error) {
+                alert(`Erreur lors de la récupération du schéma: ${error.message}`);
+                nextBtn.disabled = true;
+            }
+        });
+
+        function populateStep3() {
+            let mappingHtml = '<table><thead><tr><th>Colonne CSV</th><th>Champ BD</th></tr></thead><tbody>';
+            
+            csvHeaders.forEach((header, index) => {
+                mappingHtml += `<tr>
+                    <td><strong>${header}</strong></td>
+                    <td>
+                        <select id="mapping_${index}" onchange="updateMapping()">
+                            <option value="">-- Ne pas importer --</option>`;
+                            
+                dbColumns.forEach(col => {
+                    const selected = col.toLowerCase() === header.toLowerCase() ? 'selected' : '';
+                    mappingHtml += `<option value="${col}" ${selected}>${col}</option>`;
+                });
+                
+                mappingHtml += `</select>
+                    </td>
+                </tr>`;
+            });
+            
+            mappingHtml += '</tbody></table>';
+            document.getElementById('mappingContainer').innerHTML = mappingHtml;
+            updateMapping();
+        }
+
+        function updateMapping() {
+            columnMapping = {};
+            let hasMapping = false;
+            
+            csvHeaders.forEach((header, index) => {
+                const select = document.getElementById(`mapping_${index}`);
+                if (select.value) {
+                    columnMapping[header] = select.value;
+                    hasMapping = true;
+                }
+            });
+            
+            document.getElementById('nextToValidate').disabled = !hasMapping;
+        }
+
+        function populateStep4() {
+            let summaryHtml = `
+                <h3>Résumé de l'import:</h3>
+                <p><strong>Table de destination:</strong> ${targetTable}</p>
+                <p><strong>Nombre de lignes:</strong> ${previewData.length}</p>
+                <h4>Mapping des colonnes:</h4>
+                <ul>`;
+                
+            for (const [csvCol, dbCol] of Object.entries(columnMapping)) {
+                summaryHtml += `<li><strong>${csvCol}</strong> → ${dbCol}</li>`;
+            }
+            
+            summaryHtml += '</ul>';
+            document.getElementById('validationSummary').innerHTML = summaryHtml;
+        }
+
+        async function executeImport() {
+            document.getElementById('importResults').innerHTML = '<p>⏳ Import en cours...</p>';
+            
+            try {
+                const response = await fetch('/api/import/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        csv_data: csvData,
+                        target_table: targetTable,
+                        merge_key_csv: csvHeaders[0], // Premier champ comme clé
+                        merge_key_db: columnMapping[csvHeaders[0]],
+                        column_mappings: columnMapping
+                    }),
+                    credentials: 'same-origin'
+                });
+                
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error);
+                
+                document.getElementById('importResults').innerHTML = 
+                    `<p style="color: green;">✅ ${result.message}</p>
+                     <p>Lignes insérées: ${result.inserted || 0}</p>
+                     <p>Lignes mises à jour: ${result.updated || 0}</p>`;
+                
+            } catch (error) {
+                document.getElementById('importResults').innerHTML = 
+                    `<p style="color: red;">❌ Erreur: ${error.message}</p>`;
+            }
+        }
+
+        function showStep(stepNumber) {
+            // Cacher toutes les étapes
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`step${i}`).classList.add('hidden');
+                document.getElementById(`step${i}`).classList.remove('step-active');
+            }
+            
+            // Afficher l'étape demandée
+            document.getElementById(`step${stepNumber}`).classList.remove('hidden');
+            document.getElementById(`step${stepNumber}`).classList.add('step-active');
+            
+            // Populer les données selon l'étape
+            if (stepNumber === 3) populateStep3();
+            if (stepNumber === 4) populateStep4();
+        }
+    </script>
+</body>
+</html>

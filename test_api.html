@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test API Import</title>
+</head>
+<body>
+    <h1>Test API Import</h1>
+    <button onclick="testSchema()">Test Schema API</button>
+    <button onclick="testCSVData()">Test CSV Data</button>
+    <div id="results"></div>
+    
+    <script>
+        async function testSchema() {
+            try {
+                const response = await fetch('/api/import/schema', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'credentials': 'same-origin'
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ table_name: 'phones' })
+                });
+                const data = await response.json();
+                document.getElementById('results').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('results').innerHTML = 'Error: ' + error.message;
+            }
+        }
+        
+        async function testCSVData() {
+            const csvData = 'asset_tag,imei,serial_number,manufacturer,model,status\nTEST001,123456789012345,SN123456,Samsung,Galaxy S21,In Stock';
+            try {
+                const response = await fetch('/api/import/process', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'credentials': 'same-origin'
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ 
+                        csv_data: csvData,
+                        target_table: 'phones',
+                        merge_key_csv: 'asset_tag',
+                        merge_key_db: 'asset_tag',
+                        column_mappings: {
+                            'asset_tag': 'asset_tag',
+                            'imei': 'imei', 
+                            'serial_number': 'serial_number',
+                            'manufacturer': 'manufacturer',
+                            'model': 'model',
+                            'status': 'status'
+                        }
+                    })
+                });
+                const data = await response.json();
+                document.getElementById('results').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('results').innerHTML = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

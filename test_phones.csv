@@ -1,0 +1,4 @@
+asset_tag,imei,serial_number,manufacturer,model,status
+PHONE001,123456789012345,SN123456,Samsung,Galaxy S21,In Stock
+PHONE002,123456789012346,SN123457,Apple,iPhone 13,In Stock
+PHONE003,123456789012347,SN123458,Samsung,Galaxy Note 20,In Repair

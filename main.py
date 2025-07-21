@@ -11,7 +11,7 @@ from psycopg2.extras import RealDictCursor
 from functools import wraps
 from werkzeug.security import check_password_hash
 from flask import (
-    Flask, request, jsonify, render_template, session, redirect, url_for, g
+    Flask, request, jsonify, render_template, session, redirect, url_for, g, send_from_directory
 )
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -594,6 +594,20 @@ def admin_import_csv():
     """Serves the CSV data import page."""
     return render_template('admin/import.html')
 
+@app.route('/test-api')
+@login_required
+@role_required('Administrator')
+def test_api():
+    """Serves a test page for API debugging."""
+    return send_from_directory('.', 'test_api.html')
+
+@app.route('/csv-import-test')
+@login_required
+@role_required('Administrator')
+def csv_import_test():
+    """Serves a simplified CSV import test page."""
+    return send_from_directory('.', 'csv_import_test.html')
+
 @app.route('/admin/requests')
 @login_required
 @role_required('Administrator')
@@ -924,6 +938,126 @@ def change_password():
         db.rollback()
         cursor.close()
         app.logger.error("Unexpected error during password change for user %s: %s", username, e, exc_info=True)
+        return jsonify({"error": "An unexpected error occurred", "message": str(e)}), 500
+
+@app.route('/api/profile/update', methods=['PUT'])
+@login_required
+def update_profile():
+    """
+    Allows users to update their own name and email.
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided."}), 400
+    
+    full_name = data.get('full_name', '').strip()
+    email = data.get('email', '').strip()
+    
+    # Validate input
+    if not full_name and not email:
+        return jsonify({"error": "At least one field (name or email) must be provided."}), 400
+    
+    # Basic email validation if email is provided
+    if email and '@' not in email:
+        return jsonify({"error": "Please provide a valid email address."}), 400
+    
+    db = get_db()
+    cursor = db.cursor()
+    
+    username = session.get('username', 'Unknown')
+    user_id = session.get('user_id')
+    
+    app.logger.info("Profile update attempt by user %s (ID: %s)", username, user_id)
+    
+    try:
+        # Build update query dynamically based on provided fields
+        update_fields = []
+        values = []
+        
+        if full_name:
+            update_fields.append("full_name = %s")
+            values.append(full_name)
+        
+        if email:
+            # Check if email is already taken by another user
+            cursor.execute("SELECT id FROM users WHERE email = %s AND id != %s", (email, user_id))
+            existing_user = cursor.fetchone()
+            if existing_user:
+                cursor.close()
+                app.logger.warning("Profile update failed - email %s already exists for user %s", email, username)
+                return jsonify({"error": "This email address is already in use by another user."}), 409
+            
+            update_fields.append("email = %s")
+            values.append(email)
+        
+        if update_fields:
+            # Add updated_at timestamp
+            update_fields.append("updated_at = NOW()")
+            values.append(user_id)
+            
+            # Execute update
+            cursor.execute(
+                f"UPDATE users SET {', '.join(update_fields)} WHERE id = %s",
+                values
+            )
+            
+            db.commit()
+        
+        # Get updated user information
+        cursor.execute(
+            "SELECT full_name, email FROM users WHERE id = %s",
+            (user_id,)
+        )
+        updated_user = cursor.fetchone()
+        cursor.close()
+        
+        app.logger.info("Profile updated successfully for user %s (ID: %s)", username, user_id)
+        return jsonify({
+            "message": "Profile updated successfully.",
+            "user": {
+                "full_name": updated_user['full_name'],
+                "email": updated_user['email']
+            }
+        }), 200
+        
+    except Exception as e:
+        db.rollback()
+        cursor.close()
+        app.logger.error("Unexpected error during profile update for user %s: %s", username, e, exc_info=True)
+        return jsonify({"error": "An unexpected error occurred", "message": str(e)}), 500
+
+@app.route('/api/profile/info', methods=['GET'])
+@login_required
+def get_profile_info():
+    """
+    Get current user's profile information.
+    """
+    user_id = session.get('user_id')
+    
+    db = get_db()
+    cursor = db.cursor()
+    
+    try:
+        cursor.execute(
+            "SELECT username, full_name, email, language_preference FROM users WHERE id = %s",
+            (user_id,)
+        )
+        user = cursor.fetchone()
+        cursor.close()
+        
+        if not user:
+            return jsonify({"error": "User not found."}), 404
+        
+        return jsonify({
+            "username": user['username'],
+            "full_name": user['full_name'],
+            "email": user['email'],
+            "language_preference": user['language_preference']
+        }), 200
+        
+    except Exception as e:
+        cursor.close()
+        app.logger.error("Error getting profile info for user %s: %s", session.get('username'), e, exc_info=True)
         return jsonify({"error": "An unexpected error occurred", "message": str(e)}), 500
 
 # --- New API Endpoints for Provisioning Wizard ---

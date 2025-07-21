@@ -10,35 +10,75 @@
             <p class="text-gray-600">{{ _('Manage your account security and personal information') }}</p>
         </div>
 
-        <!-- User Information Display -->
-        <div class="mb-8 p-4 bg-gray-50 rounded-lg">
-            <h2 class="text-lg font-semibold text-gray-800 mb-3">{{ _('Account Information') }}</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="text-sm font-medium text-gray-600">{{ _('Full Name') }}</label>
-                    <p class="text-gray-900">{{ session.full_name or _('Not set') }}</p>
+        <!-- User Information Display and Edit -->
+        <div class="mb-8">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">{{ _('Personal Information') }}</h2>
+            
+            <!-- Profile Edit Form -->
+            <form id="profile-form" class="space-y-4 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="full_name" class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ _('Full Name') }}
+                        </label>
+                        <input 
+                            type="text" 
+                            id="full_name" 
+                            name="full_name" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="{{ _('Enter your full name') }}"
+                        >
+                    </div>
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ _('Email Address') }}
+                        </label>
+                        <input 
+                            type="email" 
+                            id="email" 
+                            name="email" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="{{ _('Enter your email address') }}"
+                        >
+                    </div>
                 </div>
-                <div>
-                    <label class="text-sm font-medium text-gray-600">{{ _('Email') }}</label>
-                    <p class="text-gray-900">{{ session.email or _('Not set') }}</p>
+                
+                <div class="flex items-center justify-between pt-2">
+                    <div class="text-sm text-gray-600">
+                        {{ _('Update your personal information') }}
+                    </div>
+                    <button 
+                        type="submit" 
+                        id="profile-submit-btn"
+                        class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-md transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                    >
+                        {{ _('Update Profile') }}
+                    </button>
                 </div>
-                <div>
-                    <label class="text-sm font-medium text-gray-600">{{ _('Role') }}</label>
-                    <p class="text-gray-900">{{ session.role or _('Not set') }}</p>
-                </div>
-                <div>
-                    <label class="text-sm font-medium text-gray-600">{{ _('Username') }}</label>
-                    <p class="text-gray-900">{{ session.username or 'Not set' }}</p>
+            </form>
+
+            <!-- Current Account Information (Read-only) -->
+            <div class="p-4 bg-gray-50 rounded-lg">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">{{ _('Account Details') }}</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-sm font-medium text-gray-600">{{ _('Role') }}</label>
+                        <p class="text-gray-900">{{ session.role or _('Not set') }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-600">{{ _('Username') }}</label>
+                        <p class="text-gray-900">{{ session.username or 'Not set' }}</p>
+                    </div>
                 </div>
             </div>
         </div>
 
+        <!-- Success/Error Messages -->
+        <div id="message-container" class="mb-4"></div>
+
         <!-- Password Change Form -->
         <div class="border-t pt-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4">Change Password</h2>
-            
-            <!-- Success/Error Messages -->
-            <div id="message-container" class="mb-4"></div>
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">{{ _('Change Password') }}</h2>
             
             <form id="change-password-form" class="space-y-4">
                 <div>
@@ -121,15 +161,94 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('change-password-form');
+    const profileForm = document.getElementById('profile-form');
+    const passwordForm = document.getElementById('change-password-form');
     const messageContainer = document.getElementById('message-container');
-    const submitBtn = document.getElementById('submit-btn');
+    const profileSubmitBtn = document.getElementById('profile-submit-btn');
+    const passwordSubmitBtn = document.getElementById('submit-btn');
     
-    // Form submission handler
-    form.addEventListener('submit', async function(e) {
+    // Load current user profile data
+    loadProfileData();
+    
+    async function loadProfileData() {
+        try {
+            const response = await fetch('/api/profile/info', {
+                credentials: 'same-origin'
+            });
+            
+            if (response.ok) {
+                const userData = await response.json();
+                document.getElementById('full_name').value = userData.full_name || '';
+                document.getElementById('email').value = userData.email || '';
+            }
+        } catch (error) {
+            console.error('Error loading profile data:', error);
+        }
+    }
+    
+    // Profile update form submission handler
+    profileForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         
-        const formData = new FormData(form);
+        const formData = new FormData(profileForm);
+        const data = {
+            full_name: formData.get('full_name').trim(),
+            email: formData.get('email').trim()
+        };
+        
+        // Validate at least one field is provided
+        if (!data.full_name && !data.email) {
+            showMessage('{{ _("Please provide at least your name or email address.") }}', 'error');
+            return;
+        }
+        
+        // Basic email validation
+        if (data.email && !data.email.includes('@')) {
+            showMessage('{{ _("Please provide a valid email address.") }}', 'error');
+            return;
+        }
+        
+        // Disable submit button and show loading state
+        profileSubmitBtn.disabled = true;
+        profileSubmitBtn.textContent = '{{ _("Updating...") }}';
+        
+        try {
+            const response = await fetch('/api/profile/update', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                showMessage(result.message, 'success');
+                // Update the form with the returned data
+                if (result.user) {
+                    document.getElementById('full_name').value = result.user.full_name || '';
+                    document.getElementById('email').value = result.user.email || '';
+                }
+            } else {
+                showMessage(result.error || '{{ _("An error occurred while updating your profile.") }}', 'error');
+            }
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            showMessage('{{ _("Network error. Please try again.") }}', 'error');
+        } finally {
+            // Re-enable submit button
+            profileSubmitBtn.disabled = false;
+            profileSubmitBtn.textContent = '{{ _("Update Profile") }}';
+        }
+    });
+    
+    // Password form submission handler
+    passwordForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(passwordForm);
         const data = {
             current_password: formData.get('current_password'),
             new_password: formData.get('new_password'),
@@ -138,18 +257,18 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Client-side validation
         if (data.new_password !== data.confirm_password) {
-            showMessage('New passwords do not match.', 'error');
+            showMessage('{{ _("New passwords do not match.") }}', 'error');
             return;
         }
         
         if (data.new_password.length < 8) {
-            showMessage('New password must be at least 8 characters long.', 'error');
+            showMessage('{{ _("New password must be at least 8 characters long.") }}', 'error');
             return;
         }
         
         // Disable submit button and show loading state
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Changing Password...';
+        passwordSubmitBtn.disabled = true;
+        passwordSubmitBtn.textContent = '{{ _("Changing Password...") }}';
         
         try {
             const response = await fetch('/api/profile/change_password', {
@@ -157,6 +276,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
+                credentials: 'same-origin',
                 body: JSON.stringify(data)
             });
             
@@ -164,17 +284,17 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (response.ok) {
                 showMessage(result.message, 'success');
-                form.reset();
+                passwordForm.reset();
             } else {
-                showMessage(result.error || 'An error occurred while changing your password.', 'error');
+                showMessage(result.error || '{{ _("An error occurred while changing your password.") }}', 'error');
             }
         } catch (error) {
             console.error('Error changing password:', error);
-            showMessage('Network error. Please try again.', 'error');
+            showMessage('{{ _("Network error. Please try again.") }}', 'error');
         } finally {
             // Re-enable submit button
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Change Password';
+            passwordSubmitBtn.disabled = false;
+            passwordSubmitBtn.textContent = '{{ _("Change Password") }}';
         }
     });
     
@@ -184,14 +304,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function validatePasswordMatch() {
         if (confirmPassword.value && newPassword.value !== confirmPassword.value) {
-            confirmPassword.setCustomValidity('Passwords do not match');
+            confirmPassword.setCustomValidity('{{ _("Passwords do not match") }}');
         } else {
             confirmPassword.setCustomValidity('');
         }
     }
     
-    newPassword.addEventListener('input', validatePasswordMatch);
-    confirmPassword.addEventListener('input', validatePasswordMatch);
+    if (newPassword && confirmPassword) {
+        newPassword.addEventListener('input', validatePasswordMatch);
+        confirmPassword.addEventListener('input', validatePasswordMatch);
+    }
     
     function showMessage(message, type) {
         const alertClass = type === 'success' 
@@ -215,6 +337,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 messageContainer.innerHTML = '';
             }, 5000);
         }
+        
+        // Scroll to message
+        messageContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 });
 </script>
