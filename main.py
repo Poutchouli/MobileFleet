@@ -19,6 +19,9 @@ from flask_babel import Babel
 from dotenv import load_dotenv
 import time
 from collections import defaultdict, deque
+import tempfile
+import os
+import uuid
 
 # Rate Limiter Implementation (inline)
 class RateLimiter:
@@ -3101,6 +3104,314 @@ def return_assignment(assignment_id):
 def admin_import():
     """Serves the CSV import wizard page."""
     return render_template('import.html')
+
+# Global storage for temporary CSV files and parsed data
+temp_csv_storage = {}
+
+@app.route('/api/import/upload', methods=['POST'])
+@login_required
+@role_required('Administrator')
+def import_upload_file():
+    """Upload and store CSV file temporarily on server with parsing options."""
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part in the request."}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No file selected."}), 400
+
+    try:
+        # Generate unique session ID for this upload
+        upload_id = str(uuid.uuid4())
+        
+        # Read file content
+        file_content = file.stream.read()
+        
+        # Try different encodings
+        content_str = None
+        encoding_used = None
+        for encoding in ['utf-8', 'utf-8-sig', 'iso-8859-1', 'windows-1252']:
+            try:
+                content_str = file_content.decode(encoding)
+                encoding_used = encoding
+                break
+            except UnicodeDecodeError:
+                continue
+        
+        if content_str is None:
+            return jsonify({"error": "Could not decode file. Please check the encoding."}), 400
+        
+        # Store in temporary storage
+        temp_csv_storage[upload_id] = {
+            'content': content_str,
+            'filename': file.filename,
+            'encoding': encoding_used,
+            'uploaded_at': time.time(),
+            'user_id': session['user_id']
+        }
+        
+        # Clean up old uploads (older than 1 hour)
+        current_time = time.time()
+        to_remove = [
+            key for key, value in temp_csv_storage.items() 
+            if current_time - value['uploaded_at'] > 3600
+        ]
+        for key in to_remove:
+            del temp_csv_storage[key]
+        
+        # Get available tables
+        allowed_tables = ['phones', 'sim_cards', 'workers', 'users', 'secteurs', 'phone_numbers']
+        
+        return jsonify({
+            "upload_id": upload_id,
+            "filename": file.filename,
+            "encoding": encoding_used,
+            "file_size": len(content_str),
+            "tables": allowed_tables,
+            "message": "File uploaded successfully. Configure parsing options."
+        })
+        
+    except Exception as e:
+        app.logger.error(f"CSV upload failed: {str(e)}")
+        return jsonify({"error": f"Upload failed: {str(e)}"}), 500
+
+@app.route('/api/import/parse', methods=['POST'])
+@login_required
+@role_required('Administrator')
+def import_parse_with_options():
+    """Parse uploaded CSV with specific options and return preview."""
+    data = request.get_json()
+    upload_id = data.get('upload_id')
+    
+    if not upload_id or upload_id not in temp_csv_storage:
+        return jsonify({"error": "Invalid or expired upload session."}), 400
+    
+    # Verify user owns this upload
+    if temp_csv_storage[upload_id]['user_id'] != session['user_id']:
+        return jsonify({"error": "Access denied."}), 403
+    
+    try:
+        content = temp_csv_storage[upload_id]['content']
+        
+        # Parse options
+        separators = data.get('separators', [';'])
+        text_delimiter = data.get('text_delimiter', '"')
+        start_line = data.get('start_line', 1)
+        merge_separators = data.get('merge_separators', False)
+        
+        # Parse CSV with custom logic
+        parsed_data = parse_csv_with_options(
+            content, separators, text_delimiter, start_line, merge_separators
+        )
+        
+        if not parsed_data:
+            return jsonify({"error": "No data could be parsed with these options."}), 400
+        
+        # Store parsed result
+        temp_csv_storage[upload_id]['parsed_data'] = parsed_data
+        temp_csv_storage[upload_id]['parse_options'] = {
+            'separators': separators,
+            'text_delimiter': text_delimiter,
+            'start_line': start_line,
+            'merge_separators': merge_separators
+        }
+        
+        # Extract headers and preview
+        headers = parsed_data[0] if parsed_data else []
+        preview_data = []
+        
+        for row_data in parsed_data[1:6]:  # Skip header, take next 5
+            row_dict = {}
+            for i, header in enumerate(headers):
+                row_dict[header] = row_data[i] if i < len(row_data) else ''
+            preview_data.append(row_dict)
+        
+        return jsonify({
+            "headers": headers,
+            "preview_data": preview_data,
+            "total_rows": len(parsed_data) - 1,  # Exclude header
+            "columns_detected": len(headers),
+            "parse_info": {
+                "separators_used": separators,
+                "text_delimiter": text_delimiter,
+                "start_line": start_line,
+                "merge_separators": merge_separators
+            }
+        })
+        
+    except Exception as e:
+        app.logger.error(f"CSV parsing failed: {str(e)}")
+        return jsonify({"error": f"Parsing failed: {str(e)}"}), 500
+
+def parse_csv_with_options(content, separators, text_delimiter, start_line, merge_separators):
+    """Custom CSV parser with advanced options."""
+    lines = content.split('\n')[start_line - 1:]
+    result = []
+    
+    for line in lines:
+        if line.strip() == '':
+            continue
+            
+        row = []
+        current_field = ''
+        in_quotes = False
+        i = 0
+        
+        while i < len(line):
+            char = line[i]
+            
+            # Handle text delimiter (quotes)
+            if char == text_delimiter:
+                if not in_quotes:
+                    in_quotes = True
+                elif i + 1 < len(line) and line[i + 1] == text_delimiter:
+                    # Escaped quote
+                    current_field += text_delimiter
+                    i += 1  # Skip next quote
+                else:
+                    in_quotes = False
+            elif not in_quotes and char in separators:
+                # Found separator outside quotes
+                row.append(current_field.strip())
+                current_field = ''
+                
+                # Merge consecutive separators if option is enabled
+                if merge_separators:
+                    while i + 1 < len(line) and line[i + 1] in separators:
+                        i += 1
+            else:
+                current_field += char
+            
+            i += 1
+        
+        # Add the last field
+        row.append(current_field.strip())
+        
+        # Only add non-empty rows
+        if any(field.strip() for field in row):
+            result.append(row)
+    
+    return result
+
+@app.route('/api/import/process-uploaded', methods=['POST'])
+@login_required
+@role_required('Administrator')
+def import_process_uploaded():
+    """Process uploaded CSV file for final import."""
+    data = request.get_json()
+    upload_id = data.get('upload_id')
+    
+    if not upload_id or upload_id not in temp_csv_storage:
+        return jsonify({"error": "Invalid or expired upload session."}), 400
+        
+    # Verify user owns this upload
+    if temp_csv_storage[upload_id]['user_id'] != session['user_id']:
+        return jsonify({"error": "Access denied."}), 403
+    
+    try:
+        stored_data = temp_csv_storage[upload_id]
+        parsed_data = stored_data.get('parsed_data')
+        
+        if not parsed_data:
+            return jsonify({"error": "No parsed data available. Please parse the file first."}), 400
+        
+        target_table = data.get('target_table')
+        column_mappings = data.get('column_mappings', {})
+        merge_key_csv = data.get('merge_key_csv')
+        merge_key_db = data.get('merge_key_db')
+        
+        # Validate required fields
+        if not target_table or not column_mappings:
+            return jsonify({"error": "Missing required fields: target_table and column_mappings"}), 400
+        
+        # Process the import using existing logic
+        result = process_csv_import(
+            parsed_data, target_table, column_mappings, merge_key_csv, merge_key_db
+        )
+        
+        # Clean up the temporary data after successful import
+        if upload_id in temp_csv_storage:
+            del temp_csv_storage[upload_id]
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        app.logger.error(f"CSV import processing failed: {str(e)}")
+        return jsonify({"error": f"Import failed: {str(e)}"}), 500
+
+def process_csv_import(parsed_data, target_table, column_mappings, merge_key_csv, merge_key_db):
+    """Process CSV import with parsed data."""
+    allowed_tables = ['phones', 'sim_cards', 'workers', 'users', 'secteurs', 'phone_numbers']
+    if target_table not in allowed_tables:
+        raise ValueError(f"Invalid target table: {target_table}")
+    
+    headers = parsed_data[0]
+    data_rows = parsed_data[1:]
+    
+    inserted = 0
+    updated = 0
+    
+    db = get_db()
+    cursor = db.cursor()
+    
+    try:
+        for row in data_rows:
+            # Create data dictionary
+            row_dict = {}
+            for i, header in enumerate(headers):
+                if header in column_mappings:
+                    db_column = column_mappings[header]
+                    value = row[i] if i < len(row) else ''
+                    row_dict[db_column] = value.strip() if value else None
+            
+            if not row_dict:
+                continue
+            
+            # Build UPSERT query
+            columns = list(row_dict.keys())
+            placeholders = ['%s'] * len(columns)
+            values = list(row_dict.values())
+            
+            if merge_key_db and merge_key_db in row_dict:
+                # UPSERT logic
+                set_clause = ', '.join([f"{col} = EXCLUDED.{col}" for col in columns if col != merge_key_db])
+                upsert_query = f"""
+                    INSERT INTO {target_table} ({', '.join(columns)})
+                    VALUES ({', '.join(placeholders)})
+                    ON CONFLICT ({merge_key_db}) 
+                    DO UPDATE SET {set_clause}
+                    RETURNING (xmax = 0) as is_insert
+                """
+                
+                cursor.execute(upsert_query, values)
+                result = cursor.fetchone()
+                
+                if result and result[0]:
+                    inserted += 1
+                else:
+                    updated += 1
+            else:
+                # Simple insert
+                insert_query = f"""
+                    INSERT INTO {target_table} ({', '.join(columns)})
+                    VALUES ({', '.join(placeholders)})
+                """
+                cursor.execute(insert_query, values)
+                inserted += 1
+        
+        db.commit()
+        
+        return {
+            "message": f"Successfully processed {inserted + updated} rows.",
+            "inserted": inserted,
+            "updated": updated
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise e
+    finally:
+        cursor.close()
 
 @app.route('/api/import/preview', methods=['POST'])
 @login_required

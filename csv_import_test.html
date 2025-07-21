@@ -196,23 +196,44 @@
         let targetTable = '';
         let dbColumns = [];
         let columnMapping = {};
-        let rawFileContent = '';
+        let uploadId = null; // Pour stocker l'ID de session côté serveur
 
         // Étape 1: Upload du fichier
         document.getElementById('csvFile').addEventListener('change', async function(e) {
             const file = e.target.files[0];
             if (!file) return;
             
-            document.getElementById('uploadStatus').innerHTML = '<p>📤 Fichier chargé, configurez les options de formatage...</p>';
+            document.getElementById('uploadStatus').innerHTML = '<p>📤 Upload du fichier vers le serveur...</p>';
             
-            // Lire le contenu brut du fichier
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                rawFileContent = e.target.result;
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/api/import/upload', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'same-origin'
+                });
+                
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error);
+                
+                uploadId = data.upload_id;
+                availableTables = data.tables;
+                
+                document.getElementById('uploadStatus').innerHTML = 
+                    `<p style="color: green;">✅ Fichier "${data.filename}" uploadé avec succès!</p>
+                     <p>📊 Taille: ${(data.file_size / 1024).toFixed(1)} KB | Encodage: ${data.encoding}</p>`;
+                
                 document.getElementById('formatOptions').classList.remove('hidden');
+                
+                // Déclencher un premier aperçu avec les options par défaut
                 showParsePreview();
-            };
-            reader.readAsText(file);
+                
+            } catch (error) {
+                document.getElementById('uploadStatus').innerHTML = 
+                    `<p style="color: red;">❌ Erreur: ${error.message}</p>`;
+            }
         });
 
         // Gestionnaires d'événements pour les options
@@ -242,123 +263,115 @@
             return separators.length > 0 ? separators : [';']; // Par défaut point-virgule
         }
 
-        function parseCSV(content, separators, textDelimiter, startLine, mergeSeparators) {
-            const lines = content.split('\n').slice(startLine - 1);
-            const result = [];
-            
-            for (let line of lines) {
-                if (line.trim() === '') continue;
-                
-                const row = [];
-                let currentField = '';
-                let inQuotes = false;
-                let i = 0;
-                
-                while (i < line.length) {
-                    const char = line[i];
-                    
-                    if (char === textDelimiter && !inQuotes) {
-                        inQuotes = true;
-                    } else if (char === textDelimiter && inQuotes) {
-                        inQuotes = false;
-                    } else if (!inQuotes && separators.includes(char)) {
-                        row.push(currentField.trim());
-                        currentField = '';
-                        
-                        // Fusionner les séparateurs consécutifs si l'option est activée
-                        if (mergeSeparators) {
-                            while (i + 1 < line.length && separators.includes(line[i + 1])) {
-                                i++;
-                            }
-                        }
-                    } else {
-                        currentField += char;
-                    }
-                    i++;
-                }
-                
-                row.push(currentField.trim());
-                if (row.some(field => field !== '')) {
-                    result.push(row);
-                }
-            }
-            
-            return result;
-        }
-
         function showParsePreview() {
-            if (!rawFileContent) return;
+            if (!uploadId) return;
             
             const separators = getSelectedSeparators();
             const textDelimiter = document.getElementById('textDelimiter').value;
             const startLine = parseInt(document.getElementById('startLine').value) || 1;
             const mergeSeparators = document.getElementById('mergeSeparators').checked;
             
-            const parsed = parseCSV(rawFileContent, separators, textDelimiter, startLine, mergeSeparators);
+            // Envoyer les options de parsing au serveur
+            fetch('/api/import/parse', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    upload_id: uploadId,
+                    separators: separators,
+                    text_delimiter: textDelimiter,
+                    start_line: startLine,
+                    merge_separators: mergeSeparators
+                }),
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.headers) {
+                    document.getElementById('parsePreview').innerHTML = 
+                        '<div style="color: #dc3545; font-weight: bold;">❌ ' + (data.error || 'Erreur de parsing') + '</div>';
+                    return;
+                }
+                
+                // Mettre à jour les variables globales
+                csvHeaders = data.headers;
+                previewData = data.preview_data;
+                
+                // Afficher l'aperçu
+                displayParsePreview(data);
+            })
+            .catch(error => {
+                document.getElementById('parsePreview').innerHTML = 
+                    '<div style="color: #dc3545; font-weight: bold;">❌ Erreur: ' + error.message + '</div>';
+            });
+        }
+
+        function displayParsePreview(data) {
+            let previewHtml = '<div style="color: #28a745; font-weight: bold; margin-bottom: 10px;">✅ ' + data.total_rows + ' ligne(s) de données détectée(s)</div>';
             
-            let previewHtml = '<strong>Aperçu des ' + Math.min(5, parsed.length) + ' premières lignes:</strong><br><br>';
-            
-            for (let i = 0; i < Math.min(5, parsed.length); i++) {
-                previewHtml += `<div style="margin: 5px 0; padding: 5px; background: #f0f0f0; border-radius: 3px;">`;
-                previewHtml += `Ligne ${i + startLine}: [${parsed[i].map(field => `"${field}"`).join(', ')}]`;
-                previewHtml += `</div>`;
-            }
-            
-            if (parsed.length === 0) {
-                previewHtml += '<div style="color: red;">Aucune donnée détectée avec ces paramètres</div>';
+            if (data.headers && data.headers.length > 0) {
+                // Affichage sous forme de tableau
+                previewHtml += '<table style="width: 100%; font-size: 11px; border-collapse: collapse;">';
+                
+                // Headers
+                previewHtml += '<thead><tr style="background: #e9ecef;">';
+                previewHtml += '<th style="padding: 4px; border: 1px solid #ccc; width: 60px;">Ligne</th>';
+                data.headers.forEach((header, i) => {
+                    previewHtml += '<th style="padding: 4px; border: 1px solid #ccc;">' + header + '</th>';
+                });
+                previewHtml += '</tr></thead><tbody>';
+                
+                // Ligne d'headers (ligne 1)
+                previewHtml += '<tr style="background: #fff3cd;">';
+                previewHtml += '<td style="padding: 4px; border: 1px solid #ccc; font-weight: bold; text-align: center;">' + data.parse_info.start_line + '</td>';
+                data.headers.forEach(header => {
+                    previewHtml += '<td style="padding: 4px; border: 1px solid #ccc; font-weight: bold;">' + header + '</td>';
+                });
+                previewHtml += '</tr>';
+                
+                // Données (5 premières lignes)
+                data.preview_data.forEach((row, i) => {
+                    const bgColor = (i % 2 === 0) ? '#f8f9fa' : 'white';
+                    previewHtml += '<tr style="background: ' + bgColor + ';">';
+                    previewHtml += '<td style="padding: 4px; border: 1px solid #ccc; font-weight: bold; text-align: center;">' + (i + data.parse_info.start_line + 1) + '</td>';
+                    
+                    data.headers.forEach(header => {
+                        const cellValue = row[header] || '';
+                        const displayValue = cellValue.length > 20 ? cellValue.substring(0, 17) + '...' : cellValue;
+                        previewHtml += '<td style="padding: 4px; border: 1px solid #ccc;" title="' + cellValue.replace(/"/g, '&quot;') + '">' + displayValue + '</td>';
+                    });
+                    previewHtml += '</tr>';
+                });
+                
+                previewHtml += '</tbody></table>';
+                
+                if (data.total_rows > 5) {
+                    previewHtml += '<div style="margin-top: 8px; color: #6c757d; font-style: italic;">... et ' + (data.total_rows - 5) + ' ligne(s) supplémentaire(s)</div>';
+                }
+                
+                // Informations de parsing
+                previewHtml += '<div style="margin-top: 15px; padding: 8px; background: #e7f3ff; border-radius: 4px; font-size: 11px;">';
+                previewHtml += '<strong>Informations de parsing :</strong><br>';
+                previewHtml += '📊 Lignes de données : ' + data.total_rows + ' | Colonnes : ' + data.columns_detected + '<br>';
+                previewHtml += '🔧 Séparateur(s) : ' + data.parse_info.separators_used.map(s => s === '\t' ? 'TAB' : s === ' ' ? 'ESPACE' : s).join(', ') + '<br>';
+                if (data.parse_info.text_delimiter) previewHtml += '📝 Délimiteur de texte : ' + data.parse_info.text_delimiter + '<br>';
+                previewHtml += '📍 Ligne de départ : ' + data.parse_info.start_line;
+                if (data.parse_info.merge_separators) previewHtml += '<br>🔗 Fusion des séparateurs activée';
+                previewHtml += '</div>';
             }
             
             document.getElementById('parsePreview').innerHTML = previewHtml;
         }
 
         async function parseWithOptions() {
-            if (!rawFileContent) {
+            if (!uploadId) {
                 alert('Veuillez d\'abord sélectionner un fichier');
                 return;
             }
             
-            const separators = getSelectedSeparators();
-            const textDelimiter = document.getElementById('textDelimiter').value;
-            const startLine = parseInt(document.getElementById('startLine').value) || 1;
-            const mergeSeparators = document.getElementById('mergeSeparators').checked;
-            
-            const parsed = parseCSV(rawFileContent, separators, textDelimiter, startLine, mergeSeparators);
-            
-            if (parsed.length === 0) {
-                alert('Aucune donnée n\'a pu être parsée avec ces paramètres');
+            // Les données sont déjà parsées côté serveur via showParsePreview()
+            if (!csvHeaders || csvHeaders.length === 0) {
+                alert('Aucune donnée n\'a pu être parsée. Vérifiez vos options.');
                 return;
-            }
-            
-            // Première ligne = headers
-            csvHeaders = parsed[0];
-            previewData = parsed.slice(1, 6).map(row => {
-                const obj = {};
-                csvHeaders.forEach((header, index) => {
-                    obj[header] = row[index] || '';
-                });
-                return obj;
-            });
-            
-            // Reconstituer le CSV avec le bon formatage
-            csvData = parsed.map(row => row.join(',')).join('\n');
-            
-            // Récupérer la liste des tables disponibles
-            try {
-                const response = await fetch('/api/import/preview', {
-                    method: 'POST',
-                    body: new FormData(),
-                    credentials: 'same-origin'
-                });
-                
-                const data = await response.json();
-                if (response.ok && data.tables) {
-                    availableTables = data.tables;
-                } else {
-                    // Fallback avec tables par défaut
-                    availableTables = ['phones', 'sim_cards', 'workers', 'users', 'secteurs', 'phone_numbers'];
-                }
-            } catch (error) {
-                availableTables = ['phones', 'sim_cards', 'workers', 'users', 'secteurs', 'phone_numbers'];
             }
             
             populateStep2();
@@ -426,20 +439,20 @@
             let mappingHtml = '<table><thead><tr><th>Colonne CSV</th><th>Champ BD</th></tr></thead><tbody>';
             
             csvHeaders.forEach((header, index) => {
-                mappingHtml += `<tr>
-                    <td><strong>${header}</strong></td>
-                    <td>
-                        <select id="mapping_${index}" onchange="updateMapping()">
-                            <option value="">-- Ne pas importer --</option>`;
+                mappingHtml += '<tr>' +
+                    '<td><strong>' + header + '</strong></td>' +
+                    '<td>' +
+                        '<select id="mapping_' + index + '" onchange="updateMapping()">' +
+                            '<option value="">-- Ne pas importer --</option>';
                             
                 dbColumns.forEach(col => {
                     const selected = col.toLowerCase() === header.toLowerCase() ? 'selected' : '';
-                    mappingHtml += `<option value="${col}" ${selected}>${col}</option>`;
+                    mappingHtml += '<option value="' + col + '" ' + selected + '>' + col + '</option>';
                 });
                 
-                mappingHtml += `</select>
-                    </td>
-                </tr>`;
+                mappingHtml += '</select>' +
+                    '</td>' +
+                '</tr>';
             });
             
             mappingHtml += '</tbody></table>';
@@ -463,15 +476,14 @@
         }
 
         function populateStep4() {
-            let summaryHtml = `
-                <h3>Résumé de l'import:</h3>
-                <p><strong>Table de destination:</strong> ${targetTable}</p>
-                <p><strong>Nombre de lignes:</strong> ${previewData.length}</p>
-                <h4>Mapping des colonnes:</h4>
-                <ul>`;
+            let summaryHtml = '<h3>Résumé de l\'import:</h3>' +
+                '<p><strong>Table de destination:</strong> ' + targetTable + '</p>' +
+                '<p><strong>Nombre de lignes:</strong> ' + previewData.length + '</p>' +
+                '<h4>Mapping des colonnes:</h4>' +
+                '<ul>';
                 
             for (const [csvCol, dbCol] of Object.entries(columnMapping)) {
-                summaryHtml += `<li><strong>${csvCol}</strong> → ${dbCol}</li>`;
+                summaryHtml += '<li><strong>' + csvCol + '</strong> → ' + dbCol + '</li>';
             }
             
             summaryHtml += '</ul>';
@@ -482,11 +494,11 @@
             document.getElementById('importResults').innerHTML = '<p>⏳ Import en cours...</p>';
             
             try {
-                const response = await fetch('/api/import/process', {
+                const response = await fetch('/api/import/process-uploaded', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        csv_data: csvData,
+                        upload_id: uploadId,
                         target_table: targetTable,
                         merge_key_csv: csvHeaders[0], // Premier champ comme clé
                         merge_key_db: columnMapping[csvHeaders[0]],
@@ -500,8 +512,9 @@
                 
                 document.getElementById('importResults').innerHTML = 
                     `<p style="color: green;">✅ ${result.message}</p>
-                     <p>Lignes insérées: ${result.inserted || 0}</p>
-                     <p>Lignes mises à jour: ${result.updated || 0}</p>`;
+                     <p>📊 Lignes insérées: ${result.inserted || 0}</p>
+                     <p>🔄 Lignes mises à jour: ${result.updated || 0}</p>
+                     <p>📁 Session nettoyée automatiquement</p>`;
                 
             } catch (error) {
                 document.getElementById('importResults').innerHTML = 

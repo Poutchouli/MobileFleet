@@ -7,9 +7,13 @@ import psycopg2
 import time
 from psycopg2 import sql
 from werkzeug.security import generate_password_hash
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # --- Database Connection Configuration ---
-# This will be provided by the Docker environment.
+# This will be provided by the .env file.
 DB_URL = os.environ.get("DATABASE_URL")
 
 def get_db_connection():
