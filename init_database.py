@@ -93,7 +93,19 @@ def create_schema(cursor):
             full_name VARCHAR(255) NOT NULL,
             secteur_id INTEGER NOT NULL REFERENCES secteurs(id),
             status VARCHAR(20) NOT NULL CHECK (status IN ('Active', 'Inactive')),
+            contract_type VARCHAR(255) NULL,
+            last_contract_date DATE NULL,
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        );
+        """,
+        """
+        CREATE TABLE sim_cards (
+            id SERIAL PRIMARY KEY,
+            iccid VARCHAR(22) NOT NULL UNIQUE,
+            carrier VARCHAR(100),
+            plan_details TEXT,
+            puk VARCHAR(255) NULL,
+            status VARCHAR(20) NOT NULL CHECK (status IN ('In Stock', 'In Use', 'Deactivated'))
         );
         """,
         """
@@ -108,17 +120,10 @@ def create_schema(cursor):
             warranty_end_date DATE,
             status VARCHAR(20) NOT NULL CHECK (status IN ('In Stock', 'In Use', 'In Repair', 'Retired')),
             notes TEXT,
+            worker_id INTEGER REFERENCES workers(id),
+            sim_card_id INTEGER REFERENCES sim_cards(id),
             created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
             updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-        );
-        """,
-        """
-        CREATE TABLE sim_cards (
-            id SERIAL PRIMARY KEY,
-            iccid VARCHAR(22) NOT NULL UNIQUE,
-            carrier VARCHAR(100),
-            plan_details TEXT,
-            status VARCHAR(20) NOT NULL CHECK (status IN ('In Stock', 'In Use', 'Deactivated'))
         );
         """,
         """
@@ -126,6 +131,7 @@ def create_schema(cursor):
             id SERIAL PRIMARY KEY,
             phone_number VARCHAR(20) NOT NULL UNIQUE,
             sim_card_id INTEGER UNIQUE REFERENCES sim_cards(id),
+            rio VARCHAR(255) NULL,
             status VARCHAR(20) NOT NULL CHECK (status IN ('Active', 'Inactive', 'Porting'))
         );
         """,

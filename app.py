@@ -387,6 +387,13 @@ def admin_import_csv():
     """Serves the CSV data import page."""
     return render_template('admin/import.html')
 
+@app.route('/admin/csv-import')
+@login_required
+@role_required('Administrator')
+def admin_enhanced_csv_import():
+    """Serves the enhanced multi-table CSV import page."""
+    return render_template('admin/csv_import.html')
+
 @app.route('/admin/requests')
 @login_required
 @role_required('Administrator')
@@ -2889,6 +2896,7 @@ def import_process():
         inserted_count = 0
         updated_count = 0
         error_count = 0
+        detailed_errors = []  # Store detailed error information
         
         # --- Process each CSV row ---
         for row_index, row in enumerate(reader):
@@ -2896,19 +2904,34 @@ def import_process():
                 cursor = db.cursor()
                 
                 # --- Step 1: Upsert Worker and get worker_id ---
-                worker_name_csv = mappings.get('name')  # Assuming CSV header for worker name is mapped to 'name'
+                worker_name_csv = mappings.get('full_name')  # Worker full name
+                worker_id_csv = mappings.get('worker_id')    # Worker ID (Num SAL)
+                secteur_name_csv = mappings.get('secteur_name')  # Secteur name
+                contract_type_csv = mappings.get('contract_type')  # Contract type
+                last_contract_date_csv = mappings.get('last_contract_date')  # Last contract date
+                
                 worker_id = None
                 if worker_name_csv and row.get(worker_name_csv):
                     worker_name = row[worker_name_csv].strip()
                     if worker_name:  # Only process if name is not empty
-                        # Check if worker exists
-                        cursor.execute("SELECT id FROM workers WHERE full_name = %s", (worker_name,))
-                        worker_result = cursor.fetchone()
-                        if worker_result:
-                            worker_id = worker_result['id']
-                        else:
-                            # Insert worker if not found and get the new ID
-                            # We need a secteur_id - let's use default sector or create one
+                        # Look up secteur_id by name
+                        secteur_id = None
+                        if secteur_name_csv and row.get(secteur_name_csv):
+                            secteur_name = row[secteur_name_csv].strip()
+                            cursor.execute("SELECT id FROM secteurs WHERE secteur_name = %s", (secteur_name,))
+                            secteur_result = cursor.fetchone()
+                            if secteur_result:
+                                secteur_id = secteur_result['id']
+                            else:
+                                # Create secteur if it doesn't exist
+                                cursor.execute(
+                                    "INSERT INTO secteurs (secteur_name, description) VALUES (%s, %s) RETURNING id",
+                                    (secteur_name, f'Auto-created for {secteur_name}')
+                                )
+                                secteur_id = cursor.fetchone()['id']
+                        
+                        if not secteur_id:
+                            # Use default secteur if none specified
                             cursor.execute("SELECT id FROM secteurs LIMIT 1")
                             secteur_result = cursor.fetchone()
                             if not secteur_result:
@@ -2920,41 +2943,87 @@ def import_process():
                                 secteur_id = cursor.fetchone()['id']
                             else:
                                 secteur_id = secteur_result['id']
-                            
-                            # Generate a worker_id if not provided in CSV
-                            worker_code = mappings.get('worker_id')
-                            worker_id_value = row.get(worker_code) if worker_code else f"WK{worker_name.replace(' ', '').upper()[:6]}"
-                            
-                            cursor.execute(
-                                "INSERT INTO workers (worker_id, full_name, secteur_id, status) VALUES (%s, %s, %s, %s) RETURNING id",
-                                (worker_id_value, worker_name, secteur_id, 'Active')
-                            )
-                            worker_id = cursor.fetchone()['id']
+                        
+                        # Get worker_id value and contract details
+                        worker_id_value = row.get(worker_id_csv, '').strip() if worker_id_csv else f"WK{worker_name.replace(' ', '').upper()[:6]}"
+                        contract_type = row.get(contract_type_csv, '').strip() if contract_type_csv else None
+                        last_contract_date = row.get(last_contract_date_csv, '').strip() if last_contract_date_csv else None
+                        
+                        # Handle missing or invalid worker_id
+                        if not worker_id_value or worker_id_value in ['#N/D', 'N/A', '']:
+                            worker_id_value = f"WK{worker_name.replace(' ', '').upper()[:6]}{row_index}"
+                        
+                        # Handle missing or invalid contract type
+                        if not contract_type or contract_type in ['#N/D', 'N/A', '']:
+                            contract_type = None
+                        
+                        # Convert and validate date format
+                        if last_contract_date and last_contract_date not in ['#N/D', 'N/A', '']:
+                            try:
+                                # Try to parse DD/MM/YYYY format first
+                                if '/' in last_contract_date:
+                                    from datetime import datetime
+                                    parsed_date = datetime.strptime(last_contract_date, '%d/%m/%Y')
+                                    last_contract_date = parsed_date.strftime('%Y-%m-%d')
+                                # If already in YYYY-MM-DD format, validate it
+                                elif '-' in last_contract_date:
+                                    from datetime import datetime
+                                    datetime.strptime(last_contract_date, '%Y-%m-%d')  # Just validate
+                            except (ValueError, TypeError):
+                                last_contract_date = None  # Set to None if unparseable
+                        else:
+                            last_contract_date = None
+                        
+                        # Upsert worker with all fields
+                        cursor.execute("""
+                            INSERT INTO workers (worker_id, full_name, secteur_id, status, contract_type, last_contract_date)
+                            VALUES (%s, %s, %s, %s, %s, %s)
+                            ON CONFLICT (worker_id) DO UPDATE SET
+                                full_name = EXCLUDED.full_name,
+                                secteur_id = EXCLUDED.secteur_id,
+                                contract_type = EXCLUDED.contract_type,
+                                last_contract_date = EXCLUDED.last_contract_date
+                            RETURNING id;
+                        """, (worker_id_value, worker_name, secteur_id, 'Active', contract_type, last_contract_date))
+                        worker_id = cursor.fetchone()['id']
 
                 # --- Step 2: Upsert SIM Card and get sim_id ---
                 iccid_csv = mappings.get('iccid')  # Mapped to 'iccid'
                 sim_id = None
                 if iccid_csv and row.get(iccid_csv):
                     iccid = row[iccid_csv].strip()
+                    
+                    # Handle scientific notation in ICCID (Excel export issue)
+                    if 'E+' in iccid or 'e+' in iccid:
+                        try:
+                            # Convert scientific notation to proper ICCID
+                            iccid = f"{float(iccid):.0f}"
+                        except ValueError:
+                            pass  # Keep original if conversion fails
+                    
                     if iccid:  # Only process if ICCID is not empty
-                        pin_csv = mappings.get('pin', None)
-                        puk_csv = mappings.get('puk', None)
                         carrier_csv = mappings.get('carrier', None)
+                        puk_csv = mappings.get('puk', None)
                         
-                        pin = row.get(pin_csv, '').strip() if pin_csv else None
-                        puk = row.get(puk_csv, '').strip() if puk_csv else None
                         carrier = row.get(carrier_csv, '').strip() if carrier_csv else None
+                        puk = row.get(puk_csv, '').strip() if puk_csv else None
+                        
+                        # Handle missing or invalid data
+                        if not carrier or carrier in ['#N/D', 'N/A', '']:
+                            carrier = None
+                        if not puk or puk in ['#N/D', 'N/A', '']:
+                            puk = None
 
                         # Upsert SIM and get its ID
                         cursor.execute("""
-                            INSERT INTO sim_cards (iccid, carrier, plan_details, status)
+                            INSERT INTO sim_cards (iccid, carrier, puk, status)
                             VALUES (%s, %s, %s, %s)
                             ON CONFLICT (iccid) DO UPDATE SET
                                 carrier = EXCLUDED.carrier,
-                                plan_details = EXCLUDED.plan_details,
+                                puk = EXCLUDED.puk,
                                 status = EXCLUDED.status
                             RETURNING id;
-                        """, (iccid, carrier, f"PIN: {pin}, PUK: {puk}" if pin or puk else None, 'In Stock'))
+                        """, (iccid, carrier, puk, 'In Stock'))
                         sim_id = cursor.fetchone()['id']
 
                 # --- Step 3: Upsert Phone ---
@@ -3000,7 +3069,44 @@ def import_process():
                         else:
                             updated_count += 1
 
-                        # --- Step 4: Create Assignment if we have worker_id and sim_id ---
+                        # --- Step 4: Upsert Phone Number with RIO if provided ---
+                        phone_number_csv = mappings.get('phone_number')
+                        rio_csv = mappings.get('rio')
+                        if phone_number_csv and row.get(phone_number_csv) and sim_id:
+                            phone_number = row[phone_number_csv].strip()
+                            rio = row.get(rio_csv, '').strip() if rio_csv else None
+                            
+                            if phone_number:
+                                cursor.execute("""
+                                    INSERT INTO phone_numbers (phone_number, sim_card_id, rio, status)
+                                    VALUES (%s, %s, %s, %s)
+                                    ON CONFLICT (phone_number) DO UPDATE SET
+                                        sim_card_id = EXCLUDED.sim_card_id,
+                                        rio = EXCLUDED.rio,
+                                        status = EXCLUDED.status;
+                                """, (phone_number, sim_id, rio, 'Active'))
+                        
+                        # --- Step 5: Update Phone with relationships ---
+                        if phone_id and (worker_id or sim_id):
+                            # Update phone to link with worker and/or sim card
+                            update_fields = []
+                            update_values = []
+                            
+                            if worker_id:
+                                update_fields.append("worker_id = %s")
+                                update_values.append(worker_id)
+                            if sim_id:
+                                update_fields.append("sim_card_id = %s")
+                                update_values.append(sim_id)
+                            
+                            if update_fields:
+                                update_values.append(phone_id)
+                                cursor.execute(f"""
+                                    UPDATE phones SET {', '.join(update_fields)}
+                                    WHERE id = %s
+                                """, update_values)
+
+                        # --- Step 6: Create Assignment if we have all components ---
                         if worker_id and sim_id and phone_id:
                             # Check if assignment already exists
                             cursor.execute("""
@@ -3029,15 +3135,33 @@ def import_process():
                     cursor.close()
                 db.rollback()  # Rollback on error for this row
                 error_count += 1
+                
+                # Capture detailed error information
+                error_detail = {
+                    'row': row_index + 1,
+                    'error': str(row_error),
+                    'data': {k: v for k, v in row.items() if k}  # Only include non-empty keys
+                }
+                detailed_errors.append(error_detail)
+                
                 app.logger.error(f"Error processing row {row_index + 1}: {row_error}. Row data: {row}")
                 continue  # Continue with next row
 
-        return jsonify({
+        # Prepare response with detailed error information
+        response_data = {
             "message": f"Import completed! Processed {inserted_count + updated_count} records successfully.",
             "inserted": inserted_count,
             "updated": updated_count,
             "errors": error_count
-        })
+        }
+        
+        # Include detailed errors if there are any
+        if detailed_errors:
+            response_data["error_details"] = detailed_errors[:50]  # Limit to first 50 errors
+            if len(detailed_errors) > 50:
+                response_data["note"] = f"Showing first 50 errors out of {len(detailed_errors)} total errors"
+
+        return jsonify(response_data)
 
     except Exception as e:
         if 'db' in locals():

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin - Enhanced CSV Import</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 40px auto; 
+            max-width: 600px; 
+            background: #f5f5f5; 
+        }
+        .container { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        }
+        h1 { 
+            color: #333; 
+            text-align: center; 
+            margin-bottom: 30px; 
+        }
+        .upload-area { 
+            border: 2px dashed #007bff; 
+            border-radius: 8px; 
+            padding: 40px; 
+            text-align: center; 
+            margin-bottom: 20px; 
+            background: #f8f9fa; 
+        }
+        .upload-area:hover { 
+            background: #e9ecef; 
+        }
+        input[type="file"] { 
+            margin: 15px 0; 
+            padding: 10px; 
+        }
+        .import-btn { 
+            background: #28a745; 
+            color: white; 
+            padding: 15px 30px; 
+            border: none; 
+            border-radius: 5px; 
+            font-size: 16px; 
+            cursor: pointer; 
+            width: 100%; 
+            margin-top: 15px; 
+        }
+        .import-btn:hover { 
+            background: #218838; 
+        }
+        .import-btn:disabled { 
+            background: #6c757d; 
+            cursor: not-allowed; 
+        }
+        .result { 
+            margin-top: 20px; 
+            padding: 15px; 
+            border-radius: 5px; 
+            display: none; 
+        }
+        .success { 
+            background: #d4edda; 
+            border: 1px solid #c3e6cb; 
+            color: #155724; 
+        }
+        .error { 
+            background: #f8d7da; 
+            border: 1px solid #f5c6cb; 
+            color: #721c24; 
+        }
+        .info { 
+            background: #d1ecf1; 
+            border: 1px solid #bee5eb; 
+            color: #0c5460; 
+            padding: 15px; 
+            border-radius: 5px; 
+            margin-bottom: 20px; 
+        }
+        .loading { 
+            text-align: center; 
+            color: #007bff; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Enhanced CSV Import</h1>
+        
+        <div class="info">
+            <strong>Ready to import:</strong> Workers, SIM Cards, Phone Numbers, and Phones with full relationships<br>
+            <strong>Expected format:</strong> Semicolon-separated (;) with UTF-8 encoding<br>
+            <strong>Required headers:</strong> Num SAL, Nom, Domaine d'Intervention, Contrat, Date Dernier contrat, N° SIM, OP, PUK, NUMERO, RIO, IMEI Téléphone (*#06#), Matèriel
+        </div>
+        
+        <form id="importForm">
+            <div class="upload-area">
+                <h3>📁 Select CSV File</h3>
+                <input type="file" id="csvFile" accept=".csv" required>
+                <p>Choose your CSV file to import all data with relationships</p>
+            </div>
+            
+            <button type="submit" class="import-btn" id="importBtn">
+                Import CSV Data
+            </button>
+        </form>
+        
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        document.getElementById('importForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('csvFile');
+            const importBtn = document.getElementById('importBtn');
+            const resultDiv = document.getElementById('result');
+            
+            if (!fileInput.files[0]) {
+                alert('Please select a CSV file');
+                return;
+            }
+            
+            // Disable button and show loading
+            importBtn.disabled = true;
+            importBtn.textContent = 'Importing...';
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result loading';
+            resultDiv.innerHTML = '🔄 Processing CSV file and creating relationships...';
+            
+            // Prepare form data with pre-configured mappings
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('encoding', 'utf-8');
+            formData.append('delimiter', ';');
+            
+            // Pre-configured column mappings for the enhanced import
+            const columnMappings = {
+                "worker_id": "Num SAL",
+                "full_name": "Nom", 
+                "secteur_name": "Domaine d'Intervention",
+                "contract_type": "Contrat",
+                "last_contract_date": "Date Dernier contrat",
+                "iccid": "N° SIM",
+                "carrier": "OP",
+                "puk": "PUK",
+                "phone_number": "NUMERO",
+                "rio": "RIO",
+                "imei": "IMEI Téléphone (*#06#)",
+                "model": "Matèriel"
+            };
+            
+            formData.append('column_mappings', JSON.stringify(columnMappings));
+            
+            // Send the import request
+            fetch('/api/import/process', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Re-enable button
+                importBtn.disabled = false;
+                importBtn.textContent = 'Import CSV Data';
+                
+                if (data.error) {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <strong>❌ Import Failed</strong><br>
+                        ${data.error}
+                        ${data.errors && data.errors.length > 0 ? '<br><br><strong>Details:</strong><br>' + data.errors.join('<br>') : ''}
+                    `;
+                } else {
+                    resultDiv.className = 'result success';
+                    let resultHtml = `
+                        <strong>✅ Import Successful!</strong><br><br>
+                        <strong>Summary:</strong><br>
+                        • ${data.inserted || 0} new records created<br>
+                        • ${data.updated || 0} existing records updated<br>
+                        • ${data.errors || 0} errors encountered<br><br>
+                        <em>${data.message}</em>
+                    `;
+                    
+                    // Show detailed errors if any
+                    if (data.error_details && data.error_details.length > 0) {
+                        resultHtml += `<br><br><strong>🔍 Error Details:</strong><br>`;
+                        resultHtml += `<div style="max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; background: #f8f9fa;">`;
+                        
+                        data.error_details.forEach(error => {
+                            resultHtml += `
+                                <div style="margin-bottom: 15px; padding: 10px; background: white; border-left: 3px solid #dc3545;">
+                                    <strong>Row ${error.row}:</strong> ${error.error}<br>
+                                    <small style="color: #666;">
+                                        Worker: ${error.data['Nom'] || 'N/A'} | 
+                                        ID: ${error.data['Num SAL'] || 'N/A'} | 
+                                        Date: ${error.data['Date Dernier contrat'] || 'N/A'}
+                                    </small>
+                                </div>
+                            `;
+                        });
+                        
+                        resultHtml += `</div>`;
+                        
+                        if (data.note) {
+                            resultHtml += `<br><small><em>${data.note}</em></small>`;
+                        }
+                    }
+                    
+                    resultDiv.innerHTML = resultHtml;
+                    
+                    // Clear the file input
+                    fileInput.value = '';
+                }
+            })
+            .catch(error => {
+                // Re-enable button
+                importBtn.disabled = false;
+                importBtn.textContent = 'Import CSV Data';
+                
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <strong>❌ Network Error</strong><br>
+                    ${error.message}<br><br>
+                    Please check if the server is running and try again.
+                `;
+            });
+        });
+    </script>
+</body>
+</html>
