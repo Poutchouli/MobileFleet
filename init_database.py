@@ -48,7 +48,7 @@ def drop_tables(cursor):
     tables_to_drop = [
         "asset_history_log", "ticket_updates", "tickets", "assignments",
         "phone_numbers", "sim_cards", "phones", "workers", "secteurs",
-        "users", "roles"
+        "users", "roles", "phone_requests"
     ]
     for table in tables_to_drop:
         cursor.execute(sql.SQL("DROP TABLE IF EXISTS {} CASCADE").format(sql.Identifier(table)))

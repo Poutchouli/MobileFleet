@@ -39,7 +39,7 @@ babel = Babel(app, locale_selector=get_locale)
 
 # --- Database Configuration for Migrations ---
 # Configure SQLAlchemy to work alongside existing psycopg2 connections
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize SQLAlchemy and Flask-Migrate

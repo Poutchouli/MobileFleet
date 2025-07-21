@@ -12,7 +12,7 @@ services:
     # Here, we ensure the database is ready before starting the app.
     # `sh -c "..."` runs the commands in a shell.
     # `python init_database.py &&` runs the database initialization script first.
-    # `gunicorn --bind 0.0.0.0:5000 main:app` starts the web server.
+    # `gunicorn --bind 0.0.0.0:5000 app:app` starts the web server.
     command: >
       sh -c "
         echo 'Waiting for PostgreSQL to be ready...' &&
@@ -21,7 +21,7 @@ services:
         done;
         echo 'PostgreSQL is ready.' &&
         python init_database.py &&
-        gunicorn --bind 0.0.0.0:5000 main:app
+        gunicorn --bind 0.0.0.0:5000 app:app
       "
     # Map port 5000 inside the container to port 5000 on the host machine.
     ports:
@@ -32,18 +32,13 @@ services:
       - .:/app
     # Define environment variables for the web service.
     environment:
-      # The DATABASE_URL points to the 'db' service in SQLAlchemy format.
+      # The DATABASE_URL points to the 'db' service.
       # The user, password, and db name must match the 'db' service's environment variables.
-      - DATABASE_URL=postgresql://postgres:password@db:5432/fleet_db
+      - DATABASE_URL=dbname=fleet_db user=postgres password=password host=db
+      # SQLAlchemy compatible URL
+      - SQLALCHEMY_DATABASE_URI=postgresql://postgres:password@db:5432/fleet_db
       # Flask environment settings.
       - FLASK_ENV=development
-      # Session Management - Use our secure SECRET_KEY
-      - SECRET_KEY=41e139476c7ccc329e6ec1d6203c4d91ba31e968339ca88658f0694a1c8d54cd
-      # Session timeout configuration
-      - SESSION_TIMEOUT_HOURS=8
-      - REMEMBER_ME_DAYS=30
-      # Logging configuration
-      - LOG_LEVEL=INFO
     # This service depends on the 'db' service. Docker Compose will start the 'db'
     # service before it starts the 'web' service.
     depends_on:
