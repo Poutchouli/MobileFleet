@@ -4,6 +4,7 @@
 import os
 import csv
 import io
+import json
 import logging
 from logging.handlers import RotatingFileHandler
 import psycopg2
@@ -2764,11 +2765,13 @@ def import_preview():
         import io
 
         # Read the file into memory
-        file_content = file.stream.read().decode('utf-8')
+        encoding = request.form.get('encoding', 'utf-8')
+        delimiter = request.form.get('delimiter', ',')
+        file_content = file.stream.read().decode(encoding)
         file.stream.seek(0) # Reset stream for full read later if needed
 
-        # Use DictReader to get headers and preview data
-        reader = csv.DictReader(io.StringIO(file_content))
+        # Use DictReader to get headers and preview data with the specified delimiter
+        reader = csv.DictReader(io.StringIO(file_content), delimiter=delimiter)
         headers = reader.fieldnames
         
         preview_data = []
@@ -2866,102 +2869,181 @@ def import_get_schema():
 @login_required
 @role_required('Administrator')
 def import_process():
-    """Processes the CSV data based on user-defined mappings."""
-    data = request.get_json()
-    
-    # --- Data Validation ---
-    required_keys = ['csv_data', 'target_table', 'merge_key_db', 'column_mappings']
-    if not all(key in data for key in required_keys):
-        return jsonify({"error": "Incomplete mapping data received."}), 400
+    """
+    Processes a CSV file by intelligently upserting data into related tables
+    (workers, sim_cards, phones) within a single transaction per row.
+    """
+    if 'file' not in request.files:
+        return jsonify({"error": "File not provided for import."}), 400
 
-    target_table = data['target_table']
-    merge_key_db = data['merge_key_db']
-    mappings = data['column_mappings']
-    
-    # Security: Whitelist tables again on the processing endpoint
-    allowed_tables = ['phones', 'sim_cards', 'workers', 'users', 'secteurs', 'phone_numbers']
-    if target_table not in allowed_tables:
-        return jsonify({"error": "Invalid target table for import."}), 400
+    file = request.files['file']
+    form_data = request.form
+    db = get_db()  # Get database connection
 
-    if not mappings or not merge_key_db:
-        return jsonify({"error": "A merge key and at least one mapped column are required."}), 400
-
-    import csv
-    import io
-    
-    db = get_db()
-    cursor = db.cursor()
-    
     try:
-        reader = csv.DictReader(io.StringIO(data['csv_data']))
+        # --- Configuration ---
+        mappings = json.loads(form_data['column_mappings'])
+        file_content = file.stream.read().decode(form_data.get('encoding', 'utf-8'))
+        reader = csv.DictReader(io.StringIO(file_content), delimiter=form_data.get('delimiter', ','))
+
         inserted_count = 0
         updated_count = 0
+        error_count = 0
+        
+        # --- Process each CSV row ---
+        for row_index, row in enumerate(reader):
+            try:
+                cursor = db.cursor()
+                
+                # --- Step 1: Upsert Worker and get worker_id ---
+                worker_name_csv = mappings.get('name')  # Assuming CSV header for worker name is mapped to 'name'
+                worker_id = None
+                if worker_name_csv and row.get(worker_name_csv):
+                    worker_name = row[worker_name_csv].strip()
+                    if worker_name:  # Only process if name is not empty
+                        # Check if worker exists
+                        cursor.execute("SELECT id FROM workers WHERE full_name = %s", (worker_name,))
+                        worker_result = cursor.fetchone()
+                        if worker_result:
+                            worker_id = worker_result['id']
+                        else:
+                            # Insert worker if not found and get the new ID
+                            # We need a secteur_id - let's use default sector or create one
+                            cursor.execute("SELECT id FROM secteurs LIMIT 1")
+                            secteur_result = cursor.fetchone()
+                            if not secteur_result:
+                                # Create a default sector if none exists
+                                cursor.execute(
+                                    "INSERT INTO secteurs (secteur_name, description) VALUES (%s, %s) RETURNING id",
+                                    ('Default Sector', 'Auto-created during CSV import')
+                                )
+                                secteur_id = cursor.fetchone()['id']
+                            else:
+                                secteur_id = secteur_result['id']
+                            
+                            # Generate a worker_id if not provided in CSV
+                            worker_code = mappings.get('worker_id')
+                            worker_id_value = row.get(worker_code) if worker_code else f"WK{worker_name.replace(' ', '').upper()[:6]}"
+                            
+                            cursor.execute(
+                                "INSERT INTO workers (worker_id, full_name, secteur_id, status) VALUES (%s, %s, %s, %s) RETURNING id",
+                                (worker_id_value, worker_name, secteur_id, 'Active')
+                            )
+                            worker_id = cursor.fetchone()['id']
 
-        for row in reader:
-            # --- Dynamic SQL Generation (Safe with Parameterization) ---
-            
-            # Filter out the merge key from the update set
-            update_mappings = {k: v for k, v in mappings.items() if v != merge_key_db}
-            
-            insert_cols = ", ".join(mappings.values())
-            insert_placeholders = ", ".join(["%s"] * len(mappings))
-            
-            # Values for INSERT
-            insert_values = [row.get(csv_col) for csv_col in mappings.keys()]
-            
-            # Build the query based on whether we have update mappings
-            if update_mappings:
-                # We have columns to update
-                set_clause = ", ".join([f"{db_col} = %s" for db_col in update_mappings.values()])
-                update_values = [row.get(csv_col) for csv_col in update_mappings.keys()]
-                
-                query = f"""
-                    INSERT INTO {target_table} ({insert_cols})
-                    VALUES ({insert_placeholders})
-                    ON CONFLICT ({merge_key_db}) DO UPDATE
-                    SET {set_clause}
-                    RETURNING (xmax = 0) AS inserted;
-                """
-                
-                # Combine all values for the final execution
-                final_values = tuple(insert_values + update_values)
-            else:
-                # Only merge key, so just do INSERT ... ON CONFLICT DO NOTHING
-                query = f"""
-                    INSERT INTO {target_table} ({insert_cols})
-                    VALUES ({insert_placeholders})
-                    ON CONFLICT ({merge_key_db}) DO NOTHING;
-                """
-                
-                final_values = tuple(insert_values)
-            
-            cursor.execute(query, final_values)
-            
-            # Handle result based on query type
-            if update_mappings:
-                result = cursor.fetchone()
-                if result and (result[0] if isinstance(result, tuple) else result.get('inserted')):
-                    inserted_count += 1
-                else:
-                    updated_count += 1
-            else:
-                # For DO NOTHING, we check if any row was affected
-                if cursor.rowcount > 0:
-                    inserted_count += 1
-                # If no rows affected, it means the record already existed (conflict)
+                # --- Step 2: Upsert SIM Card and get sim_id ---
+                iccid_csv = mappings.get('iccid')  # Mapped to 'iccid'
+                sim_id = None
+                if iccid_csv and row.get(iccid_csv):
+                    iccid = row[iccid_csv].strip()
+                    if iccid:  # Only process if ICCID is not empty
+                        pin_csv = mappings.get('pin', None)
+                        puk_csv = mappings.get('puk', None)
+                        carrier_csv = mappings.get('carrier', None)
+                        
+                        pin = row.get(pin_csv, '').strip() if pin_csv else None
+                        puk = row.get(puk_csv, '').strip() if puk_csv else None
+                        carrier = row.get(carrier_csv, '').strip() if carrier_csv else None
 
-        db.commit()
-        cursor.close()
+                        # Upsert SIM and get its ID
+                        cursor.execute("""
+                            INSERT INTO sim_cards (iccid, carrier, plan_details, status)
+                            VALUES (%s, %s, %s, %s)
+                            ON CONFLICT (iccid) DO UPDATE SET
+                                carrier = EXCLUDED.carrier,
+                                plan_details = EXCLUDED.plan_details,
+                                status = EXCLUDED.status
+                            RETURNING id;
+                        """, (iccid, carrier, f"PIN: {pin}, PUK: {puk}" if pin or puk else None, 'In Stock'))
+                        sim_id = cursor.fetchone()['id']
+
+                # --- Step 3: Upsert Phone ---
+                imei_csv = mappings.get('imei')  # Mapped to 'imei'
+                phone_id = None
+                if imei_csv and row.get(imei_csv):
+                    imei = row[imei_csv].strip()
+                    if imei:  # Only process if IMEI is not empty
+                        # Prepare phone data from mappings
+                        asset_tag = row.get(mappings.get('asset_tag'), '').strip() or f"PHONE_{imei[-6:]}"
+                        serial_number = row.get(mappings.get('serial_number'), '').strip() or f"SN_{imei[-8:]}"
+                        manufacturer = row.get(mappings.get('manufacturer'), '').strip() or None
+                        model = row.get(mappings.get('model'), '').strip() or None  # Assuming 'Matériel' is mapped to 'model'
+                        status = row.get(mappings.get('status'), '').strip() or 'In Stock'
+
+                        phone_data = {
+                            'asset_tag': asset_tag,
+                            'imei': imei,
+                            'serial_number': serial_number,
+                            'manufacturer': manufacturer,
+                            'model': model,
+                            'status': status
+                        }
+
+                        # Filter out any keys with None values
+                        phone_data = {k: v for k, v in phone_data.items() if v is not None}
+
+                        columns = ", ".join(phone_data.keys())
+                        placeholders = ", ".join(["%s"] * len(phone_data))
+                        update_clause = ", ".join([f"{col} = EXCLUDED.{col}" for col in phone_data if col != 'imei'])
+
+                        cursor.execute(f"""
+                            INSERT INTO phones ({columns})
+                            VALUES ({placeholders})
+                            ON CONFLICT (imei) DO UPDATE SET {update_clause}
+                            RETURNING id, (xmax = 0) AS inserted;
+                        """, tuple(phone_data.values()))
+                        
+                        result = cursor.fetchone()
+                        phone_id = result['id']
+                        if result['inserted']:
+                            inserted_count += 1
+                        else:
+                            updated_count += 1
+
+                        # --- Step 4: Create Assignment if we have worker_id and sim_id ---
+                        if worker_id and sim_id and phone_id:
+                            # Check if assignment already exists
+                            cursor.execute("""
+                                SELECT id FROM assignments 
+                                WHERE phone_id = %s AND return_date IS NULL
+                            """, (phone_id,))
+                            existing_assignment = cursor.fetchone()
+                            
+                            if not existing_assignment:
+                                # Create new assignment
+                                cursor.execute("""
+                                    INSERT INTO assignments (phone_id, sim_card_id, worker_id)
+                                    VALUES (%s, %s, %s)
+                                """, (phone_id, sim_id, worker_id))
+                                
+                                # Update phone and SIM status to 'In Use'
+                                cursor.execute("UPDATE phones SET status = 'In Use' WHERE id = %s", (phone_id,))
+                                cursor.execute("UPDATE sim_cards SET status = 'In Use' WHERE id = %s", (sim_id,))
+                
+                # Commit the transaction for this row
+                db.commit()
+                cursor.close()
+
+            except Exception as row_error:
+                if 'cursor' in locals():
+                    cursor.close()
+                db.rollback()  # Rollback on error for this row
+                error_count += 1
+                app.logger.error(f"Error processing row {row_index + 1}: {row_error}. Row data: {row}")
+                continue  # Continue with next row
+
         return jsonify({
-            "message": "Import completed successfully!",
+            "message": f"Import completed! Processed {inserted_count + updated_count} records successfully.",
             "inserted": inserted_count,
-            "updated": updated_count
+            "updated": updated_count,
+            "errors": error_count
         })
 
     except Exception as e:
-        db.rollback()
-        cursor.close()
-        return jsonify({"error": f"An error occurred during import: {str(e)}"}), 500
+        if 'db' in locals():
+            db.rollback()  # Ensure rollback on major failure
+        app.logger.error(f"Critical error during CSV import: {str(e)}", exc_info=True)
+        return jsonify({"error": f"A critical error occurred: {str(e)}"}), 500
 
 @app.route('/api/admin/migrate_timestamps', methods=['POST'])
 @login_required
@@ -3309,26 +3391,33 @@ def get_all_phone_requests():
     cursor = db.cursor()
     query = """
         SELECT 
-            pr.id, pr.status, pr.required_by_date,
-            w.full_name AS worker_name, w.id as worker_id,
-            s.secteur_name,
-            requester.full_name AS requested_by
+            pr.id, pr.status, pr.submitted_at as required_by_date,
+            pr.employee_name AS worker_name, 
+            pr.department AS secteur_name,
+            requester.full_name AS requested_by,
+            pr.urgency_level,
+            pr.request_reason,
+            pr.phone_type_preference,
+            pr.review_notes
         FROM phone_requests pr
-        JOIN workers w ON pr.worker_id = w.id
-        JOIN secteurs s ON pr.secteur_id = s.id
-        JOIN users requester ON pr.requested_by_user_id = requester.id
+        JOIN users requester ON pr.requester_id = requester.id
         ORDER BY
             CASE pr.status WHEN 'Pending' THEN 1 WHEN 'Approved' THEN 2 ELSE 3 END,
-            pr.required_by_date ASC;
+            pr.submitted_at ASC;
     """
     cursor.execute(query)
     requests = cursor.fetchall()
     cursor.close()
     
+    # Convert to list of dictionaries and handle date formatting
+    result = []
     for req in requests:
-        if req.get('required_by_date'): req['required_by_date'] = req['required_by_date'].isoformat()
+        req_dict = dict(req)
+        if req_dict.get('required_by_date'): 
+            req_dict['required_by_date'] = req_dict['required_by_date'].isoformat()
+        result.append(req_dict)
             
-    return jsonify(requests)
+    return jsonify(result)
 
 @app.route('/api/admin/phone_requests/<int:request_id>', methods=['PUT'])
 @login_required
@@ -3345,7 +3434,7 @@ def update_phone_request_status(request_id):
     db = get_db()
     cursor = db.cursor()
     try:
-        cursor.execute("UPDATE phone_requests SET status = %s, updated_at = now() WHERE id = %s", (new_status, request_id))
+        cursor.execute("UPDATE phone_requests SET status = %s, reviewed_at = now(), reviewed_by = %s WHERE id = %s", (new_status, session['user_id'], request_id))
         db.commit()
         cursor.close()
         return jsonify({"message": f"Request #{request_id} has been {new_status}."})

@@ -21,7 +21,7 @@ services:
         done;
         echo 'PostgreSQL is ready.' &&
         python init_database.py &&
-        gunicorn --bind 0.0.0.0:5000 app:app
+        gunicorn --bind 0.0.0.0:5000 --timeout 300 --workers 2 --worker-class sync --preload app:app
       "
     # Map port 5000 inside the container to port 5000 on the host machine.
     ports:
