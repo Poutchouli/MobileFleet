@@ -1179,9 +1179,10 @@ def get_team_by_sector():
     query = """
         SELECT 
             w.id as worker_db_id, w.worker_id, w.full_name, w.status, w.notes, w.secteur_id,
-            rh.contract_type, rh.contract_end_date,
+            rh.id_philia, rh.mdp_philia, rh.contract_type, rh.contract_end_date,
             p.model,
             pn.phone_number,
+            sc.puk,
             a.assignment_date
         FROM workers w
         LEFT JOIN rh_data rh ON w.id = rh.worker_id

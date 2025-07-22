@@ -294,13 +294,18 @@ def insert_sample_data(cursor):
     ]
 
     workers_data = [
-        ('WKR-001', 'Eve Employee', 1, 'Active'),    # Northern Sector
-        ('WKR-002', 'Frank Field', 1, 'Congés'),     # Northern Sector
-        ('WKR-003', 'Grace Ground', 2, 'Active'),    # Southern Sector
-        ('WKR-004', 'Heidi Home', 2, 'Arrêt'),       # Southern Sector
-        ('WKR-005', 'Ivan Installer', 3, 'Active'),  # Logistics
-        ('WKR-006', 'Julie Tech', 1, 'Inactive'),    # Northern Sector
-        ('WKR-007', 'Karl Sales', 2, 'Congés')       # Southern Sector
+        ('WKR-001', 'Eve Employee', 1, 'Active'),     # Northern Sector - CDI
+        ('WKR-002', 'Frank Field', 1, 'Congés'),      # Northern Sector - CDI
+        ('WKR-003', 'Grace Ground', 2, 'Active'),     # Southern Sector - CDD expiring soon
+        ('WKR-004', 'Heidi Home', 2, 'Arrêt'),        # Southern Sector - CDD critical
+        ('WKR-005', 'Ivan Installer', 3, 'Active'),   # Logistics - CDD future
+        ('WKR-006', 'Julie Tech', 1, 'Inactive'),     # Northern Sector - CDI
+        ('WKR-007', 'Karl Sales', 2, 'Congés'),       # Southern Sector - CDI
+        ('WKR-008', 'Laura Engineer', 1, 'Active'),   # Northern Sector - CDD expired
+        ('WKR-009', 'Marc Operations', 3, 'Active'),  # Logistics - CDD warning
+        ('WKR-010', 'Nina Support', 2, 'Active'),     # Southern Sector - CDD normal
+        ('WKR-011', 'Oliver Field', 1, 'Active'),     # Northern Sector - CDI
+        ('WKR-012', 'Paula Admin', 3, 'Congés')       # Logistics - CDD critical 2 days
     ]
 
     phones_data = [
@@ -312,10 +317,10 @@ def insert_sample_data(cursor):
     ]
 
     sim_cards_data = [
-        ('1111111111111111111111', 'Proximus', 'In Use'),
-        ('2222222222222222222222', 'Orange', 'In Use'),
-        ('3333333333333333333333', 'T-Mobile', 'In Stock'),
-        ('4444444444444444444444', 'BASE', 'Deactivated')
+        ('1111111111111111111111', 'Proximus', '12345678', 'In Use'),
+        ('2222222222222222222222', 'Orange', '87654321', 'In Use'),
+        ('3333333333333333333333', 'T-Mobile', '11223344', 'In Stock'),
+        ('4444444444444444444444', 'BASE', '44332211', 'Deactivated')
     ]
     
     phone_numbers_data = [
@@ -338,13 +343,18 @@ def insert_sample_data(cursor):
 
     rh_data = [
         # worker_id, id_philia, mdp_philia, contract_type, contract_end_date
-        (1, 'philia001', 'philia_id_1', 'CDI', None), # For Eve Employee
-        (2, 'philia002', 'philia_id_2', 'CDI', None), # For Frank Field
-        (3, 'philia003', 'philia_id_3', 'CDD', '2025-12-31'),  # For Grace Ground
-        (4, 'philia004', 'philia_id_4', 'CDI', None), # For Heidi Home
-        (5, 'philia005', 'philia_id_5', 'CDD', '2026-06-30'),  # For Ivan Installer
-        (6, 'philia006', 'philia_id_6', 'CDI', None), # For Julie Tech
-        (7, 'philia007', 'philia_id_7', 'CDI', None)  # For Karl Sales
+        (1, 'philia001', 'pwd_eve123', 'CDI', None),           # Eve Employee - CDI (light blue)
+        (2, 'philia002', 'pwd_frank456', 'CDI', None),           # Frank Field - CDI (light blue)
+        (3, 'philia003', 'pwd_grace789', 'CDD', '2025-08-05'),   # Grace Ground - CDD 13 days left (yellow)
+        (4, 'philia004', 'pwd_heidi012', 'CDD', '2025-07-27'),   # Heidi Home - CDD 4 days left (light red)
+        (5, 'philia005', 'pwd_ivan345', 'CDD', '2026-06-30'),   # Ivan Installer - CDD future (light green)
+        (6, 'philia006', 'pwd_julie678', 'CDI', None),           # Julie Tech - CDI (light blue)
+        (7, 'philia007', 'pwd_karl901', 'CDI', None),           # Karl Sales - CDI (light blue)
+        (8, 'philia008', 'pwd_laura234', 'CDD', '2025-07-20'),   # Laura Engineer - CDD expired (dark red)
+        (9, 'philia009', 'pwd_marc567', 'CDD', '2025-08-01'),   # Marc Operations - CDD 9 days left (yellow)
+        (10, 'philia010', 'pwd_nina890', 'CDD', '2025-09-15'), # Nina Support - CDD normal (light green)
+        (11, 'philia011', 'pwd_oliver123', 'CDI', None),         # Oliver Field - CDI (light blue)
+        (12, 'philia012', 'pwd_paula456', 'CDD', '2025-07-25')  # Paula Admin - CDD 2 days left (light red)
     ]
 
     # --- Execute Inserts ---
@@ -354,7 +364,7 @@ def insert_sample_data(cursor):
     cursor.executemany("INSERT INTO secteurs (secteur_name, manager_id, description) VALUES (%s, %s, %s);", secteurs_data)
     cursor.executemany("INSERT INTO workers (worker_id, full_name, secteur_id, status) VALUES (%s, %s, %s, %s);", workers_data)
     cursor.executemany("INSERT INTO phones (asset_tag, imei, serial_number, manufacturer, model, status) VALUES (%s, %s, %s, %s, %s, %s);", phones_data)
-    cursor.executemany("INSERT INTO sim_cards (iccid, carrier, status) VALUES (%s, %s, %s);", sim_cards_data)
+    cursor.executemany("INSERT INTO sim_cards (iccid, carrier, puk, status) VALUES (%s, %s, %s, %s);", sim_cards_data)
     cursor.executemany("INSERT INTO phone_numbers (phone_number, sim_card_id, status) VALUES (%s, %s, %s);", phone_numbers_data)
     cursor.executemany("INSERT INTO assignments (phone_id, sim_card_id, worker_id) VALUES (%s, %s, %s);", assignments_data)
     cursor.executemany("INSERT INTO phone_requests (requester_id, employee_name, department, position, request_reason, phone_type_preference, urgency_level, status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);", phone_requests_data)
