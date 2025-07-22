@@ -1088,6 +1088,13 @@ def manager_create_ticket():
     """Serves the create ticket page for a manager."""
     return render_template('manager/create_ticket.html')
 
+@app.route('/manager/return_phone')
+@login_required
+@role_required('Manager')
+def manager_return_phone():
+    """Sert le formulaire pour qu'un manager puisse déclarer un retour de téléphone."""
+    return render_template('manager/phone_return_form.html')
+
 # --- API Endpoint for Manager Portal ---
 
 @app.route('/api/manager/team_status', methods=['GET'])
@@ -3884,6 +3891,88 @@ def update_phone_request_status(request_id):
         return jsonify({"message": f"Request #{request_id} has been {new_status}."})
     except Exception as e:
         db.rollback(); cursor.close()
+        return jsonify({"error": str(e)}), 500
+
+# --- Phone Return Management API Endpoints ---
+
+@app.route('/api/manager/returnable_phones', methods=['GET'])
+@login_required
+@role_required('Manager')
+def get_returnable_phones():
+    """Récupère tous les téléphones actuellement affectés aux travailleurs des secteurs du manager."""
+    manager_id = session.get('user_id')
+    db = get_db()
+    cursor = db.cursor()
+    query = """
+        SELECT 
+            a.id as assignment_id,
+            p.id as phone_id,
+            w.id as worker_id,
+            w.full_name as worker_name,
+            w.worker_id as worker_employee_id,
+            p.asset_tag,
+            p.model,
+            p.manufacturer,
+            s.secteur_name
+        FROM assignments a
+        JOIN workers w ON a.worker_id = w.id
+        JOIN phones p ON a.phone_id = p.id
+        JOIN secteurs s ON w.secteur_id = s.id
+        WHERE s.manager_id = %s AND a.return_date IS NULL AND p.status = 'In Use'
+        ORDER BY s.secteur_name, w.full_name;
+    """
+    cursor.execute(query, (manager_id,))
+    phones = cursor.fetchall()
+    cursor.close()
+    return jsonify(phones)
+
+@app.route('/api/manager/return_phone', methods=['POST'])
+@login_required
+@role_required('Manager')
+def process_phone_return():
+    """Traite la soumission du formulaire de retour de téléphone."""
+    data = request.get_json()
+    required = ['assignment_id', 'phone_id', 'worker_id', 'condition', 'accessories']
+    if not all(k in data for k in required):
+        return jsonify({"error": "Des champs obligatoires sont manquants."}), 400
+
+    manager_id = session.get('user_id')
+    db = get_db()
+    cursor = db.cursor()
+    try:
+        # Vérifier que le manager a bien accès à ce téléphone
+        cursor.execute("""
+            SELECT 1 FROM assignments a
+            JOIN workers w ON a.worker_id = w.id
+            JOIN secteurs s ON w.secteur_id = s.id
+            WHERE a.id = %s AND s.manager_id = %s AND a.return_date IS NULL
+        """, (data['assignment_id'], manager_id))
+        
+        if cursor.fetchone() is None:
+            cursor.close()
+            return jsonify({"error": "Vous n'êtes pas autorisé à traiter ce retour."}), 403
+        
+        # Insérer dans la nouvelle table de retours
+        cursor.execute(
+            """
+            INSERT INTO phone_returns (assignment_id, phone_id, worker_id, manager_id, accessories_returned, phone_condition, notes)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """,
+            (data['assignment_id'], data['phone_id'], data['worker_id'], manager_id, data['accessories'], data['condition'], data.get('notes', ''))
+        )
+        
+        # Mettre à jour le statut du téléphone
+        cursor.execute("UPDATE phones SET status = 'Disponible pour enlèvement' WHERE id = %s", (data['phone_id'],))
+        
+        # Mettre à jour l'ancienne affectation avec une date de retour pour la clore
+        cursor.execute("UPDATE assignments SET return_date = now() WHERE id = %s", (data['assignment_id'],))
+
+        db.commit()
+        cursor.close()
+        return jsonify({"message": "Le retour du téléphone a été enregistré avec succès."}), 201
+    except Exception as e:
+        db.rollback()
+        cursor.close()
         return jsonify({"error": str(e)}), 500
 
 

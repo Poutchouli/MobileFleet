@@ -46,7 +46,7 @@ def drop_tables(cursor):
     """Drops all tables in the correct order to avoid foreign key constraints."""
     print("\nDropping existing tables...")
     tables_to_drop = [
-        "asset_history_log", "ticket_updates", "tickets", "assignments",
+        "phone_returns", "asset_history_log", "ticket_updates", "tickets", "assignments",
         "phone_numbers", "sim_cards", "phones", "rh_data", "workers", "manager_secteurs", 
         "secteurs", "users", "roles", "phone_requests"
     ]
@@ -127,7 +127,7 @@ def create_schema(cursor):
             model VARCHAR(100),
             purchase_date DATE,
             warranty_end_date DATE,
-            status VARCHAR(20) NOT NULL CHECK (status IN ('In Stock', 'In Use', 'In Repair', 'Retired')),
+            status VARCHAR(50) NOT NULL CHECK (status IN ('In Stock', 'In Use', 'In Repair', 'Retired', 'Disponible pour enlèvement', 'Préparation SI terminée')),
             notes TEXT,
             worker_id INTEGER REFERENCES workers(id),
             sim_card_id INTEGER REFERENCES sim_cards(id),
@@ -216,6 +216,20 @@ def create_schema(cursor):
             secteur_id INTEGER NOT NULL REFERENCES secteurs(id) ON DELETE CASCADE,
             assigned_at TIMESTAMPTZ NOT NULL DEFAULT now(),
             PRIMARY KEY (manager_id, secteur_id)
+        );
+        """,
+        """
+        CREATE TABLE phone_returns (
+            id SERIAL PRIMARY KEY,
+            assignment_id INTEGER REFERENCES assignments(id),
+            phone_id INTEGER NOT NULL REFERENCES phones(id),
+            worker_id INTEGER NOT NULL REFERENCES workers(id),
+            manager_id INTEGER NOT NULL REFERENCES users(id),
+            return_date TIMESTAMPTZ NOT NULL DEFAULT now(),
+            accessories_returned TEXT[], -- e.g., ARRAY['cable', 'chargeur', 'boite']
+            phone_condition VARCHAR(255),
+            notes TEXT,
+            status VARCHAR(50) DEFAULT 'Pending Pickup'
         );
         """,
         """

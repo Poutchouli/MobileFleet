@@ -1,0 +1,100 @@
+{% extends "manager/base.html" %}
+{% block title %}Déclarer un Retour de Téléphone{% endblock %}
+{% block page_title %}Déclarer un Retour de Téléphone{% endblock %}
+
+{% block content %}
+<div class="custom-card max-w-2xl mx-auto">
+    <div class="card-header"><h2 class="card-title">Formulaire de Retour de Mobile</h2></div>
+    <form id="return-form" class="p-4">
+        <div class="space-y-4">
+            <div class="custom-form-group">
+                <label for="worker-phone-select" class="custom-label">Travailleur / Téléphone à retourner*</label>
+                <select id="worker-phone-select" name="assignment" required class="custom-select"></select>
+            </div>
+            
+            <div class="custom-form-group">
+                <label class="custom-label">Accessoires Retournés*</label>
+                <div class="mt-2 space-y-2">
+                    <div class="flex items-center"><input id="cable" type="checkbox" name="accessories" value="cable" class="h-4 w-4"><label for="cable" class="ml-2">Câble</label></div>
+                    <div class="flex items-center"><input id="chargeur" type="checkbox" name="accessories" value="chargeur" class="h-4 w-4"><label for="chargeur" class="ml-2">Chargeur</label></div>
+                    <div class="flex items-center"><input id="boite" type="checkbox" name="accessories" value="boite" class="h-4 w-4"><label for="boite" class="ml-2">Boîte</label></div>
+                </div>
+            </div>
+
+            <div class="custom-form-group">
+                <label for="condition-select" class="custom-label">État du mobile*</label>
+                <select id="condition-select" name="condition" required class="custom-select">
+                    <option value="">Sélectionnez un état...</option>
+                    <option value="Comme neuf">Comme neuf</option>
+                    <option value="Bon état">Bon état</option>
+                    <option value="Rayures légères">Rayures légères</option>
+                    <option value="Endommagé">Endommagé</option>
+                    <option value="Ne s'allume pas">Ne s'allume pas</option>
+                </select>
+            </div>
+
+            <div class="custom-form-group">
+                <label for="notes" class="custom-label">Notes (dégâts, etc.)</label>
+                <textarea id="notes" name="notes" rows="3" class="custom-textarea" placeholder="Décrivez tout dommage visible..."></textarea>
+            </div>
+        </div>
+        <div class="custom-modal-footer">
+            <button type="submit" class="btn btn-primary">Valider le Retour</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const workerPhoneSelect = document.getElementById('worker-phone-select');
+        const returnForm = document.getElementById('return-form');
+
+        async function populateReturnablePhones() {
+            try {
+                const response = await fetch('/api/manager/returnable_phones');
+                const phones = await response.json();
+                workerPhoneSelect.innerHTML = '<option value="">Sélectionnez un travailleur...</option>';
+                phones.forEach(p => {
+                    const optionValue = JSON.stringify({assignment_id: p.assignment_id, phone_id: p.phone_id, worker_id: p.worker_id});
+                    workerPhoneSelect.innerHTML += `<option value='${optionValue}'>${p.worker_name} - (${p.model}, ${p.asset_tag})</option>`;
+                });
+            } catch (error) {
+                console.error('Erreur lors du chargement des téléphones :', error);
+            }
+        }
+
+        returnForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const selectedData = JSON.parse(workerPhoneSelect.value);
+            const accessories = Array.from(document.querySelectorAll('input[name="accessories"]:checked')).map(el => el.value);
+            
+            const payload = {
+                ...selectedData,
+                accessories: accessories,
+                condition: document.getElementById('condition-select').value,
+                notes: document.getElementById('notes').value
+            };
+
+            try {
+                const response = await fetch('/api/manager/return_phone', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error);
+                
+                alert('Retour enregistré !');
+                window.location.href = "{{ url_for('manager_dashboard') }}";
+            } catch (error) {
+                alert(`Erreur : ${error.message}`);
+            }
+        });
+
+        populateReturnablePhones();
+    });
+</script>
+{% endblock %}
+```

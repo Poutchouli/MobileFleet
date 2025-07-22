@@ -817,6 +817,10 @@ msgstr "Rapports"
 msgid "My Tickets"
 msgstr "Mes Tickets"
 
+#: templates/manager/base.html:7
+msgid "Phone Return"
+msgstr "Retour de Téléphone"
+
 #: templates/integration/dashboard.html:2
 #: templates/integration/dashboard.html:3
 #: templates/integration/dashboard.html:8
