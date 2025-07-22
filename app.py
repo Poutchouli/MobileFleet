@@ -3197,7 +3197,7 @@ def import_process():
                 worker_id_csv = mappings.get('worker_id')
                 secteur_name_csv = mappings.get('secteur_name')
                 contract_type_csv = mappings.get('contract_type')
-                last_contract_date_csv = mappings.get('last_contract_date')
+                contract_end_date_csv = mappings.get('contract_end_date')
                 
                 worker_id = None
                 if worker_name_csv and row.get(worker_name_csv):
@@ -3236,7 +3236,7 @@ def import_process():
                         # Enhanced worker ID generation
                         worker_id_value = row.get(worker_id_csv, '').strip() if worker_id_csv else f"WK{worker_name.replace(' ', '').upper()[:6]}"
                         contract_type = row.get(contract_type_csv, '').strip() if contract_type_csv else None
-                        last_contract_date = row.get(last_contract_date_csv, '').strip() if last_contract_date_csv else None
+                        contract_end_date = row.get(contract_end_date_csv, '').strip() if contract_end_date_csv else None
                         
                         # Handle missing or invalid worker_id
                         if not worker_id_value or worker_id_value in ['#N/D', 'N/A', '', 'NULL']:
@@ -3247,46 +3247,44 @@ def import_process():
                             contract_type = None
                         
                         # Enhanced date parsing
-                        if last_contract_date and last_contract_date not in ['#N/D', 'N/A', '', 'NULL']:
+                        if contract_end_date and contract_end_date not in ['#N/D', 'N/A', '', 'NULL']:
                             try:
                                 # Try multiple date formats
-                                if '/' in last_contract_date:
+                                if '/' in contract_end_date:
                                     from datetime import datetime
                                     # Try DD/MM/YYYY first, then MM/DD/YYYY
                                     try:
-                                        parsed_date = datetime.strptime(last_contract_date, '%d/%m/%Y')
+                                        parsed_date = datetime.strptime(contract_end_date, '%d/%m/%Y')
                                     except ValueError:
-                                        parsed_date = datetime.strptime(last_contract_date, '%m/%d/%Y')
-                                    last_contract_date = parsed_date.strftime('%Y-%m-%d')
-                                elif '-' in last_contract_date:
+                                        parsed_date = datetime.strptime(contract_end_date, '%m/%d/%Y')
+                                    contract_end_date = parsed_date.strftime('%Y-%m-%d')
+                                elif '-' in contract_end_date:
                                     from datetime import datetime
                                     # Validate YYYY-MM-DD format
-                                    datetime.strptime(last_contract_date, '%Y-%m-%d')
+                                    datetime.strptime(contract_end_date, '%Y-%m-%d')
                             except (ValueError, TypeError) as e:
-                                app.logger.warning(f"Invalid date format in row {row_index + 1}: {last_contract_date}")
-                                last_contract_date = None
+                                app.logger.warning(f"Invalid date format in row {row_index + 1}: {contract_end_date}")
+                                contract_end_date = None
                         else:
-                            last_contract_date = None
+                            contract_end_date = None
                         
-                        # Upsert worker with enhanced conflict handling
+                        # Upsert worker with enhanced conflict handling (without contract fields in workers table)
                         if update_existing:
                             cursor.execute("""
-                                INSERT INTO workers (worker_id, full_name, secteur_id, status, contract_type, last_contract_date)
-                                VALUES (%s, %s, %s, %s, %s, %s)
+                                INSERT INTO workers (worker_id, full_name, secteur_id, status)
+                                VALUES (%s, %s, %s, %s)
                                 ON CONFLICT (worker_id) DO UPDATE SET
                                     full_name = EXCLUDED.full_name,
-                                    secteur_id = EXCLUDED.secteur_id,
-                                    contract_type = EXCLUDED.contract_type,
-                                    last_contract_date = EXCLUDED.last_contract_date
+                                    secteur_id = EXCLUDED.secteur_id
                                 RETURNING id, (xmax = 0) AS inserted;
-                            """, (worker_id_value, worker_name, secteur_id, 'Active', contract_type, last_contract_date))
+                            """, (worker_id_value, worker_name, secteur_id, 'Active'))
                         else:
                             cursor.execute("""
-                                INSERT INTO workers (worker_id, full_name, secteur_id, status, contract_type, last_contract_date)
-                                VALUES (%s, %s, %s, %s, %s, %s)
+                                INSERT INTO workers (worker_id, full_name, secteur_id, status)
+                                VALUES (%s, %s, %s, %s)
                                 ON CONFLICT (worker_id) DO NOTHING
                                 RETURNING id, (xmax = 0) AS inserted;
-                            """, (worker_id_value, worker_name, secteur_id, 'Active', contract_type, last_contract_date))
+                            """, (worker_id_value, worker_name, secteur_id, 'Active'))
                         
                         result = cursor.fetchone()
                         if result:
@@ -3297,6 +3295,38 @@ def import_process():
                             else:
                                 row_updated = True
                                 app.logger.info(f"Updated existing worker: {worker_name}")
+                            
+                            # Handle RH data separately if contract information is provided
+                            if contract_type or contract_end_date:
+                                id_philia_csv = mappings.get('id_philia')
+                                mdp_philia_csv = mappings.get('mdp_philia')
+                                
+                                id_philia = row.get(id_philia_csv, '').strip() if id_philia_csv else None
+                                mdp_philia = row.get(mdp_philia_csv, '').strip() if mdp_philia_csv else None
+                                
+                                # Clean up empty values
+                                if id_philia and id_philia in ['#N/D', 'N/A', '', 'NULL']:
+                                    id_philia = None
+                                if mdp_philia and mdp_philia in ['#N/D', 'N/A', '', 'NULL']:
+                                    mdp_philia = None
+                                
+                                if update_existing:
+                                    cursor.execute("""
+                                        INSERT INTO rh_data (worker_id, id_philia, mdp_philia, contract_type, contract_end_date)
+                                        VALUES (%s, %s, %s, %s, %s)
+                                        ON CONFLICT (worker_id) DO UPDATE SET
+                                            id_philia = COALESCE(EXCLUDED.id_philia, rh_data.id_philia),
+                                            mdp_philia = COALESCE(EXCLUDED.mdp_philia, rh_data.mdp_philia),
+                                            contract_type = COALESCE(EXCLUDED.contract_type, rh_data.contract_type),
+                                            contract_end_date = COALESCE(EXCLUDED.contract_end_date, rh_data.contract_end_date);
+                                    """, (worker_id, id_philia, mdp_philia, contract_type, contract_end_date))
+                                else:
+                                    cursor.execute("""
+                                        INSERT INTO rh_data (worker_id, id_philia, mdp_philia, contract_type, contract_end_date)
+                                        VALUES (%s, %s, %s, %s, %s)
+                                        ON CONFLICT (worker_id) DO NOTHING;
+                                    """, (worker_id, id_philia, mdp_philia, contract_type, contract_end_date))
+                                app.logger.info(f"Processed RH data for worker: {worker_name}")
 
                 # --- Step 2: Enhanced SIM Card Processing ---
                 iccid_csv = mappings.get('iccid')
