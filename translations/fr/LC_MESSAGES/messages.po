@@ -1503,3 +1503,39 @@ msgstr "Enregistrer l'Échange"
 #~ msgid "#: templates/manager/tickets.html:3"
 #~ msgstr ""
 
+#: templates/manager/dashboard.html:8
+msgid "Filters"
+msgstr "Filtres"
+
+#: templates/manager/dashboard.html:12
+msgid "Filter by Sector"
+msgstr "Filtrer par Secteur"
+
+#: templates/manager/dashboard.html:14
+msgid "All Sectors"
+msgstr "Tous les Secteurs"
+
+#: templates/manager/dashboard.html:18
+msgid "Phone Status"
+msgstr "Statut du Téléphone"
+
+#: templates/manager/dashboard.html:20
+msgid "All Statuses"
+msgstr "Tous les Statuts"
+
+#: templates/manager/dashboard.html:21
+msgid "With Phone"
+msgstr "Avec Téléphone"
+
+#: templates/manager/dashboard.html:22
+msgid "Without Phone"
+msgstr "Sans Téléphone"
+
+#: templates/manager/dashboard.html:26
+msgid "Search Worker"
+msgstr "Rechercher un Travailleur"
+
+#: templates/manager/dashboard.html:27
+msgid "Search by name..."
+msgstr "Rechercher par nom..."
+

@@ -2,14 +2,64 @@
 {% block title %}Déclarer un Retour de Téléphone{% endblock %}
 {% block page_title %}Déclarer un Retour de Téléphone{% endblock %}
 
+{% block styles %}
+<style>
+.suggestions-container {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-top: none;
+    border-radius: 0 0 0.375rem 0.375rem;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+.suggestion-item {
+    padding: 0.75rem;
+    cursor: pointer;
+    border-bottom: 1px solid #f3f4f6;
+}
+.suggestion-item:hover {
+    background-color: #f9fafb;
+}
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+.custom-form-group {
+    position: relative;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="custom-card max-w-2xl mx-auto">
     <div class="card-header"><h2 class="card-title">Formulaire de Retour de Mobile</h2></div>
     <form id="return-form" class="p-4">
         <div class="space-y-4">
             <div class="custom-form-group">
-                <label for="worker-phone-select" class="custom-label">Travailleur / Téléphone à retourner*</label>
-                <select id="worker-phone-select" name="assignment" required class="custom-select"></select>
+                <label for="sector-filter" class="custom-label">Filtrer par secteur (optionnel)</label>
+                <select id="sector-filter" class="custom-select">
+                    <option value="">Tous les secteurs</option>
+                </select>
+            </div>
+            
+            <div class="custom-form-group">
+                <label for="worker-search" class="custom-label">Rechercher un travailleur</label>
+                <input type="text" id="worker-search" class="custom-input" placeholder="Tapez le nom du travailleur..." autocomplete="off">
+                <div id="worker-suggestions" class="suggestions-container" style="display: none;"></div>
+            </div>
+            
+            <div class="custom-form-group" id="selected-worker-group" style="display: none;">
+                <label class="custom-label">Travailleur sélectionné</label>
+                <div id="selected-worker-info" class="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                    <div class="font-medium" id="selected-worker-name"></div>
+                    <div class="text-sm text-gray-600" id="selected-worker-details"></div>
+                </div>
+                <input type="hidden" id="selected-assignment-data">
             </div>
             
             <div class="custom-form-group">
@@ -48,26 +98,121 @@
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const workerPhoneSelect = document.getElementById('worker-phone-select');
+        const sectorFilter = document.getElementById('sector-filter');
+        const workerSearch = document.getElementById('worker-search');
+        const workerSuggestions = document.getElementById('worker-suggestions');
+        const selectedWorkerGroup = document.getElementById('selected-worker-group');
+        const selectedWorkerName = document.getElementById('selected-worker-name');
+        const selectedWorkerDetails = document.getElementById('selected-worker-details');
+        const selectedAssignmentData = document.getElementById('selected-assignment-data');
         const returnForm = document.getElementById('return-form');
+        
+        let allPhones = [];
+        let filteredPhones = [];
 
-        async function populateReturnablePhones() {
+        async function loadReturnablePhones() {
             try {
                 const response = await fetch('/api/manager/returnable_phones');
-                const phones = await response.json();
-                workerPhoneSelect.innerHTML = '<option value="">Sélectionnez un travailleur...</option>';
-                phones.forEach(p => {
-                    const optionValue = JSON.stringify({assignment_id: p.assignment_id, phone_id: p.phone_id, worker_id: p.worker_id});
-                    workerPhoneSelect.innerHTML += `<option value='${optionValue}'>${p.worker_name} - (${p.model}, ${p.asset_tag})</option>`;
-                });
+                allPhones = await response.json();
+                populateSectorFilter();
+                filterPhones();
             } catch (error) {
                 console.error('Erreur lors du chargement des téléphones :', error);
             }
         }
 
+        function populateSectorFilter() {
+            const sectors = [...new Set(allPhones.map(p => p.secteur_name))].sort();
+            sectorFilter.innerHTML = '<option value="">Tous les secteurs</option>';
+            sectors.forEach(sector => {
+                sectorFilter.innerHTML += `<option value="${sector}">${sector}</option>`;
+            });
+        }
+
+        function filterPhones() {
+            const sectorValue = sectorFilter.value;
+            filteredPhones = sectorValue ? 
+                allPhones.filter(p => p.secteur_name === sectorValue) : 
+                allPhones;
+        }
+
+        function showSuggestions(searchTerm) {
+            if (!searchTerm || searchTerm.length < 2) {
+                workerSuggestions.style.display = 'none';
+                return;
+            }
+
+            const matches = filteredPhones.filter(p => 
+                p.worker_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                p.worker_employee_id.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            if (matches.length === 0) {
+                workerSuggestions.style.display = 'none';
+                return;
+            }
+
+            workerSuggestions.innerHTML = matches.map(p => `
+                <div class="suggestion-item" data-worker='${JSON.stringify(p)}'>
+                    <div class="font-medium">${p.worker_name}</div>
+                    <div class="text-sm text-gray-600">${p.secteur_name} • ${p.manufacturer} ${p.model} (${p.asset_tag})</div>
+                </div>
+            `).join('');
+            
+            workerSuggestions.style.display = 'block';
+        }
+
+        function selectWorker(workerData) {
+            selectedWorkerName.textContent = workerData.worker_name;
+            selectedWorkerDetails.textContent = `${workerData.secteur_name} • ${workerData.manufacturer} ${workerData.model} (${workerData.asset_tag})`;
+            selectedAssignmentData.value = JSON.stringify({
+                assignment_id: workerData.assignment_id,
+                phone_id: workerData.phone_id,
+                worker_id: workerData.worker_id
+            });
+            
+            selectedWorkerGroup.style.display = 'block';
+            workerSuggestions.style.display = 'none';
+            workerSearch.value = workerData.worker_name;
+        }
+
+        // Event Listeners
+        sectorFilter.addEventListener('change', function() {
+            filterPhones();
+            workerSearch.value = '';
+            selectedWorkerGroup.style.display = 'none';
+            workerSuggestions.style.display = 'none';
+        });
+
+        workerSearch.addEventListener('input', function() {
+            selectedWorkerGroup.style.display = 'none';
+            showSuggestions(this.value);
+        });
+
+        workerSuggestions.addEventListener('click', function(e) {
+            const suggestionItem = e.target.closest('.suggestion-item');
+            if (suggestionItem) {
+                const workerData = JSON.parse(suggestionItem.dataset.worker);
+                selectWorker(workerData);
+            }
+        });
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!workerSearch.contains(e.target) && !workerSuggestions.contains(e.target)) {
+                workerSuggestions.style.display = 'none';
+            }
+        });
+
         returnForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-            const selectedData = JSON.parse(workerPhoneSelect.value);
+            
+            if (!selectedAssignmentData.value) {
+                alert('Veuillez sélectionner un travailleur');
+                return;
+            }
+            
+            const selectedData = JSON.parse(selectedAssignmentData.value);
             const accessories = Array.from(document.querySelectorAll('input[name="accessories"]:checked')).map(el => el.value);
             
             const payload = {
@@ -93,7 +238,7 @@
             }
         });
 
-        populateReturnablePhones();
+        loadReturnablePhones();
     });
 </script>
 {% endblock %}

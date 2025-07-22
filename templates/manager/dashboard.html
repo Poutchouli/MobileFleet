@@ -3,6 +3,35 @@
 {% block page_title %}{{ _('Team Dashboard') }}{% endblock %}
 
 {% block content %}
+<!-- Filters Section -->
+<div class="custom-card mb-4">
+    <div class="card-header">
+        <h3 class="text-lg font-medium">{{ _('Filters') }}</h3>
+    </div>
+    <div class="p-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="custom-form-group">
+                <label for="sector-filter" class="custom-label">{{ _('Filter by Sector') }}</label>
+                <select id="sector-filter" class="custom-select">
+                    <option value="">{{ _('All Sectors') }}</option>
+                </select>
+            </div>
+            <div class="custom-form-group">
+                <label for="phone-status-filter" class="custom-label">{{ _('Phone Status') }}</label>
+                <select id="phone-status-filter" class="custom-select">
+                    <option value="">{{ _('All Statuses') }}</option>
+                    <option value="assigned">{{ _('With Phone') }}</option>
+                    <option value="unassigned">{{ _('Without Phone') }}</option>
+                </select>
+            </div>
+            <div class="custom-form-group">
+                <label for="worker-search" class="custom-label">{{ _('Search Worker') }}</label>
+                <input type="text" id="worker-search" class="custom-input" placeholder="{{ _('Search by name...') }}">
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="space-y-4" id="dashboard-sectors-container">
     <div class="text-center py-8 text-gray-500">{{ _('Loading team data...') }}</div>
 </div>
@@ -51,6 +80,13 @@
         const phoneIdInput = document.getElementById('phone_id');
         const toast = document.getElementById('toast');
         const toastMessage = document.getElementById('toast-message');
+        
+        // Filter elements
+        const sectorFilter = document.getElementById('sector-filter');
+        const phoneStatusFilter = document.getElementById('phone-status-filter');
+        const workerSearchFilter = document.getElementById('worker-search');
+        
+        let originalTeamData = {}; // Store original data for filtering
 
         function showToast(message, isError = false) {
             toastMessage.textContent = message;
@@ -63,11 +99,70 @@
             }, 3000);
         }
 
+        function populateFilters() {
+            // Populate sector filter
+            const sectors = Object.keys(originalTeamData).sort();
+            sectorFilter.innerHTML = '<option value="">{{ _("All Sectors") }}</option>';
+            sectors.forEach(sector => {
+                sectorFilter.innerHTML += `<option value="${sector}">${sector}</option>`;
+            });
+        }
+
+        function applyFilters() {
+            let filteredData = {};
+            
+            // Filter by sector
+            const selectedSector = sectorFilter.value;
+            if (selectedSector) {
+                if (originalTeamData[selectedSector]) {
+                    filteredData[selectedSector] = originalTeamData[selectedSector];
+                }
+            } else {
+                filteredData = { ...originalTeamData };
+            }
+            
+            // Filter by phone status and worker name
+            const phoneStatus = phoneStatusFilter.value;
+            const workerSearchTerm = workerSearchFilter.value.toLowerCase();
+            
+            if (phoneStatus || workerSearchTerm) {
+                Object.keys(filteredData).forEach(sectorName => {
+                    filteredData[sectorName] = filteredData[sectorName].filter(worker => {
+                        let passesPhoneFilter = true;
+                        let passesNameFilter = true;
+                        
+                        // Phone status filter
+                        if (phoneStatus === 'assigned') {
+                            passesPhoneFilter = worker.asset_tag !== null;
+                        } else if (phoneStatus === 'unassigned') {
+                            passesPhoneFilter = worker.asset_tag === null;
+                        }
+                        
+                        // Worker name filter
+                        if (workerSearchTerm) {
+                            passesNameFilter = worker.full_name.toLowerCase().includes(workerSearchTerm);
+                        }
+                        
+                        return passesPhoneFilter && passesNameFilter;
+                    });
+                    
+                    // Remove sectors with no workers after filtering
+                    if (filteredData[sectorName].length === 0) {
+                        delete filteredData[sectorName];
+                    }
+                });
+            }
+            
+            renderSectors(filteredData);
+        }
+
         async function fetchTeamData() {
             try {
                 const response = await fetch('/api/manager/team_by_sector');
                 if (!response.ok) throw new Error('{{ _("Failed to fetch team data.") }}');
                 const data = await response.json();
+                originalTeamData = data; // Store original data
+                populateFilters();
                 renderSectors(data);
             } catch (error) {
                 console.error(error);
@@ -276,6 +371,17 @@
             } catch (error) {
                 showToast(error.message, true);
             }
+        });
+
+        // Filter event listeners
+        sectorFilter.addEventListener('change', applyFilters);
+        phoneStatusFilter.addEventListener('change', applyFilters);
+        
+        // Debounced search for worker name
+        let filterSearchTimeout;
+        workerSearchFilter.addEventListener('input', function() {
+            clearTimeout(filterSearchTimeout);
+            filterSearchTimeout = setTimeout(applyFilters, 300);
         });
 
         // Initial data load
