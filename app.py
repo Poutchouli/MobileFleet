@@ -2972,31 +2972,163 @@ def import_get_schema():
 @role_required('Administrator')
 def import_process():
     """
-    Processes a CSV file by intelligently upserting data into related tables
-    (workers, sim_cards, phones) within a single transaction per row.
+    Enhanced CSV processing with improved error handling, batch processing,
+    and configurable options for maximum import capability.
     """
+    import time
+    start_time = time.time()
+    
     if 'file' not in request.files:
         return jsonify({"error": "File not provided for import."}), 400
 
     file = request.files['file']
     form_data = request.form
+    
+    # Get configuration options
+    skip_errors = form_data.get('skip_errors', 'true').lower() == 'true'
+    create_missing = form_data.get('create_missing', 'true').lower() == 'true'  
+    update_existing = form_data.get('update_existing', 'true').lower() == 'true'
+    encoding = form_data.get('encoding', 'utf-8')
+    delimiter = form_data.get('delimiter', ';')
+    
+    app.logger.info(f"Starting enhanced CSV import with options: skip_errors={skip_errors}, create_missing={create_missing}, update_existing={update_existing}, encoding={encoding}, delimiter={delimiter}")
+    
     db = get_db()  # Get database connection
 
     try:
         # --- Configuration ---
         mappings = json.loads(form_data['column_mappings'])
-        file_content = file.stream.read().decode(form_data.get('encoding', 'utf-8'))
-        reader = csv.DictReader(io.StringIO(file_content), delimiter=form_data.get('delimiter', ','))
+        file_content = file.stream.read().decode(encoding)
+        reader = csv.DictReader(io.StringIO(file_content), delimiter=delimiter)
 
         inserted_count = 0
         updated_count = 0
         error_count = 0
         detailed_errors = []  # Store detailed error information
+        skipped_count = 0
+        
+        # Pre-flight checks
+        total_rows = sum(1 for _ in csv.DictReader(io.StringIO(file_content), delimiter=delimiter))
+        app.logger.info(f"Processing {total_rows} rows from CSV file")
+        
+        # Reset reader
+        reader = csv.DictReader(io.StringIO(file_content), delimiter=delimiter)
         
         # --- Process each CSV row ---
         for row_index, row in enumerate(reader):
+            # Skip empty rows
+            if not any(value.strip() for value in row.values() if value):
+                skipped_count += 1
+                continue
+                
             try:
                 cursor = db.cursor()
+                row_inserted = False
+                row_updated = False
+                
+                # --- Step 1: Enhanced Worker Processing ---
+                worker_name_csv = mappings.get('full_name')
+                worker_id_csv = mappings.get('worker_id')
+                secteur_name_csv = mappings.get('secteur_name')
+                contract_type_csv = mappings.get('contract_type')
+                last_contract_date_csv = mappings.get('last_contract_date')
+                
+                worker_id = None
+                if worker_name_csv and row.get(worker_name_csv):
+                    worker_name = row[worker_name_csv].strip()
+                    if worker_name:  # Only process if name is not empty
+                        # Enhanced secteur handling
+                        secteur_id = None
+                        if secteur_name_csv and row.get(secteur_name_csv):
+                            secteur_name = row[secteur_name_csv].strip()
+                            cursor.execute("SELECT id FROM secteurs WHERE secteur_name = %s", (secteur_name,))
+                            secteur_result = cursor.fetchone()
+                            if secteur_result:
+                                secteur_id = secteur_result['id']
+                            elif create_missing:
+                                # Create secteur if it doesn't exist and option is enabled
+                                cursor.execute(
+                                    "INSERT INTO secteurs (secteur_name, description) VALUES (%s, %s) RETURNING id",
+                                    (secteur_name, f'Auto-created during import for {secteur_name}')
+                                )
+                                secteur_id = cursor.fetchone()['id']
+                                app.logger.info(f"Created new secteur: {secteur_name}")
+                        
+                        if not secteur_id:
+                            # Use or create default secteur
+                            cursor.execute("SELECT id FROM secteurs LIMIT 1")
+                            secteur_result = cursor.fetchone()
+                            if not secteur_result and create_missing:
+                                cursor.execute(
+                                    "INSERT INTO secteurs (secteur_name, description) VALUES (%s, %s) RETURNING id",
+                                    ('Default Sector', 'Auto-created during CSV import')
+                                )
+                                secteur_id = cursor.fetchone()['id']
+                            elif secteur_result:
+                                secteur_id = secteur_result['id']
+                        
+                        # Enhanced worker ID generation
+                        worker_id_value = row.get(worker_id_csv, '').strip() if worker_id_csv else f"WK{worker_name.replace(' ', '').upper()[:6]}"
+                        contract_type = row.get(contract_type_csv, '').strip() if contract_type_csv else None
+                        last_contract_date = row.get(last_contract_date_csv, '').strip() if last_contract_date_csv else None
+                        
+                        # Handle missing or invalid worker_id
+                        if not worker_id_value or worker_id_value in ['#N/D', 'N/A', '', 'NULL']:
+                            worker_id_value = f"WK{worker_name.replace(' ', '').upper()[:6]}{row_index}"
+                        
+                        # Handle missing or invalid contract type
+                        if not contract_type or contract_type in ['#N/D', 'N/A', '', 'NULL']:
+                            contract_type = None
+                        
+                        # Enhanced date parsing
+                        if last_contract_date and last_contract_date not in ['#N/D', 'N/A', '', 'NULL']:
+                            try:
+                                # Try multiple date formats
+                                if '/' in last_contract_date:
+                                    from datetime import datetime
+                                    # Try DD/MM/YYYY first, then MM/DD/YYYY
+                                    try:
+                                        parsed_date = datetime.strptime(last_contract_date, '%d/%m/%Y')
+                                    except ValueError:
+                                        parsed_date = datetime.strptime(last_contract_date, '%m/%d/%Y')
+                                    last_contract_date = parsed_date.strftime('%Y-%m-%d')
+                                elif '-' in last_contract_date:
+                                    from datetime import datetime
+                                    # Validate YYYY-MM-DD format
+                                    datetime.strptime(last_contract_date, '%Y-%m-%d')
+                            except (ValueError, TypeError) as e:
+                                app.logger.warning(f"Invalid date format in row {row_index + 1}: {last_contract_date}")
+                                last_contract_date = None
+                        else:
+                            last_contract_date = None
+                        
+                        # Upsert worker with enhanced conflict handling
+                        if update_existing:
+                            cursor.execute("""
+                                INSERT INTO workers (worker_id, full_name, secteur_id, status, contract_type, last_contract_date)
+                                VALUES (%s, %s, %s, %s, %s, %s)
+                                ON CONFLICT (worker_id) DO UPDATE SET
+                                    full_name = EXCLUDED.full_name,
+                                    secteur_id = EXCLUDED.secteur_id,
+                                    contract_type = EXCLUDED.contract_type,
+                                    last_contract_date = EXCLUDED.last_contract_date
+                                RETURNING id, (xmax = 0) AS inserted;
+                            """, (worker_id_value, worker_name, secteur_id, 'Active', contract_type, last_contract_date))
+                        else:
+                            cursor.execute("""
+                                INSERT INTO workers (worker_id, full_name, secteur_id, status, contract_type, last_contract_date)
+                                VALUES (%s, %s, %s, %s, %s, %s)
+                                ON CONFLICT (worker_id) DO NOTHING
+                                RETURNING id, (xmax = 0) AS inserted;
+                            """, (worker_id_value, worker_name, secteur_id, 'Active', contract_type, last_contract_date))
+                        
+                        result = cursor.fetchone()
+                        if result:
+                            worker_id = result['id']
+                            if result['inserted']:
+                                row_inserted = True
+                            else:
+                                row_updated = True
                 
                 # --- Step 1: Upsert Worker and get worker_id ---
                 worker_name_csv = mappings.get('full_name')  # Worker full name
@@ -3082,13 +3214,13 @@ def import_process():
                         """, (worker_id_value, worker_name, secteur_id, 'Active', contract_type, last_contract_date))
                         worker_id = cursor.fetchone()['id']
 
-                # --- Step 2: Upsert SIM Card and get sim_id ---
-                iccid_csv = mappings.get('iccid')  # Mapped to 'iccid'
+                # --- Step 2: Enhanced SIM Card Processing ---
+                iccid_csv = mappings.get('iccid')
                 sim_id = None
                 if iccid_csv and row.get(iccid_csv):
                     iccid = row[iccid_csv].strip()
                     
-                    # Handle scientific notation in ICCID (Excel export issue)
+                    # Enhanced ICCID processing
                     if 'E+' in iccid or 'e+' in iccid:
                         try:
                             # Convert scientific notation to proper ICCID
@@ -3096,7 +3228,10 @@ def import_process():
                         except ValueError:
                             pass  # Keep original if conversion fails
                     
-                    if iccid:  # Only process if ICCID is not empty
+                    # Remove any non-numeric characters except for basic formatting
+                    iccid = ''.join(filter(str.isdigit, iccid))
+                    
+                    if iccid and len(iccid) >= 15:  # Basic ICCID validation
                         carrier_csv = mappings.get('carrier', None)
                         puk_csv = mappings.get('puk', None)
                         
@@ -3104,34 +3239,53 @@ def import_process():
                         puk = row.get(puk_csv, '').strip() if puk_csv else None
                         
                         # Handle missing or invalid data
-                        if not carrier or carrier in ['#N/D', 'N/A', '']:
-                            carrier = None
-                        if not puk or puk in ['#N/D', 'N/A', '']:
+                        if not carrier or carrier in ['#N/D', 'N/A', '', 'NULL']:
+                            carrier = 'Unknown'
+                        if not puk or puk in ['#N/D', 'N/A', '', 'NULL']:
                             puk = None
 
-                        # Upsert SIM and get its ID
-                        cursor.execute("""
-                            INSERT INTO sim_cards (iccid, carrier, puk, status)
-                            VALUES (%s, %s, %s, %s)
-                            ON CONFLICT (iccid) DO UPDATE SET
-                                carrier = EXCLUDED.carrier,
-                                puk = EXCLUDED.puk,
-                                status = EXCLUDED.status
-                            RETURNING id;
-                        """, (iccid, carrier, puk, 'In Stock'))
-                        sim_id = cursor.fetchone()['id']
+                        # Enhanced SIM upsert
+                        if update_existing:
+                            cursor.execute("""
+                                INSERT INTO sim_cards (iccid, carrier, puk, status)
+                                VALUES (%s, %s, %s, %s)
+                                ON CONFLICT (iccid) DO UPDATE SET
+                                    carrier = EXCLUDED.carrier,
+                                    puk = EXCLUDED.puk,
+                                    status = EXCLUDED.status
+                                RETURNING id, (xmax = 0) AS inserted;
+                            """, (iccid, carrier, puk, 'In Stock'))
+                        else:
+                            cursor.execute("""
+                                INSERT INTO sim_cards (iccid, carrier, puk, status)
+                                VALUES (%s, %s, %s, %s)
+                                ON CONFLICT (iccid) DO NOTHING
+                                RETURNING id, (xmax = 0) AS inserted;
+                            """, (iccid, carrier, puk, 'In Stock'))
+                        
+                        result = cursor.fetchone()
+                        if result:
+                            sim_id = result['id']
+                            if result['inserted'] and not row_inserted:
+                                row_inserted = True
+                            elif not result['inserted'] and not row_updated:
+                                row_updated = True
 
-                # --- Step 3: Upsert Phone ---
-                imei_csv = mappings.get('imei')  # Mapped to 'imei'
+                # --- Step 3: Enhanced Phone Processing ---
+                imei_csv = mappings.get('imei')
                 phone_id = None
                 if imei_csv and row.get(imei_csv):
                     imei = row[imei_csv].strip()
-                    if imei:  # Only process if IMEI is not empty
-                        # Prepare phone data from mappings
+                    
+                    # Enhanced IMEI validation and cleaning
+                    imei = ''.join(filter(str.isdigit, imei))
+                    
+                    if imei and len(imei) >= 14:  # Basic IMEI validation
+                        # Enhanced phone data preparation
                         asset_tag = row.get(mappings.get('asset_tag'), '').strip() or f"PHONE_{imei[-6:]}"
                         serial_number = row.get(mappings.get('serial_number'), '').strip() or f"SN_{imei[-8:]}"
-                        manufacturer = row.get(mappings.get('manufacturer'), '').strip() or None
-                        model = row.get(mappings.get('model'), '').strip() or None  # Assuming 'Matériel' is mapped to 'model'
+                        manufacturer = row.get(mappings.get('manufacturer'), '').strip() or 'Unknown'
+                        model = row.get(mappings.get('model'), '').strip() or 'Unknown'
                         status = row.get(mappings.get('status'), '').strip() or 'In Stock'
 
                         phone_data = {
@@ -3143,65 +3297,67 @@ def import_process():
                             'status': status
                         }
 
-                        # Filter out any keys with None values
-                        phone_data = {k: v for k, v in phone_data.items() if v is not None}
+                        # Remove None values but keep meaningful defaults
+                        phone_data = {k: v for k, v in phone_data.items() if v is not None and v != ''}
 
                         columns = ", ".join(phone_data.keys())
                         placeholders = ", ".join(["%s"] * len(phone_data))
                         update_clause = ", ".join([f"{col} = EXCLUDED.{col}" for col in phone_data if col != 'imei'])
 
-                        cursor.execute(f"""
-                            INSERT INTO phones ({columns})
-                            VALUES ({placeholders})
-                            ON CONFLICT (imei) DO UPDATE SET {update_clause}
-                            RETURNING id, (xmax = 0) AS inserted;
-                        """, tuple(phone_data.values()))
+                        if update_existing and update_clause:
+                            cursor.execute(f"""
+                                INSERT INTO phones ({columns})
+                                VALUES ({placeholders})
+                                ON CONFLICT (imei) DO UPDATE SET {update_clause}
+                                RETURNING id, (xmax = 0) AS inserted;
+                            """, tuple(phone_data.values()))
+                        else:
+                            cursor.execute(f"""
+                                INSERT INTO phones ({columns})
+                                VALUES ({placeholders})
+                                ON CONFLICT (imei) DO NOTHING
+                                RETURNING id, (xmax = 0) AS inserted;
+                            """, tuple(phone_data.values()))
                         
                         result = cursor.fetchone()
-                        phone_id = result['id']
-                        if result['inserted']:
-                            inserted_count += 1
-                        else:
-                            updated_count += 1
+                        if result:
+                            phone_id = result['id']
+                            if result['inserted'] and not row_inserted:
+                                row_inserted = True
+                            elif not result['inserted'] and not row_updated:
+                                row_updated = True
 
-                        # --- Step 4: Upsert Phone Number with RIO if provided ---
+                        # --- Step 4: Enhanced Phone Number Processing ---
                         phone_number_csv = mappings.get('phone_number')
                         rio_csv = mappings.get('rio')
                         if phone_number_csv and row.get(phone_number_csv) and sim_id:
                             phone_number = row[phone_number_csv].strip()
                             rio = row.get(rio_csv, '').strip() if rio_csv else None
                             
-                            if phone_number:
-                                cursor.execute("""
-                                    INSERT INTO phone_numbers (phone_number, sim_card_id, rio, status)
-                                    VALUES (%s, %s, %s, %s)
-                                    ON CONFLICT (phone_number) DO UPDATE SET
-                                        sim_card_id = EXCLUDED.sim_card_id,
-                                        rio = EXCLUDED.rio,
-                                        status = EXCLUDED.status;
-                                """, (phone_number, sim_id, rio, 'Active'))
+                            # Clean phone number
+                            phone_number = ''.join(filter(str.isdigit, phone_number))
+                            
+                            if phone_number and len(phone_number) >= 8:
+                                if not rio or rio in ['#N/D', 'N/A', '', 'NULL']:
+                                    rio = None
+                                    
+                                if update_existing:
+                                    cursor.execute("""
+                                        INSERT INTO phone_numbers (phone_number, sim_card_id, rio, status)
+                                        VALUES (%s, %s, %s, %s)
+                                        ON CONFLICT (phone_number) DO UPDATE SET
+                                            sim_card_id = EXCLUDED.sim_card_id,
+                                            rio = EXCLUDED.rio,
+                                            status = EXCLUDED.status;
+                                    """, (phone_number, sim_id, rio, 'Active'))
+                                else:
+                                    cursor.execute("""
+                                        INSERT INTO phone_numbers (phone_number, sim_card_id, rio, status)
+                                        VALUES (%s, %s, %s, %s)
+                                        ON CONFLICT (phone_number) DO NOTHING;
+                                    """, (phone_number, sim_id, rio, 'Active'))
                         
-                        # --- Step 5: Update Phone with relationships ---
-                        if phone_id and (worker_id or sim_id):
-                            # Update phone to link with worker and/or sim card
-                            update_fields = []
-                            update_values = []
-                            
-                            if worker_id:
-                                update_fields.append("worker_id = %s")
-                                update_values.append(worker_id)
-                            if sim_id:
-                                update_fields.append("sim_card_id = %s")
-                                update_values.append(sim_id)
-                            
-                            if update_fields:
-                                update_values.append(phone_id)
-                                cursor.execute(f"""
-                                    UPDATE phones SET {', '.join(update_fields)}
-                                    WHERE id = %s
-                                """, update_values)
-
-                        # --- Step 6: Create Assignment if we have all components ---
+                        # --- Step 5: Enhanced Assignment Creation ---
                         if worker_id and sim_id and phone_id:
                             # Check if assignment already exists
                             cursor.execute("""
@@ -3221,6 +3377,12 @@ def import_process():
                                 cursor.execute("UPDATE phones SET status = 'In Use' WHERE id = %s", (phone_id,))
                                 cursor.execute("UPDATE sim_cards SET status = 'In Use' WHERE id = %s", (sim_id,))
                 
+                # Update counters
+                if row_inserted:
+                    inserted_count += 1
+                elif row_updated:
+                    updated_count += 1
+                
                 # Commit the transaction for this row
                 db.commit()
                 cursor.close()
@@ -3235,34 +3397,52 @@ def import_process():
                 error_detail = {
                     'row': row_index + 1,
                     'error': str(row_error),
-                    'data': {k: v for k, v in row.items() if k}  # Only include non-empty keys
+                    'data': {k: v for k, v in row.items() if k and v}  # Only include non-empty keys and values
                 }
                 detailed_errors.append(error_detail)
                 
                 app.logger.error(f"Error processing row {row_index + 1}: {row_error}. Row data: {row}")
-                continue  # Continue with next row
+                
+                # Stop processing if skip_errors is False
+                if not skip_errors:
+                    raise row_error
+                    
+                continue  # Continue with next row if skip_errors is True
 
-        # Prepare response with detailed error information
+        # Calculate processing time
+        processing_time = round(time.time() - start_time, 2)
+        
+        # Prepare enhanced response
+        total_processed = inserted_count + updated_count
         response_data = {
-            "message": f"Import completed! Processed {inserted_count + updated_count} records successfully.",
+            "message": f"Import completed! Processed {total_processed} records successfully.",
             "inserted": inserted_count,
             "updated": updated_count,
-            "errors": error_count
+            "errors": error_count,
+            "skipped": skipped_count,
+            "total_rows": total_rows,
+            "processing_time": processing_time
         }
         
         # Include detailed errors if there are any
         if detailed_errors:
-            response_data["error_details"] = detailed_errors[:50]  # Limit to first 50 errors
-            if len(detailed_errors) > 50:
-                response_data["note"] = f"Showing first 50 errors out of {len(detailed_errors)} total errors"
+            response_data["error_details"] = detailed_errors[:100]  # Limit to first 100 errors
+            if len(detailed_errors) > 100:
+                response_data["note"] = f"Showing first 100 errors out of {len(detailed_errors)} total errors"
 
+        app.logger.info(f"CSV import completed: {total_processed} processed, {error_count} errors, {processing_time}s")
         return jsonify(response_data)
 
     except Exception as e:
         if 'db' in locals():
             db.rollback()  # Ensure rollback on major failure
-        app.logger.error(f"Critical error during CSV import: {str(e)}", exc_info=True)
-        return jsonify({"error": f"A critical error occurred: {str(e)}"}), 500
+        processing_time = round(time.time() - start_time, 2)
+        app.logger.error(f"Critical error during CSV import after {processing_time}s: {str(e)}", exc_info=True)
+        return jsonify({
+            "error": f"A critical error occurred during import", 
+            "details": str(e),
+            "processing_time": processing_time
+        }), 500
 
 @app.route('/api/admin/migrate_timestamps', methods=['POST'])
 @login_required
