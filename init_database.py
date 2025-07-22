@@ -47,8 +47,8 @@ def drop_tables(cursor):
     print("\nDropping existing tables...")
     tables_to_drop = [
         "asset_history_log", "ticket_updates", "tickets", "assignments",
-        "phone_numbers", "sim_cards", "phones", "workers", "secteurs",
-        "users", "roles", "phone_requests"
+        "phone_numbers", "sim_cards", "phones", "workers", "manager_secteurs", 
+        "secteurs", "users", "roles", "phone_requests"
     ]
     for table in tables_to_drop:
         cursor.execute(sql.SQL("DROP TABLE IF EXISTS {} CASCADE").format(sql.Identifier(table)))
@@ -199,6 +199,14 @@ def create_schema(cursor):
             fulfilled_by INTEGER REFERENCES users(id),
             fulfilled_at TIMESTAMPTZ,
             assigned_phone_id INTEGER REFERENCES phones(id)
+        );
+        """,
+        """
+        CREATE TABLE manager_secteurs (
+            manager_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            secteur_id INTEGER NOT NULL REFERENCES secteurs(id) ON DELETE CASCADE,
+            assigned_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            PRIMARY KEY (manager_id, secteur_id)
         );
         """,
         """

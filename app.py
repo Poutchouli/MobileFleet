@@ -394,7 +394,102 @@ def admin_enhanced_csv_import():
     """Serves the enhanced multi-table CSV import page."""
     return render_template('admin/csv_import.html')
 
-@app.route('/admin/requests')
+@app.route('/admin/assign-secteurs')
+@login_required
+@role_required('Administrator')
+def admin_assign_secteurs():
+    """Serves the manager secteur assignment page."""
+    return render_template('admin/assign_secteurs.html')
+
+@app.route('/api/manager-secteur-assignments', methods=['GET'])
+@login_required
+@role_required('Administrator')
+def get_manager_secteur_assignments():
+    """
+    Fetches data needed for the assignment page.
+    - A list of all managers.
+    - A list of all sectors.
+    - If a 'manager_id' is provided, the list of sectors assigned to them.
+    """
+    db = get_db()
+    cursor = db.cursor()
+
+    # Get all managers (users with Manager role)
+    cursor.execute("""
+        SELECT u.id, u.full_name
+        FROM users u
+        WHERE u.role_id = (SELECT id FROM roles WHERE role_name = 'Manager')
+        ORDER BY u.full_name;
+    """)
+    managers = cursor.fetchall()
+
+    # Get all secteurs
+    cursor.execute("SELECT id, secteur_name FROM secteurs ORDER BY secteur_name;")
+    secteurs = cursor.fetchall()
+
+    assigned_secteur_ids = []
+    manager_id = request.args.get('manager_id', type=int)
+    if manager_id:
+        cursor.execute(
+            "SELECT secteur_id FROM manager_secteurs WHERE manager_id = %s",
+            (manager_id,)
+        )
+        # Extract secteur_id from each row - use dict access since RealDictCursor is used
+        assigned_secteur_ids = [row['secteur_id'] for row in cursor.fetchall()]
+
+    cursor.close()
+
+    # Convert RealDictRow objects to regular dictionaries to ensure compatibility
+    return jsonify({
+        "managers": [dict(m) for m in managers],
+        "secteurs": [dict(s) for s in secteurs], 
+        "assigned_secteur_ids": assigned_secteur_ids
+    })
+
+
+@app.route('/api/manager-secteur-assignments', methods=['POST'])
+@login_required
+@role_required('Administrator')
+def save_manager_secteur_assignments():
+    """
+    Saves the full list of sector assignments for a single manager.
+    This uses a safe "delete-then-insert" strategy within a transaction.
+    """
+    data = request.get_json()
+    manager_id = data.get('manager_id')
+    secteur_ids = data.get('secteur_ids', [])
+
+    if not manager_id:
+        return jsonify({"error": "Manager ID is required."}), 400
+
+    db = get_db()
+    cursor = db.cursor()
+
+    try:
+        # 1. Delete all existing assignments for this manager
+        cursor.execute("DELETE FROM manager_secteurs WHERE manager_id = %s", (manager_id,))
+
+        # 2. Insert the new set of assignments, if any are provided
+        if secteur_ids:
+            # Prepare values for insertion
+            for secteur_id in secteur_ids:
+                cursor.execute(
+                    "INSERT INTO manager_secteurs (manager_id, secteur_id) VALUES (%s, %s)",
+                    (manager_id, int(secteur_id))
+                )
+
+        db.commit()  # Commit the transaction
+
+    except Exception as e:
+        db.rollback()  # Rollback on any error
+        app.logger.error(f"Error saving secteur assignments: {str(e)}")
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
+    finally:
+        cursor.close()
+
+    return jsonify({"message": "Assignments updated successfully."})
+
+@app.route('/admin/phone-requests')
 @login_required
 @role_required('Administrator')
 def admin_phone_requests():
