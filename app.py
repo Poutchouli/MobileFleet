@@ -1825,6 +1825,59 @@ def update_worker_notes(worker_id):
         db.rollback(); cursor.close()
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/manager/worker_status/<int:worker_id>', methods=['PUT'])
+@login_required
+@role_required('Manager')
+def update_worker_status(worker_id):
+    """Updates the status for a specific worker using worker database ID."""
+    if request.method != 'PUT':
+        return jsonify({"error": "Method not allowed"}), 405
+        
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+        
+    new_status = data.get('status', '')
+    
+    # Validate status
+    valid_statuses = ['Active', 'Inactive', 'Arrêt', 'Congés']
+    if new_status not in valid_statuses:
+        return jsonify({"error": "Invalid status. Must be one of: " + ", ".join(valid_statuses)}), 400
+    
+    manager_id = session.get('user_id')
+    db = get_db()
+    cursor = db.cursor()
+    
+    # Security check: Ensure the manager is authorized to edit this worker
+    cursor.execute("SELECT w.id FROM workers w JOIN secteurs s ON w.secteur_id = s.id WHERE w.id = %s AND s.manager_id = %s", (worker_id, manager_id))
+    if cursor.fetchone() is None:
+        cursor.close()
+        return jsonify({"error": "You are not authorized to edit this worker."}), 403
+        
+    try:
+        cursor.execute("UPDATE workers SET status = %s WHERE id = %s", (new_status, worker_id))
+        db.commit()
+        cursor.close()
+        return jsonify({"message": "Status updated successfully.", "status": new_status})
+    except Exception as e:
+        db.rollback(); 
+        cursor.close()
+        return jsonify({"error": str(e)}), 500
+
+# Test endpoint to debug the 404 issue
+@app.route('/api/manager/test/<int:worker_id>', methods=['GET', 'PUT'])
+@login_required
+@role_required('Manager')
+def test_worker_endpoint(worker_id):
+    """Test endpoint to debug the 404 issue."""
+    return jsonify({
+        "message": "Test endpoint working", 
+        "worker_id": worker_id, 
+        "method": request.method,
+        "user_id": session.get('user_id'),
+        "user_role": session.get('role')
+    })
+
 # --- API Endpoint for Support Portal ---
 
 @app.route('/api/support/tickets', methods=['GET'])

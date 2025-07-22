@@ -164,6 +164,18 @@ body {
     color: #991b1b;
 }
 
+.status-badge.arrêt {
+    background-color: #fef2f2;
+    color: #7f1d1d;
+    border: 1px solid #fca5a5;
+}
+
+.status-badge.congés {
+    background-color: #ede9fe;
+    color: #5b21b6;
+    border: 1px solid #c4b5fd;
+}
+
 /* === Custom Buttons === */
 .btn-primary {
     background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));

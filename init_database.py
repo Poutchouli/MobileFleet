@@ -92,7 +92,7 @@ def create_schema(cursor):
             worker_id VARCHAR(50) NOT NULL UNIQUE,
             full_name VARCHAR(255) NOT NULL,
             secteur_id INTEGER NOT NULL REFERENCES secteurs(id),
-            status VARCHAR(20) NOT NULL CHECK (status IN ('Active', 'Inactive')),
+            status VARCHAR(20) NOT NULL CHECK (status IN ('Active', 'Inactive', 'Arrêt', 'Congés')),
             notes TEXT,
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         );
@@ -295,10 +295,12 @@ def insert_sample_data(cursor):
 
     workers_data = [
         ('WKR-001', 'Eve Employee', 1, 'Active'),    # Northern Sector
-        ('WKR-002', 'Frank Field', 1, 'Active'),     # Northern Sector
+        ('WKR-002', 'Frank Field', 1, 'Congés'),     # Northern Sector
         ('WKR-003', 'Grace Ground', 2, 'Active'),    # Southern Sector
-        ('WKR-004', 'Heidi Home', 2, 'Inactive'),    # Southern Sector
-        ('WKR-005', 'Ivan Installer', 3, 'Active')   # Logistics
+        ('WKR-004', 'Heidi Home', 2, 'Arrêt'),       # Southern Sector
+        ('WKR-005', 'Ivan Installer', 3, 'Active'),  # Logistics
+        ('WKR-006', 'Julie Tech', 1, 'Inactive'),    # Northern Sector
+        ('WKR-007', 'Karl Sales', 2, 'Congés')       # Southern Sector
     ]
 
     phones_data = [
@@ -340,7 +342,9 @@ def insert_sample_data(cursor):
         (2, 'philia002', 'philia_id_2', 'CDI', None), # For Frank Field
         (3, 'philia003', 'philia_id_3', 'CDD', '2025-12-31'),  # For Grace Ground
         (4, 'philia004', 'philia_id_4', 'CDI', None), # For Heidi Home
-        (5, 'philia005', 'philia_id_5', 'CDD', '2026-06-30')  # For Ivan Installer
+        (5, 'philia005', 'philia_id_5', 'CDD', '2026-06-30'),  # For Ivan Installer
+        (6, 'philia006', 'philia_id_6', 'CDI', None), # For Julie Tech
+        (7, 'philia007', 'philia_id_7', 'CDI', None)  # For Karl Sales
     ]
 
     # --- Execute Inserts ---

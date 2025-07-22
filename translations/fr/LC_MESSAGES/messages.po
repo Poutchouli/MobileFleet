@@ -1539,3 +1539,35 @@ msgstr "Rechercher un Travailleur"
 msgid "Search by name..."
 msgstr "Rechercher par nom..."
 
+#: templates/manager/dashboard.html:20
+msgid "Worker Status"
+msgstr "Statut du Travailleur"
+
+#: templates/manager/dashboard.html:23
+msgid "Active"
+msgstr "Actif"
+
+#: templates/manager/dashboard.html:24
+msgid "Inactive"
+msgstr "Inactif"
+
+#: templates/manager/dashboard.html:25
+msgid "Arrêt"
+msgstr "Arrêt"
+
+#: templates/manager/dashboard.html:26
+msgid "Congés"
+msgstr "Congés"
+
+#: templates/manager/dashboard.html:230
+msgid "Change Status"
+msgstr "Changer le Statut"
+
+#: templates/manager/dashboard.html:240
+msgid "Update"
+msgstr "Mettre à jour"
+
+#: templates/manager/dashboard.html:310
+msgid "Status updated successfully!"
+msgstr "Statut mis à jour avec succès !"
+

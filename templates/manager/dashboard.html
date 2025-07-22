@@ -17,11 +17,13 @@
                 </select>
             </div>
             <div class="custom-form-group">
-                <label for="phone-status-filter" class="custom-label">{{ _('Phone Status') }}</label>
-                <select id="phone-status-filter" class="custom-select">
+                <label for="worker-status-filter" class="custom-label">{{ _('Worker Status') }}</label>
+                <select id="worker-status-filter" class="custom-select">
                     <option value="">{{ _('All Statuses') }}</option>
-                    <option value="assigned">{{ _('With Phone') }}</option>
-                    <option value="unassigned">{{ _('Without Phone') }}</option>
+                    <option value="Active">{{ _('Active') }}</option>
+                    <option value="Inactive">{{ _('Inactive') }}</option>
+                    <option value="Arrêt">{{ _('Arrêt') }}</option>
+                    <option value="Congés">{{ _('Congés') }}</option>
                 </select>
             </div>
             <div class="custom-form-group">
@@ -83,7 +85,7 @@
         
         // Filter elements
         const sectorFilter = document.getElementById('sector-filter');
-        const phoneStatusFilter = document.getElementById('phone-status-filter');
+        const workerStatusFilter = document.getElementById('worker-status-filter');
         const workerSearchFilter = document.getElementById('worker-search');
         
         let originalTeamData = {}; // Store original data for filtering
@@ -108,6 +110,22 @@
             });
         }
 
+        // Check if a worker should be hidden based on current filters
+        function shouldHideWorker(workerStatus) {
+            const selectedStatusFilter = workerStatusFilter.value;
+            const workerSearchTerm = workerSearchFilter.value.toLowerCase();
+            
+            // Check status filter
+            if (selectedStatusFilter && workerStatus !== selectedStatusFilter) {
+                return true;
+            }
+            
+            // Name filter is handled by the existing search, we don't change names
+            // so we don't need to check it here for status updates
+            
+            return false;
+        }
+
         function applyFilters() {
             let filteredData = {};
             
@@ -121,21 +139,19 @@
                 filteredData = { ...originalTeamData };
             }
             
-            // Filter by phone status and worker name
-            const phoneStatus = phoneStatusFilter.value;
+            // Filter by worker status and worker name
+            const workerStatus = workerStatusFilter.value;
             const workerSearchTerm = workerSearchFilter.value.toLowerCase();
             
-            if (phoneStatus || workerSearchTerm) {
+            if (workerStatus || workerSearchTerm) {
                 Object.keys(filteredData).forEach(sectorName => {
                     filteredData[sectorName] = filteredData[sectorName].filter(worker => {
-                        let passesPhoneFilter = true;
+                        let passesStatusFilter = true;
                         let passesNameFilter = true;
                         
-                        // Phone status filter
-                        if (phoneStatus === 'assigned') {
-                            passesPhoneFilter = worker.asset_tag !== null;
-                        } else if (phoneStatus === 'unassigned') {
-                            passesPhoneFilter = worker.asset_tag === null;
+                        // Worker status filter
+                        if (workerStatus) {
+                            passesStatusFilter = worker.status === workerStatus;
                         }
                         
                         // Worker name filter
@@ -143,7 +159,7 @@
                             passesNameFilter = worker.full_name.toLowerCase().includes(workerSearchTerm);
                         }
                         
-                        return passesPhoneFilter && passesNameFilter;
+                        return passesStatusFilter && passesNameFilter;
                     });
                     
                     // Remove sectors with no workers after filtering
@@ -221,7 +237,23 @@
                                         <p class="text-sm text-gray-500">ID: ${worker.worker_id}</p>
                                     </div>
                                 </div>
-                                <span class="status-badge ${worker.status.toLowerCase()}">${worker.status}</span>
+                                <span class="status-badge ${worker.status.toLowerCase()}" id="status-${worker.worker_db_id}">${worker.status}</span>
+                            </div>
+                            
+                            <!-- Status Change Section -->
+                            <div class="mb-3 p-2 bg-gray-50 rounded-md">
+                                <label class="block text-sm font-medium text-gray-600 mb-1">{{ _('Change Status') }}:</label>
+                                <div class="flex space-x-2">
+                                    <select class="text-sm border border-gray-300 rounded-md px-2 py-1 flex-1 status-select" data-worker-id="${worker.worker_db_id}">
+                                        <option value="Active" ${worker.status === 'Active' ? 'selected' : ''}>{{ _('Active') }}</option>
+                                        <option value="Inactive" ${worker.status === 'Inactive' ? 'selected' : ''}>{{ _('Inactive') }}</option>
+                                        <option value="Arrêt" ${worker.status === 'Arrêt' ? 'selected' : ''}>{{ _('Arrêt') }}</option>
+                                        <option value="Congés" ${worker.status === 'Congés' ? 'selected' : ''}>{{ _('Congés') }}</option>
+                                    </select>
+                                    <button class="px-3 py-1 bg-green-600 text-white text-xs rounded-md hover:bg-green-700 transition-colors save-status-btn" data-worker-id="${worker.worker_db_id}">
+                                        {{ _('Update') }}
+                                    </button>
+                                </div>
                             </div>
 
                             <!-- Worker Details Grid -->
@@ -292,6 +324,41 @@
                     const result = await response.json();
                     if (!response.ok) throw new Error(result.error);
                     showToast('{{ _("Note saved successfully!") }}');
+                } catch (error) {
+                    showToast(error.message, true);
+                }
+            }
+
+            // Handle Status Update button
+            if (e.target.classList.contains('save-status-btn')) {
+                const workerId = e.target.dataset.workerId;
+                const newStatus = document.querySelector(`.status-select[data-worker-id='${workerId}']`).value;
+                try {
+                    const response = await fetch(`/api/manager/worker_status/${workerId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: newStatus })
+                    });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.error);
+                    
+                    // Update only the status badge without collapsing sections
+                    const statusBadge = document.getElementById(`status-${workerId}`);
+                    if (statusBadge) {
+                        statusBadge.textContent = newStatus;
+                        statusBadge.className = `status-badge ${newStatus.toLowerCase()}`;
+                    }
+                    
+                    showToast('{{ _("Status updated successfully!") }}');
+                    
+                    // Only check if the worker should still be visible with current filters
+                    // without rebuilding the entire display
+                    const workerCard = document.querySelector(`[data-worker-id="${workerId}"]`).closest('.bg-white');
+                    if (workerCard && shouldHideWorker(newStatus)) {
+                        workerCard.style.display = 'none';
+                    } else if (workerCard) {
+                        workerCard.style.display = 'block';
+                    }
                 } catch (error) {
                     showToast(error.message, true);
                 }
@@ -375,7 +442,7 @@
 
         // Filter event listeners
         sectorFilter.addEventListener('change', applyFilters);
-        phoneStatusFilter.addEventListener('change', applyFilters);
+        workerStatusFilter.addEventListener('change', applyFilters);
         
         // Debounced search for worker name
         let filterSearchTimeout;
