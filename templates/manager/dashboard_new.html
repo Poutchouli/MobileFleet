@@ -54,11 +54,9 @@
 
         function showToast(message, isError = false) {
             toastMessage.textContent = message;
-            toast.className = `toast ${isError ? 'error' : 'success'}`;
+            toast.className = `toast fixed top-4 right-4 p-4 rounded-md shadow-lg ${isError ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`;
             toast.classList.remove('hidden');
-            toast.classList.add('show');
             setTimeout(() => {
-                toast.classList.remove('show');
                 toast.classList.add('hidden');
             }, 3000);
         }
@@ -97,8 +95,25 @@
                                 </svg>
                             </div>
                         </div>
-                        <div id="accordion-${sectorId}" class="hidden accordion-body p-4">
-                            ${renderWorkerCards(workers)}
+                        <div id="accordion-${sectorId}" class="overflow-x-auto hidden accordion-body">
+                            <table class="custom-table">
+                                <thead>
+                                    <tr>
+                                        <th>{{ _('Worker ID') }}</th>
+                                        <th>{{ _('Full Name') }}</th>
+                                        <th>{{ _('Contract Type') }}</th>
+                                        <th>{{ _('Contract End') }}</th>
+                                        <th>{{ _('Status') }}</th>
+                                        <th>{{ _('Phone Model') }}</th>
+                                        <th>{{ _('Phone Number') }}</th>
+                                        <th>{{ _('Assigned On') }}</th>
+                                        <th style="width: 20%;">{{ _('Notes') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${renderWorkerRows(workers)}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 `;
@@ -106,70 +121,26 @@
             }
         }
 
-        function renderWorkerCards(workers) {
+        function renderWorkerRows(workers) {
             if (workers.length === 0) {
-                return '<div class="text-center py-8 text-gray-500">{{ _("No workers in this sector.") }}</div>';
+                return '<tr><td colspan="9" class="text-center py-4">{{ _("No workers in this sector.") }}</td></tr>';
             }
-            
-            return `
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    ${workers.map(worker => `
-                        <div class="worker-card bg-white rounded-lg shadow-md border border-gray-200 p-4 hover:shadow-lg transition-shadow">
-                            <!-- Worker Header -->
-                            <div class="flex items-center justify-between mb-3">
-                                <div class="flex items-center space-x-3">
-                                    <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
-                                        ${worker.full_name.split(' ').map(n => n[0]).join('').substring(0, 2)}
-                                    </div>
-                                    <div>
-                                        <h3 class="font-semibold text-gray-900">${worker.full_name}</h3>
-                                        <p class="text-sm text-gray-500">ID: ${worker.worker_id}</p>
-                                    </div>
-                                </div>
-                                <span class="status-badge ${worker.status.toLowerCase()}">${worker.status}</span>
-                            </div>
-
-                            <!-- Worker Details Grid -->
-                            <div class="space-y-2 mb-4">
-                                <div class="flex justify-between">
-                                    <span class="text-sm font-medium text-gray-600">{{ _('Contract Type') }}:</span>
-                                    <span class="text-sm text-gray-900">${worker.contract_type || '{{ _("N/A") }}'}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-sm font-medium text-gray-600">{{ _('Contract End') }}:</span>
-                                    <span class="text-sm text-gray-900">${worker.contract_end_date ? new Date(worker.contract_end_date).toLocaleDateString() : '{{ _("N/A") }}'}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-sm font-medium text-gray-600">{{ _('Phone Model') }}:</span>
-                                    <span class="text-sm text-gray-900">${worker.model || '{{ _("N/A") }}'}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-sm font-medium text-gray-600">{{ _('Phone Number') }}:</span>
-                                    <span class="text-sm text-gray-900 font-mono">${worker.phone_number || '{{ _("N/A") }}'}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-sm font-medium text-gray-600">{{ _('Assigned On') }}:</span>
-                                    <span class="text-sm text-gray-900">${worker.assignment_date ? new Date(worker.assignment_date).toLocaleDateString() : '{{ _("N/A") }}'}</span>
-                                </div>
-                            </div>
-
-                            <!-- Notes Section -->
-                            <div class="border-t pt-3">
-                                <label class="block text-sm font-medium text-gray-600 mb-2">{{ _('Manager Notes') }}:</label>
-                                <textarea 
-                                    class="w-full text-sm p-2 border border-gray-300 rounded-md resize-none note-area" 
-                                    data-worker-id="${worker.worker_db_id}" 
-                                    rows="2" 
-                                    placeholder="{{ _('Add a note...') }}"
-                                >${worker.notes || ''}</textarea>
-                                <button class="mt-2 px-3 py-1 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 transition-colors save-note-btn" data-worker-id="${worker.worker_db_id}">
-                                    {{ _('Save Note') }}
-                                </button>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
+            return workers.map(worker => `
+                <tr>
+                    <td>${worker.worker_id}</td>
+                    <td class="font-medium">${worker.full_name}</td>
+                    <td>${worker.contract_type || '{{ _("N/A") }}'}</td>
+                    <td>${worker.contract_end_date ? new Date(worker.contract_end_date).toLocaleDateString() : '{{ _("N/A") }}'}</td>
+                    <td><span class="status-badge ${worker.status.toLowerCase()}">${worker.status}</span></td>
+                    <td>${worker.model || '{{ _("N/A") }}'}</td>
+                    <td>${worker.phone_number || '{{ _("N/A") }}'}</td>
+                    <td>${worker.assignment_date ? new Date(worker.assignment_date).toLocaleDateString() : '{{ _("N/A") }}'}</td>
+                    <td>
+                        <textarea class="custom-input text-sm p-1 note-area" data-worker-id="${worker.worker_db_id}" rows="2" placeholder="{{ _('Add a note...') }}">${worker.notes || ''}</textarea>
+                        <button class="btn-link text-sm save-note-btn mt-1" data-worker-id="${worker.worker_db_id}">{{ _('Save Note') }}</button>
+                    </td>
+                </tr>
+            `).join('');
         }
         
         // --- Event Delegation for Accordions, Save Note, and Create Ticket ---

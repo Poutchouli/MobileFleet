@@ -82,7 +82,17 @@ class Worker(db.Model):
     full_name = db.Column(db.String(255), nullable=False)
     secteur_id = db.Column(db.Integer, db.ForeignKey('secteurs.id'), nullable=False)
     status = db.Column(db.String(20), nullable=False)
+    notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=db.func.now())
+
+class RhData(db.Model):
+    __tablename__ = 'rh_data'
+    id = db.Column(db.Integer, primary_key=True)
+    worker_id = db.Column(db.Integer, db.ForeignKey('workers.id'), nullable=False, unique=True)
+    id_philia = db.Column(db.String(100))
+    mdp_philia = db.Column(db.String(100))
+    contract_type = db.Column(db.String(50))
+    contract_end_date = db.Column(db.Date)
 
 class Phone(db.Model):
     __tablename__ = 'phones'
@@ -1084,97 +1094,121 @@ def manager_create_ticket():
 @login_required
 @role_required('Manager')
 def get_manager_team_status():
-    """
-    API endpoint to get the status of all workers and their assigned assets
-    for the currently logged-in manager.
-    """
+    """Gets status for the manager's team, including new RH data and notes."""
     manager_id = session.get('user_id')
     db = get_db()
     cursor = db.cursor()
-    
-    # This query securely fetches only the workers belonging to the manager's sectors.
-    # It also gets details of their currently assigned phone, a count of any open tickets,
-    # and information about pending phone swaps.
     query = """
         SELECT
-            w.id AS worker_id,
-            w.full_name AS worker_name,
-            p.id AS phone_id,
-            p.asset_tag,
-            p.manufacturer,
-            p.model,
-            p.status AS phone_status,
-            COALESCE(open_tickets.ticket_count, 0) AS open_ticket_count,
-            COALESCE(swap_info.pending_swaps, 0) AS pending_swaps,
-            swap_info.latest_swap_initiated,
-            swap_info.swap_ticket_id
+            w.id AS worker_id, w.full_name AS worker_name, w.notes,
+            p.id AS phone_id, p.asset_tag, p.manufacturer, p.model, p.status AS phone_status,
+            rh.id_philia, rh.mdp_philia, rh.contract_type, rh.contract_end_date,
+            (SELECT COUNT(*) FROM tickets t WHERE t.phone_id = p.id AND t.status NOT IN ('Solved', 'Closed')) AS open_ticket_count
         FROM workers w
         LEFT JOIN assignments a ON w.id = a.worker_id AND a.return_date IS NULL
         LEFT JOIN phones p ON a.phone_id = p.id
+        LEFT JOIN rh_data rh ON w.id = rh.worker_id
         JOIN secteurs s ON w.secteur_id = s.id
-        LEFT JOIN (
-            SELECT 
-                t.phone_id,
-                COUNT(*) AS ticket_count
-            FROM tickets t
-            WHERE t.status NOT IN ('Solved', 'Closed')
-            GROUP BY t.phone_id
-        ) open_tickets ON p.id = open_tickets.phone_id
-        LEFT JOIN (
-            SELECT 
-                t.phone_id,
-                COUNT(*) AS pending_swaps,
-                MAX(tu.created_at) AS latest_swap_initiated,
-                MAX(t.id) AS swap_ticket_id
-            FROM tickets t
-            JOIN ticket_updates tu ON t.id = tu.ticket_id
-            WHERE tu.update_text LIKE %s
-            AND t.status NOT IN ('Solved', 'Closed')
-            GROUP BY t.phone_id
-        ) swap_info ON p.id = swap_info.phone_id
         WHERE s.manager_id = %s
         ORDER BY w.full_name;
     """
-    
-    cursor.execute(query, ('%PHONE SWAP INITIATED%', manager_id))
+    cursor.execute(query, (manager_id,))
     team_status = cursor.fetchall()
     cursor.close()
     
-    return jsonify(team_status)
+    # Convert to list of dicts and format dates
+    team_status_list = []
+    for member in team_status:
+        member_dict = dict(member)
+        if member_dict.get('contract_end_date'):
+            member_dict['contract_end_date'] = member_dict['contract_end_date'].isoformat()
+        team_status_list.append(member_dict)
+    
+    return jsonify(team_status_list)
 
 @app.route('/api/manager/selectable_phones', methods=['GET'])
 @login_required
 @role_required('Manager')
 def get_manager_selectable_phones():
+    """Gets a list of all workers/phones, searchable by a query param."""
+    search_term = request.args.get('q', '')
+    db = get_db()
+    cursor = db.cursor()
+    
+    query = """
+        SELECT
+            p.id AS phone_id, w.full_name AS worker_name, p.asset_tag,
+            p.manufacturer, p.model
+        FROM phones p
+        JOIN assignments a ON p.id = a.phone_id AND a.return_date IS NULL
+        JOIN workers w ON a.worker_id = w.id
+        WHERE p.status = 'In Use' AND (w.full_name ILIKE %s OR p.asset_tag ILIKE %s)
+        ORDER BY w.full_name
+        LIMIT 20;
     """
-    API endpoint to get all phones assigned to workers under the current manager,
-    formatted for ticket creation dropdown.
+    # The ILIKE is a case-insensitive search
+    like_term = f"%{search_term}%"
+    cursor.execute(query, (like_term, like_term))
+    selectable_phones = cursor.fetchall()
+    cursor.close()
+    return jsonify(selectable_phones)
+
+@app.route('/api/manager/team_by_sector', methods=['GET'])
+@login_required
+@role_required('Manager')
+def get_team_by_sector():
+    """
+    Gets all workers and their asset details for a manager, structured by sector.
     """
     manager_id = session.get('user_id')
     db = get_db()
     cursor = db.cursor()
+
+    # First, get the sectors managed by this manager
+    cursor.execute("SELECT id, secteur_name FROM secteurs WHERE manager_id = %s ORDER BY secteur_name", (manager_id,))
+    sectors = cursor.fetchall()
     
-    # Get all phones assigned to workers in the manager's sectors
+    # Then, get all workers with their detailed info for those sectors
     query = """
-        SELECT
-            p.id AS phone_id,
-            w.full_name AS worker_name,
-            p.asset_tag,
-            p.manufacturer,
-            p.model
-        FROM phones p
-        JOIN assignments a ON p.id = a.phone_id AND a.return_date IS NULL
-        JOIN workers w ON a.worker_id = w.id
-        JOIN secteurs s ON w.secteur_id = s.id
-        WHERE s.manager_id = %s
+        SELECT 
+            w.id as worker_db_id, w.worker_id, w.full_name, w.status, w.notes, w.secteur_id,
+            rh.contract_type, rh.contract_end_date,
+            p.model,
+            pn.phone_number,
+            a.assignment_date
+        FROM workers w
+        LEFT JOIN rh_data rh ON w.id = rh.worker_id
+        LEFT JOIN assignments a ON w.id = a.worker_id AND a.return_date IS NULL
+        LEFT JOIN phones p ON a.phone_id = p.id
+        LEFT JOIN sim_cards sc ON a.sim_card_id = sc.id
+        LEFT JOIN phone_numbers pn ON sc.id = pn.sim_card_id
+        WHERE w.secteur_id IN (SELECT id FROM secteurs WHERE manager_id = %s)
         ORDER BY w.full_name;
     """
-    
     cursor.execute(query, (manager_id,))
-    selectable_phones = cursor.fetchall()
+    workers = cursor.fetchall()
     cursor.close()
+
+    # Process the data in Python to group workers by sector
+    sectors_list = [dict(sector) for sector in sectors]
+    workers_list = []
+    for worker in workers:
+        worker_dict = dict(worker)
+        # Format dates for JSON
+        if worker_dict.get('contract_end_date'):
+            worker_dict['contract_end_date'] = worker_dict['contract_end_date'].isoformat()
+        if worker_dict.get('assignment_date'):
+            worker_dict['assignment_date'] = worker_dict['assignment_date'].isoformat()
+        workers_list.append(worker_dict)
     
-    return jsonify(selectable_phones)
+    data_by_sector = {sector['secteur_name']: [] for sector in sectors_list}
+    for worker in workers_list:
+        for sector in sectors_list:
+            if worker['secteur_id'] == sector['id']:
+                data_by_sector[sector['secteur_name']].append(worker)
+                break
+                
+    return jsonify(data_by_sector)
 
 @app.route('/api/manager/tickets', methods=['GET'])
 @login_required
@@ -1758,6 +1792,31 @@ def delete_worker(worker_id):
     db.commit()
     cursor.close()
     return jsonify({"message": "Worker has been set to Inactive."}), 200
+
+@app.route('/api/manager/worker_notes/<int:worker_id>', methods=['PUT'])
+@login_required
+@role_required('Manager')
+def update_worker_notes(worker_id):
+    """Updates the notes for a specific worker using worker database ID."""
+    data = request.get_json()
+    notes = data.get('notes', '')
+    manager_id = session.get('user_id')
+    db = get_db()
+    cursor = db.cursor()
+    
+    # Security check: Ensure the manager is authorized to edit this worker
+    cursor.execute("SELECT w.id FROM workers w JOIN secteurs s ON w.secteur_id = s.id WHERE w.id = %s AND s.manager_id = %s", (worker_id, manager_id))
+    if cursor.fetchone() is None:
+        return jsonify({"error": "You are not authorized to edit this worker."}), 403
+        
+    try:
+        cursor.execute("UPDATE workers SET notes = %s WHERE id = %s", (notes, worker_id))
+        db.commit()
+        cursor.close()
+        return jsonify({"message": "Note saved successfully."})
+    except Exception as e:
+        db.rollback(); cursor.close()
+        return jsonify({"error": str(e)}), 500
 
 # --- API Endpoint for Support Portal ---
 

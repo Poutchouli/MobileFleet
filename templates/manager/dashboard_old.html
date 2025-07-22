@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Manager Dashboard') }}{% endblock %}
+{% block page_title %}{{ _('Team Dashboard') }}{% endblock %}
+
+{% block content %}
+<div class="custom-card">
+    <div class="card-header">
+        <h2 class="card-title">{{ _("My Team's Status") }}</h2>
+        <button id="create-ticket-btn" class="btn btn-primary">{{ _('Create New Ticket') }}</button>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>{{ _('Worker Name') }}</th>
+                    <th>{{ _('Contract End') }}</th>
+                    <th>{{ _('ID Philia') }}</th>
+                    <th>{{ _('Assigned Phone') }}</th>
+                    <th>{{ _('Manager Notes') }}</th>
+                    <th class="text-right">{{ _('Actions') }}</th>
+                </tr>
+            </thead>
+            <tbody id="team-status-table-body"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Create Ticket Modal -->
+<div id="ticket-modal" class="custom-modal hidden">
+    <div class="custom-modal-backdrop"></div>
+    <div class="custom-modal-content">
+        <form id="ticket-form" class="custom-form">
+            <div class="custom-modal-header"><h3 class="custom-modal-title">{{ _('Create New Support Ticket') }}</h3></div>
+            <div class="custom-modal-body">
+                <div class="custom-form-grid">
+                    <div class="custom-form-group custom-form-group-full">
+                        <label for="phone_search" class="custom-label">{{ _('Search Worker / Phone') }}*</label>
+                        <input type="text" id="phone_search" class="custom-input" placeholder="{{ _('Start typing worker name or asset tag...') }}">
+                        <div id="search-results" class="border border-gray-300 rounded-md mt-1 max-h-40 overflow-y-auto hidden"></div>
+                        <input type="hidden" id="phone_id" name="phone_id">
+                    </div>
+                    <div class="custom-form-group"><label for="title" class="custom-label">{{ _('Issue Title') }}*</label><input type="text" name="title" id="title" required class="custom-input"></div>
+                    <div class="custom-form-group"><label for="priority" class="custom-label">{{ _('Priority') }}*</label><select id="priority" name="priority" required class="custom-select"><option>{{ _('Low') }}</option><option>{{ _('Medium') }}</option><option>{{ _('High') }}</option><option>{{ _('Urgent') }}</option></select></div>
+                    <div class="custom-form-group custom-form-group-full"><label for="description" class="custom-label">{{ _('Full Description') }}*</label><textarea id="description" name="description" rows="4" required class="custom-textarea"></textarea></div>
+                </div>
+            </div>
+            <div class="custom-modal-footer">
+                <button type="button" id="cancel-ticket-btn" class="btn btn-secondary">{{ _('Cancel') }}</button>
+                <button type="submit" class="btn btn-primary">{{ _('Submit Ticket') }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="toast" class="toast fixed top-4 right-4 p-4 rounded-md shadow-lg hidden">
+    <span id="toast-message"></span>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tableBody = document.getElementById('team-status-table-body');
+        const ticketModal = document.getElementById('ticket-modal');
+        const createTicketBtn = document.getElementById('create-ticket-btn');
+        const cancelTicketBtn = document.getElementById('cancel-ticket-btn');
+        const ticketForm = document.getElementById('ticket-form');
+        const phoneSearchInput = document.getElementById('phone_search');
+        const searchResultsDiv = document.getElementById('search-results');
+        const phoneIdInput = document.getElementById('phone_id');
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toast-message');
+
+        function showToast(message, isError = false) { 
+            toastMessage.textContent = message;
+            toast.className = `toast fixed top-4 right-4 p-4 rounded-md shadow-lg ${isError ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`;
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        async function fetchTeamStatus() {
+            try {
+                const response = await fetch('/api/manager/team_status');
+                if (!response.ok) throw new Error('{{ _("Failed to fetch team status") }}');
+                const teamStatus = await response.json();
+                renderTable(teamStatus);
+            } catch (error) {
+                showToast(error.message, true);
+            }
+        }
+
+        function renderTable(teamStatus) {
+            tableBody.innerHTML = '';
+            if (teamStatus.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4">{{ _("No workers found in your sectors.") }}</td></tr>';
+                return;
+            }
+            teamStatus.forEach(member => {
+                const phoneInfo = member.asset_tag ? `${member.model} (${member.asset_tag})` : '{{ _("N/A") }}';
+                const contractEnd = member.contract_end_date ? new Date(member.contract_end_date).toLocaleDateString() : '{{ _("N/A") }}';
+                const row = `
+                    <tr>
+                        <td class="font-medium">${member.worker_name}</td>
+                        <td>${contractEnd}</td>
+                        <td>${member.id_philia || '{{ _("N/A") }}'}</td>
+                        <td>${phoneInfo}</td>
+                        <td>
+                            <textarea class="custom-input text-sm p-1 note-area" data-worker-id="${member.worker_id}" rows="2" placeholder="{{ _('Add a note...') }}">${member.notes || ''}</textarea>
+                        </td>
+                        <td class="text-right">
+                            <button class="btn-link text-sm save-note-btn" data-worker-id="${member.worker_id}">{{ _('Save Note') }}</button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.insertAdjacentHTML('beforeend', row);
+            });
+        }
+
+        // --- Event Delegation for Save Note ---
+        tableBody.addEventListener('click', async function(e) {
+            if (e.target.classList.contains('save-note-btn')) {
+                const workerId = e.target.dataset.workerId;
+                const noteText = document.querySelector(`.note-area[data-worker-id='${workerId}']`).value;
+                try {
+                    const response = await fetch(`/api/manager/worker_notes/${workerId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ notes: noteText })
+                    });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.error);
+                    showToast(result.message);
+                } catch (error) {
+                    showToast(error.message, true);
+                }
+            }
+        });
+
+        // --- Ticket Modal Logic ---
+        function openTicketModal() { ticketModal.classList.remove('hidden'); }
+        function closeTicketModal() { ticketModal.classList.add('hidden'); ticketForm.reset(); searchResultsDiv.innerHTML = ''; searchResultsDiv.classList.add('hidden'); }
+        
+        createTicketBtn.addEventListener('click', () => openTicketModal());
+        cancelTicketBtn.addEventListener('click', closeTicketModal);
+
+        let searchTimeout;
+        phoneSearchInput.addEventListener('keyup', () => {
+            clearTimeout(searchTimeout);
+            const searchTerm = phoneSearchInput.value;
+            if (searchTerm.length < 2) {
+                searchResultsDiv.classList.add('hidden');
+                return;
+            }
+            searchTimeout = setTimeout(() => {
+                fetch(`/api/manager/selectable_phones?q=${encodeURIComponent(searchTerm)}`)
+                    .then(res => res.json())
+                    .then(phones => {
+                        searchResultsDiv.innerHTML = '';
+                        if (phones.length > 0) {
+                            phones.forEach(phone => {
+                                const item = document.createElement('div');
+                                item.className = 'p-2 hover:bg-gray-100 cursor-pointer';
+                                item.textContent = `${phone.worker_name} - (${phone.model}, ${phone.asset_tag})`;
+                                item.dataset.phoneId = phone.phone_id;
+                                item.dataset.displayText = item.textContent;
+                                searchResultsDiv.appendChild(item);
+                            });
+                            searchResultsDiv.classList.remove('hidden');
+                        } else {
+                            searchResultsDiv.innerHTML = '<div class="p-2 text-gray-500">{{ _("No results found.") }}</div>';
+                            searchResultsDiv.classList.remove('hidden');
+                        }
+                    });
+            }, 300);
+        });
+
+        searchResultsDiv.addEventListener('click', function(e) {
+            if (e.target.dataset.phoneId) {
+                phoneIdInput.value = e.target.dataset.phoneId;
+                phoneSearchInput.value = e.target.dataset.displayText;
+                searchResultsDiv.classList.add('hidden');
+            }
+        });
+
+        ticketForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(ticketForm);
+            const ticketData = Object.fromEntries(formData.entries());
+            if (!ticketData.phone_id) {
+                showToast('{{ _("Please select a worker/phone from the search results.") }}', true);
+                return;
+            }
+            try {
+                const response = await fetch('/api/tickets', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(ticketData)
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error);
+                showToast('{{ _("Ticket created successfully!") }}');
+                closeTicketModal();
+                fetchTeamStatus();
+            } catch (error) {
+                showToast(error.message, true);
+            }
+        });
+
+        fetchTeamStatus();
+    });
+</script>
+{% endblock %}

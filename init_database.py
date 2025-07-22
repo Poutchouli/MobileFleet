@@ -47,7 +47,7 @@ def drop_tables(cursor):
     print("\nDropping existing tables...")
     tables_to_drop = [
         "asset_history_log", "ticket_updates", "tickets", "assignments",
-        "phone_numbers", "sim_cards", "phones", "workers", "manager_secteurs", 
+        "phone_numbers", "sim_cards", "phones", "rh_data", "workers", "manager_secteurs", 
         "secteurs", "users", "roles", "phone_requests"
     ]
     for table in tables_to_drop:
@@ -93,9 +93,18 @@ def create_schema(cursor):
             full_name VARCHAR(255) NOT NULL,
             secteur_id INTEGER NOT NULL REFERENCES secteurs(id),
             status VARCHAR(20) NOT NULL CHECK (status IN ('Active', 'Inactive')),
-            contract_type VARCHAR(255) NULL,
-            last_contract_date DATE NULL,
+            notes TEXT,
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        );
+        """,
+        """
+        CREATE TABLE rh_data (
+            id SERIAL PRIMARY KEY,
+            worker_id INTEGER NOT NULL UNIQUE REFERENCES workers(id) ON DELETE CASCADE,
+            id_philia VARCHAR(100),
+            mdp_philia VARCHAR(100),
+            contract_type VARCHAR(50),
+            contract_end_date DATE
         );
         """,
         """
@@ -311,6 +320,15 @@ def insert_sample_data(cursor):
         (6, 'Mike Johnson', 'Operations', 'Field Technician', 'Current phone outdated, needs upgrade', 'Any Android', 'Low', 'Fulfilled')
     ]
 
+    rh_data = [
+        # worker_id, id_philia, mdp_philia, contract_type, contract_end_date
+        (1, 'philia001', 'philia_id_1', 'CDI', None), # For Eve Employee
+        (2, 'philia002', 'philia_id_2', 'CDI', None), # For Frank Field
+        (3, 'philia003', 'philia_id_3', 'CDD', '2025-12-31'),  # For Grace Ground
+        (4, 'philia004', 'philia_id_4', 'CDI', None), # For Heidi Home
+        (5, 'philia005', 'philia_id_5', 'CDD', '2026-06-30')  # For Ivan Installer
+    ]
+
     # --- Execute Inserts ---
     # Using executemany for efficient bulk insertion
     cursor.executemany("INSERT INTO roles (role_name, description) VALUES (%s, %s);", roles_data)
@@ -322,6 +340,7 @@ def insert_sample_data(cursor):
     cursor.executemany("INSERT INTO phone_numbers (phone_number, sim_card_id, status) VALUES (%s, %s, %s);", phone_numbers_data)
     cursor.executemany("INSERT INTO assignments (phone_id, sim_card_id, worker_id) VALUES (%s, %s, %s);", assignments_data)
     cursor.executemany("INSERT INTO phone_requests (requester_id, employee_name, department, position, request_reason, phone_type_preference, urgency_level, status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);", phone_requests_data)
+    cursor.executemany("INSERT INTO rh_data (worker_id, id_philia, mdp_philia, contract_type, contract_end_date) VALUES (%s, %s, %s, %s, %s);", rh_data)
 
     print("✅ Sample data inserted successfully.")
 
