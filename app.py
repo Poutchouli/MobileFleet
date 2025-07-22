@@ -33,8 +33,8 @@ def get_locale():
     # Check if the user has a language stored in their session
     if 'language' in session and session['language'] in app.config['LANGUAGES']:
         return session['language']
-    # Otherwise, try to match the language from their browser's settings
-    return request.accept_languages.best_match(app.config['LANGUAGES'])
+    # Default to French if no language preference is set
+    return 'fr'
 
 babel = Babel(app, locale_selector=get_locale)
 

@@ -14,10 +14,10 @@
             <div class="flex justify-center items-center gap-x-2 text-sm text-gray-500">
                 <span class="text-gray-400">{{ _('Language') }}:</span>
                 <a href="{{ url_for('set_language', lang='fr') }}" 
-                   class="hover:underline {% if session.language == 'fr' or not session.language %}font-bold text-blue-600{% endif %}">FR</a>
+                   class="hover:underline {% if not session.get('language') or session.get('language') == 'fr' %}font-bold text-blue-600{% endif %}">FR</a>
                 <span>|</span>
                 <a href="{{ url_for('set_language', lang='en') }}" 
-                   class="hover:underline {% if session.language == 'en' %}font-bold text-blue-600{% endif %}">EN</a>
+                   class="hover:underline {% if session.get('language') == 'en' %}font-bold text-blue-600{% endif %}">EN</a>
             </div>
             <div>
                 <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
@@ -58,11 +58,11 @@
                 </div>
             </form>
              <div class="text-center text-sm text-gray-600 bg-gray-100 p-4 rounded-lg">
-                <p class="font-bold">Demo Credentials:</p>
-                <p>Admin: `admin` / `adminpass`</p>
-                <p>Manager: `manager_north` / `managerpass`</p>
-                <p>Support: `support_tech` / `supportpass`</p>
-                <p>Integration Manager: `integration_mgr` / `integrationpass`</p>
+                <p class="font-bold">{{ _('Demo Credentials') }}:</p>
+                <p>{{ _('Admin') }}: `admin` / `adminpass`</p>
+                <p>{{ _('Manager') }}: `manager_north` / `managerpass`</p>
+                <p>{{ _('Support') }}: `support_tech` / `supportpass`</p>
+                <p>{{ _('Integration Manager') }}: `integration_mgr` / `integrationpass`</p>
             </div>
         </div>
     </div>

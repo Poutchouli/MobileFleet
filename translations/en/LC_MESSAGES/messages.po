@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-07-20 20:24+0000\n"
+"POT-Creation-Date: 2025-07-22 18:20+0200\n"
 "PO-Revision-Date: 2025-07-20 20:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -97,6 +97,7 @@ msgstr "IMEI"
 #: templates/admin/phones.html:22 templates/admin/requests.html:18
 #: templates/admin/sims.html:21 templates/admin/workers.html:21
 #: templates/dashboard.html:42 templates/integration/dashboard.html:19
+#: templates/manager/tickets.html:109
 msgid "Status"
 msgstr "Status"
 
@@ -104,27 +105,49 @@ msgstr "Status"
 msgid "Login"
 msgstr "Login"
 
-#: templates/login.html:27
+#: templates/login.html:24
 msgid "Sign in to your account"
 msgstr "Sign in to your account"
 
 #: templates/admin/users.html:18 templates/admin/users.html:43
-#: templates/login.html:33 templates/login.html:34 templates/profile.html:30
+#: templates/login.html:30 templates/login.html:31 templates/profile.html:69
 msgid "Username"
 msgstr "Username"
 
-#: templates/admin/users.html:61 templates/login.html:37
-#: templates/login.html:38
+#: templates/admin/users.html:61 templates/login.html:34
+#: templates/login.html:35
 msgid "Password"
 msgstr "Password"
 
-#: templates/login.html:52
+#: templates/login.html:49
 msgid "Remember me for 30 days"
 msgstr "Remember me for 30 days"
 
-#: templates/login.html:59
+#: templates/login.html:56
 msgid "Sign in"
 msgstr "Sign in"
+
+#: templates/login.html:61
+msgid "Demo Credentials"
+msgstr "Demo Credentials"
+
+#: templates/admin/phones.html:3 templates/admin/sims.html:3
+#: templates/admin/users.html:3 templates/admin/workers.html:3
+#: templates/login.html:62
+msgid "Admin"
+msgstr "Admin"
+
+#: templates/login.html:63
+msgid "Manager"
+msgstr "Manager"
+
+#: templates/login.html:64
+msgid "Support"
+msgstr "Support"
+
+#: templates/login.html:65
+msgid "Integration Manager"
+msgstr "Integration Manager"
 
 #: templates/profile.html:3
 msgid "Profile"
@@ -135,68 +158,136 @@ msgid "Manage your account security and personal information"
 msgstr "Manage your account security and personal information"
 
 #: templates/profile.html:15
-msgid "Account Information"
-msgstr "Account Information"
+#, fuzzy
+msgid "Personal Information"
+msgstr "Ticket Information"
 
 #: templates/admin/users.html:19 templates/admin/users.html:47
-#: templates/admin/workers.html:19 templates/profile.html:18
+#: templates/admin/workers.html:19 templates/profile.html:22
 msgid "Full Name"
 msgstr "Full Name"
 
-#: templates/profile.html:19 templates/profile.html:23
-#: templates/profile.html:27
-msgid "Not set"
-msgstr "Not set"
+#: templates/profile.html:29
+#, fuzzy
+msgid "Enter your full name"
+msgstr "Enter employee's full name"
 
-#: templates/admin/users.html:20 templates/admin/users.html:51
-#: templates/profile.html:22
-msgid "Email"
-msgstr "Email"
+#: templates/profile.html:34
+#, fuzzy
+msgid "Email Address"
+msgstr "Email Manager"
+
+#: templates/profile.html:41
+msgid "Enter your email address"
+msgstr ""
+
+#: templates/profile.html:48
+#, fuzzy
+msgid "Update your personal information"
+msgstr "Manage your account security and personal information"
+
+#: templates/profile.html:55 templates/profile.html:243
+#, fuzzy
+msgid "Update Profile"
+msgstr "Profile"
+
+#: templates/profile.html:62
+#, fuzzy
+msgid "Account Details"
+msgstr "Asset Details"
 
 #: templates/admin/users.html:21 templates/admin/users.html:55
-#: templates/profile.html:26
+#: templates/profile.html:65
 msgid "Role"
 msgstr "Role"
 
-#: templates/profile.html:71
-msgid "Password must be at least 8 characters long"
-msgstr "Password must be at least 8 characters long"
+#: templates/profile.html:66
+msgid "Not set"
+msgstr "Not set"
 
-#: templates/profile.html:76
-msgid "Confirm New Password"
-msgstr "Confirm New Password"
-
-#: templates/profile.html:85
-msgid "Confirm your new password"
-msgstr "Confirm your new password"
-
-#: templates/profile.html:94
-msgid "Your password will be encrypted"
-msgstr "Your password will be encrypted"
-
-#: templates/profile.html:101
+#: templates/profile.html:81 templates/profile.html:141
+#: templates/profile.html:297
 msgid "Change Password"
 msgstr "Change Password"
 
-#: templates/profile.html:109
+#: templates/profile.html:111
+msgid "Password must be at least 8 characters long"
+msgstr "Password must be at least 8 characters long"
+
+#: templates/profile.html:116
+msgid "Confirm New Password"
+msgstr "Confirm New Password"
+
+#: templates/profile.html:125
+msgid "Confirm your new password"
+msgstr "Confirm your new password"
+
+#: templates/profile.html:134
+msgid "Your password will be encrypted"
+msgstr "Your password will be encrypted"
+
+#: templates/profile.html:149
 msgid "Security Tips"
 msgstr "Security Tips"
 
-#: templates/profile.html:111
+#: templates/profile.html:151
 msgid "Use a unique password that you don't use elsewhere"
 msgstr "Use a unique password that you don't use elsewhere"
 
-#: templates/profile.html:112
+#: templates/profile.html:152
 msgid "Include a mix of uppercase, lowercase, numbers, and symbols"
 msgstr "Include a mix of uppercase, lowercase, numbers, and symbols"
 
-#: templates/profile.html:113
+#: templates/profile.html:153
 msgid "Avoid personal information like names or birthdays"
 msgstr "Avoid personal information like names or birthdays"
 
-#: templates/profile.html:114
+#: templates/profile.html:154
 msgid "Consider using a password manager"
 msgstr "Consider using a password manager"
+
+#: templates/profile.html:201
+msgid "Please provide at least your name or email address."
+msgstr ""
+
+#: templates/profile.html:207
+msgid "Please provide a valid email address."
+msgstr ""
+
+#: templates/profile.html:213
+#, fuzzy
+msgid "Updating..."
+msgstr "Loading..."
+
+#: templates/profile.html:235
+msgid "An error occurred while updating your profile."
+msgstr ""
+
+#: templates/profile.html:239 templates/profile.html:293
+msgid "Network error. Please try again."
+msgstr ""
+
+#: templates/profile.html:260
+msgid "New passwords do not match."
+msgstr ""
+
+#: templates/profile.html:265
+#, fuzzy
+msgid "New password must be at least 8 characters long."
+msgstr "Password must be at least 8 characters long"
+
+#: templates/profile.html:271
+#, fuzzy
+msgid "Changing Password..."
+msgstr "Change Password"
+
+#: templates/profile.html:289
+msgid "An error occurred while changing your password."
+msgstr ""
+
+#: templates/profile.html:307
+msgid "Passwords do not match"
+msgstr ""
 
 #: templates/admin/dashboard.html:11 templates/admin/workers.html:10
 msgid "Active Workers"
@@ -251,12 +342,13 @@ msgid "CSV Import Wizard"
 msgstr "CSV Import Wizard"
 
 #: templates/admin/import.html:13
-msgid "Upload File"
-msgstr "Upload File"
+msgid "Options & Upload"
+msgstr ""
 
 #: templates/admin/import.html:17
-msgid "Preview & Select"
-msgstr "Preview & Select"
+#, fuzzy
+msgid "Select Table"
+msgstr "Select Target Table:"
 
 #: templates/admin/import.html:21
 msgid "Map Columns"
@@ -267,251 +359,266 @@ msgid "Import"
 msgstr "Import"
 
 #: templates/admin/import.html:32
-msgid "Step 1: Upload CSV File"
+#, fuzzy
+msgid "Step 1: Configure and Upload CSV File"
 msgstr "Step 1: Upload CSV File"
 
-#: templates/admin/import.html:34
+#: templates/admin/import.html:36
 msgid "Select or drag your CSV file here."
 msgstr "Select or drag your CSV file here."
 
-#: templates/admin/import.html:36
+#: templates/admin/import.html:38
 msgid "Choose File"
 msgstr "Choose File"
 
-#: templates/admin/import.html:40
-msgid "Processing file..."
-msgstr "Processing file..."
+#: templates/admin/import.html:47
+#, fuzzy
+msgid "Parsing Options"
+msgstr "Position"
 
-#: templates/admin/import.html:46
-msgid "Step 2: Preview Data & Select Target Table"
-msgstr "Step 2: Preview Data & Select Target Table"
-
-#: templates/admin/import.html:48
-msgid "Select Target Table:"
-msgstr "Select Target Table:"
-
-#: templates/admin/import.html:50 templates/admin/import.html:158
-msgid "-- Choose a table --"
-msgstr "-- Choose a table --"
-
-#: templates/admin/import.html:56
-msgid "Target Table Fields:"
-msgstr "Target Table Fields:"
-
-#: templates/admin/import.html:62
-msgid "Field Name"
-msgstr "Field Name"
-
-#: templates/admin/import.html:63
-msgid "Data Type"
-msgstr "Data Type"
-
-#: templates/admin/import.html:64 templates/admin/import.html:156
-msgid "Required"
-msgstr "Required"
-
-#: templates/admin/import.html:65
-msgid "Notes"
-msgstr "Notes"
-
-#: templates/admin/import.html:74
-msgid "Note:"
-msgstr "Note:"
-
-#: templates/admin/import.html:74
-msgid ""
-"Primary key fields are automatically generated and don't need to be "
-"included in your CSV."
+#: templates/admin/import.html:50
+msgid "Character Set"
 msgstr ""
 
-#: templates/admin/import.html:79
-msgid "Data Preview (First 5 rows):"
-msgstr "Data Preview (First 5 rows):"
+#: templates/admin/import.html:58
+#, fuzzy
+msgid "Separator"
+msgstr "Sector"
+
+#: templates/admin/import.html:62
+msgid "Comma"
+msgstr ""
+
+#: templates/admin/import.html:66
+msgid "Semicolon"
+msgstr ""
+
+#: templates/admin/import.html:70
+msgid "Tab"
+msgstr ""
+
+#: templates/admin/import.html:74
+#, fuzzy
+msgid "Other:"
+msgstr "Note:"
+
+#: templates/admin/import.html:83
+msgid "Data Cleaning Tools"
+msgstr ""
 
 #: templates/admin/import.html:87
-msgid "Back to Upload"
+msgid "Trim whitespace from column headers"
+msgstr ""
+
+#: templates/admin/import.html:91
+msgid "Trim whitespace from data values"
+msgstr ""
+
+#: templates/admin/import.html:95
+msgid "Treat empty strings as NULL"
+msgstr ""
+
+#: templates/admin/import.html:102
+#, fuzzy
+msgid "Refresh Preview"
+msgstr "Refresh"
+
+#: templates/admin/import.html:106
+#, fuzzy
+msgid "Data Preview"
+msgstr "Back to Preview"
+
+#: templates/admin/import.html:116
+msgid "Next: Multi-Table Import"
+msgstr ""
+
+#: templates/admin/import.html:123
+msgid "Step 2: Multi-Table Import Overview"
+msgstr ""
+
+#: templates/admin/import.html:126
+#, fuzzy
+msgid "Smart Multi-Table Import"
+msgstr "Start New Import"
+
+#: templates/admin/import.html:128
+msgid ""
+"Your CSV data will be intelligently distributed across multiple database "
+"tables to maintain proper relationships:"
+msgstr ""
+
+#: templates/admin/import.html:133
+#, fuzzy
+msgid "Workers Table"
+msgstr "Worker Name"
+
+#: templates/admin/import.html:135
+#, fuzzy
+msgid "Worker names"
+msgstr "Worker Name"
+
+#: templates/admin/import.html:136
+#, fuzzy
+msgid "Worker IDs"
+msgstr "Worker ID"
+
+#: templates/admin/import.html:137
+#, fuzzy
+msgid "Sector assignments"
+msgstr "Worker Assignments"
+
+#: templates/admin/import.html:142
+#, fuzzy
+msgid "SIM Cards Table"
+msgstr "SIM Cards"
+
+#: templates/admin/import.html:144
+#, fuzzy
+msgid "ICCID numbers"
+msgstr "Phone Numbers"
+
+#: templates/admin/import.html:145
+msgid "PIN/PUK codes"
+msgstr ""
+
+#: templates/admin/import.html:146
+#, fuzzy
+msgid "Carrier information"
+msgstr "Ticket Information"
+
+#: templates/admin/import.html:151
+#, fuzzy
+msgid "Phones Table"
+msgstr "Phone Asset"
+
+#: templates/admin/import.html:153
+#, fuzzy
+msgid "IMEI numbers"
+msgstr "Phone Numbers"
+
+#: templates/admin/import.html:154
+#, fuzzy
+msgid "Device models"
+msgstr "Device"
+
+#: templates/admin/import.html:155
+#, fuzzy
+msgid "Asset tags"
+msgstr "Asset Tag"
+
+#: templates/admin/import.html:161
+msgid "Automatic Relationships"
+msgstr ""
+
+#: templates/admin/import.html:163
+msgid ""
+"The system will automatically create assignments linking phones, SIM "
+"cards, and workers together, maintaining data integrity and "
+"relationships."
+msgstr ""
+
+#: templates/admin/import.html:169
+#, fuzzy
+msgid "Back to Options"
 msgstr "Back to Upload"
 
-#: templates/admin/import.html:88
-msgid "Proceed to Column Mapping"
-msgstr "Proceed to Column Mapping"
+#: templates/admin/import.html:170
+#, fuzzy
+msgid "Next: Map Columns"
+msgstr "Map Columns"
 
-#: templates/admin/import.html:94
+#: templates/admin/import.html:176
 msgid "Step 3: Map CSV Columns to Database Fields"
 msgstr "Step 3: Map CSV Columns to Database Fields"
 
-#: templates/admin/import.html:95
+#: templates/admin/import.html:180
+#, fuzzy
+msgid "Multi-Table Import"
+msgstr "Data Import"
+
+#: templates/admin/import.html:182
 msgid ""
-"Map each CSV column to the corresponding database field. Select one "
-"column as the merge key for data updates."
+"This import will intelligently distribute your CSV data across multiple "
+"related tables (Workers, SIM Cards, Phones) and create the necessary "
+"relationships."
 msgstr ""
 
-#: templates/admin/import.html:103
-msgid "Auto-mapping Tips"
-msgstr "Auto-mapping Tips"
+#: templates/admin/import.html:185
+#, fuzzy
+msgid "Available Fields:"
+msgstr "Target Table Fields:"
 
-#: templates/admin/import.html:105
-msgid ""
-"Columns with similar names have been automatically matched. Review and "
-"adjust as needed."
-msgstr ""
+#: templates/admin/import.html:186
+#, fuzzy
+msgid "Worker:"
+msgstr "Worker"
 
-#: templates/admin/import.html:107
-msgid "Re-run Auto-mapping"
-msgstr "Re-run Auto-mapping"
+#: templates/admin/import.html:187
+#, fuzzy
+msgid "SIM Card:"
+msgstr "SIM Cards"
 
-#: templates/admin/import.html:115
+#: templates/admin/import.html:188
+#, fuzzy
+msgid "Phone:"
+msgstr "Phones"
+
+#: templates/admin/import.html:196
 msgid "CSV Column"
 msgstr "CSV Column"
 
-#: templates/admin/import.html:116
-msgid "Database Field"
+#: templates/admin/import.html:197
+#, fuzzy
+msgid "Maps To Database Field"
 msgstr "Database Field"
 
-#: templates/admin/import.html:117
-msgid "Field Info"
-msgstr "Field Info"
+#: templates/admin/import.html:198
+#, fuzzy
+msgid "Field Description"
+msgstr "Description"
 
-#: templates/admin/import.html:118
-msgid "Use as Merge Key"
-msgstr "Use as Merge Key"
-
-#: templates/admin/import.html:125
-msgid "Back to Preview"
+#: templates/admin/import.html:205
+#, fuzzy
+msgid "Back to Overview"
 msgstr "Back to Preview"
 
-#: templates/admin/import.html:126
+#: templates/admin/import.html:206
 msgid "Run Import"
 msgstr "Run Import"
 
-#: templates/admin/import.html:132
+#: templates/admin/import.html:212
 msgid "Step 4: Import Results"
 msgstr "Step 4: Import Results"
 
-#: templates/admin/import.html:134
-msgid "Importing data, please wait..."
-msgstr "Importing data, please wait..."
-
-#: templates/admin/import.html:154
-msgid "Primary Key (auto-generated)"
-msgstr "Primary Key (auto-generated)"
-
-#: templates/admin/import.html:155
-msgid "Has default value"
-msgstr "Has default value"
-
-#: templates/admin/import.html:157
-msgid "Optional"
-msgstr "Optional"
-
-#: templates/admin/import.html:159
+#: templates/admin/import.html:380
 msgid "Do not import"
 msgstr "Do not import"
 
-#: templates/admin/import.html:160
-msgid "(auto-generated)"
-msgstr "(auto-generated)"
-
-#: templates/admin/import.html:161
-msgid "No field selected"
-msgstr "No field selected"
-
-#: templates/admin/import.html:162 templates/admin/requests.html:39
-msgid "Error:"
-msgstr "Error:"
-
-#: templates/admin/import.html:163
-msgid "Error fetching schema:"
-msgstr "Error fetching schema:"
-
-#: templates/admin/import.html:164
-msgid "Duplicate column mapping:"
-msgstr "Duplicate column mapping:"
-
-#: templates/admin/import.html:165
-msgid "The selected merge key must be mapped to a database column."
-msgstr "The selected merge key must be mapped to a database column."
-
-#: templates/admin/import.html:166
-msgid "All columns are set to \"Do not import\". Please map at least one column."
+#: templates/admin/import.html:386 templates/admin/import.html:473
+msgid "Select a field to see description"
 msgstr ""
 
-#: templates/admin/import.html:167
-msgid "Error during import:"
-msgstr "Error during import:"
-
-#: templates/admin/import.html:168
-msgid "Import started..."
+#: templates/admin/import.html:481
+#, fuzzy
+msgid "Multi-table import started..."
 msgstr "Import started..."
 
-#: templates/admin/import.html:169
-msgid "Import completed!"
-msgstr "Import completed!"
+#: templates/admin/import.html:498
+#, fuzzy
+msgid "Please map at least one CSV column to a database field."
+msgstr "Step 3: Map CSV Columns to Database Fields"
 
-#: templates/admin/import.html:170
-msgid "Processing rows..."
-msgstr "Processing rows..."
+#: templates/admin/import.html:509
+msgid "Warning: Missing recommended fields"
+msgstr ""
 
-#: templates/admin/import.html:171
-msgid "Import Results"
-msgstr "Import Results"
-
-#: templates/admin/import.html:172
-msgid "Import was successful!"
-msgstr "Import was successful!"
-
-#: templates/admin/import.html:173
-msgid "Import was partially successful"
-msgstr "Import was partially successful"
-
-#: templates/admin/import.html:174
-msgid "Import failed"
-msgstr "Import failed"
-
-#: templates/admin/import.html:175
-msgid "Rows processed:"
-msgstr "Rows processed:"
-
-#: templates/admin/import.html:176
-msgid "Rows inserted:"
-msgstr "Rows inserted:"
-
-#: templates/admin/import.html:177
-msgid "Rows updated:"
-msgstr "Rows updated:"
-
-#: templates/admin/import.html:178
-msgid "Rows skipped:"
-msgstr "Rows skipped:"
-
-#: templates/admin/import.html:179
-msgid "Errors:"
-msgstr "Errors:"
-
-#: templates/admin/import.html:180
-msgid "No errors encountered."
-msgstr "No errors encountered."
-
-#: templates/admin/import.html:181
-msgid "Error Details:"
-msgstr "Error Details:"
-
-#: templates/admin/import.html:182
-msgid "Start New Import"
-msgstr "Start New Import"
-
-#: templates/admin/import.html:183
-msgid "Go Back"
-msgstr "Go Back"
+#: templates/admin/import.html:509
+msgid "Continue anyway?"
+msgstr ""
 
 #: templates/admin/phones.html:3 templates/admin/phones.html:5
 msgid "Manage Phones"
 msgstr "Manage Phones"
-
-#: templates/admin/phones.html:3 templates/admin/sims.html:3
-#: templates/admin/users.html:3 templates/admin/workers.html:3
-msgid "Admin"
-msgstr "Admin"
 
 #: templates/admin/phones.html:12
 msgid "Provision Phone"
@@ -524,6 +631,7 @@ msgstr "Add New Phone"
 #: templates/admin/phones.html:23 templates/admin/requests.html:19
 #: templates/admin/sims.html:22 templates/admin/users.html:22
 #: templates/admin/workers.html:22 templates/manager/dashboard.html:25
+#: templates/manager/tickets.html:112
 msgid "Actions"
 msgstr "Actions"
 
@@ -535,7 +643,7 @@ msgstr "Manage Phone Requests"
 msgid "Incoming Phone Requests"
 msgstr "Incoming Phone Requests"
 
-#: templates/admin/requests.html:14
+#: templates/admin/requests.html:14 templates/manager/tickets.html:108
 msgid "Worker"
 msgstr "Worker"
 
@@ -579,6 +687,10 @@ msgstr "Are you sure you want to approve this request?"
 msgid "Are you sure you want to deny this request?"
 msgstr "Are you sure you want to deny this request?"
 
+#: templates/admin/requests.html:39
+msgid "Error:"
+msgstr "Error:"
+
 #: templates/admin/sims.html:3 templates/admin/sims.html:5
 msgid "Manage SIM Cards"
 msgstr "Manage SIM Cards"
@@ -619,6 +731,10 @@ msgstr "User Accounts"
 msgid "Add New User"
 msgstr "Add New User"
 
+#: templates/admin/users.html:20 templates/admin/users.html:51
+msgid "Email"
+msgstr "Email"
+
 #: templates/admin/users.html:67
 msgid "Save"
 msgstr "Save"
@@ -653,10 +769,15 @@ msgid "Roles"
 msgstr "Roles"
 
 #: templates/components/nav/admin_nav.html:11
+#, fuzzy
+msgid "Assign Secteurs"
+msgstr "Assigned To"
+
+#: templates/components/nav/admin_nav.html:12
 msgid "Data Import"
 msgstr "Data Import"
 
-#: templates/components/nav/admin_nav.html:12
+#: templates/components/nav/admin_nav.html:13
 msgid "Reports"
 msgstr "Reports"
 
@@ -822,7 +943,8 @@ msgstr "Brief description of the issue"
 msgid "Provide a clear, concise title for the issue."
 msgstr "Provide a clear, concise title for the issue."
 
-#: templates/manager/create_ticket.html:50 templates/support/dashboard.html:28
+#: templates/manager/create_ticket.html:50 templates/manager/tickets.html:110
+#: templates/support/dashboard.html:28
 msgid "Priority"
 msgstr "Priority"
 
@@ -874,7 +996,7 @@ msgstr "Error Loading Ticket"
 msgid "Device Information"
 msgstr "Device Information"
 
-#: templates/manager/ticket_detail.html:70
+#: templates/manager/ticket_detail.html:70 templates/manager/tickets.html:107
 msgid "Device"
 msgstr "Device"
 
@@ -887,7 +1009,7 @@ msgstr "Assigned To"
 msgid "Ticket Information"
 msgstr "Ticket Information"
 
-#: templates/manager/ticket_detail.html:85
+#: templates/manager/ticket_detail.html:85 templates/manager/tickets.html:111
 msgid "Created"
 msgstr "Created"
 
@@ -902,6 +1024,174 @@ msgstr "Description"
 #: templates/manager/tickets.html:24
 msgid "Loading your tickets..."
 msgstr "Loading your tickets..."
+
+#: templates/manager/tickets.html:36
+#, fuzzy
+msgid "#: templates/manager/tickets.html:32
+msgid "Error Loading Tickets"
+msgstr "Error Loading Tickets"
+
+#: templates/manager/tickets.html:50
+msgid "Filter by Status"
+msgstr "Filter by Status"
+
+#: templates/manager/tickets.html:52
+msgid "All"
+msgstr "All"
+
+#: templates/manager/tickets.html:53 templates/manager/tickets.html:72
+msgid "New"
+msgstr "New"
+
+#: templates/manager/tickets.html:54 templates/manager/tickets.html:76
+msgid "Open"
+msgstr "Open"
+
+#: templates/manager/tickets.html:55 templates/manager/tickets.html:80
+msgid "Pending"
+msgstr "Pending"
+
+#: templates/manager/tickets.html:56
+msgid "On-Hold"
+msgstr "On-Hold"
+
+#: templates/manager/tickets.html:57 templates/manager/tickets.html:84
+msgid "Solved"
+msgstr "Solved"
+
+#: templates/manager/tickets.html:58 templates/manager/tickets.html:88
+msgid "Closed"
+msgstr "Closed"
+
+#: templates/manager/tickets.html:64
+msgid "Statistics"
+msgstr "Statistics"
+
+#: templates/manager/tickets.html:68
+msgid "Total"
+msgstr "Total"
+
+#: templates/manager/tickets.html:99
+msgid "Your Submitted Tickets"
+msgstr "Your Submitted Tickets"
+
+#: templates/manager/tickets.html:105
+msgid "Ticket #"
+msgstr "Ticket #"
+
+#: templates/manager/tickets.html:106 templates/support/dashboard.html:29
+msgid "Title"
+msgstr "Title"
+
+#: templates/manager/tickets.html:107
+msgid "Device"
+msgstr "Device"
+
+#: templates/manager/tickets.html:108
+msgid "Worker"
+msgstr "Worker"
+
+#: templates/manager/tickets.html:110
+msgid "Priority"
+msgstr "Priority"
+
+#: templates/manager/tickets.html:111
+msgid "Created"
+msgstr "Created"
+
+#: templates/manager/tickets.html:112
+msgid "Actions"
+msgstr "Actions"
+
+#: templates/manager/tickets.html:126
+msgid "No tickets found"
+msgstr "No tickets found"
+
+#: templates/manager/tickets.html:127
+msgid ""
+"You haven't submitted any tickets yet, or no tickets match the current "
+"filter."
+msgstr ""
+"You haven't submitted any tickets yet, or no tickets match the current "
+"filter."
+
+#: templates/manager/tickets.html:131
+msgid "Create Your First Ticket"
+msgstr "Create Your First Ticket""
+msgstr "Error Loading Ticket"
+
+#: templates/manager/tickets.html:50
+#, fuzzy
+msgid "Filter by Status"
+msgstr "Phones by Status"
+
+#: templates/manager/tickets.html:52
+msgid "All"
+msgstr ""
+
+#: templates/manager/tickets.html:53 templates/manager/tickets.html:72
+msgid "New"
+msgstr ""
+
+#: templates/manager/tickets.html:54 templates/manager/tickets.html:76
+msgid "Open"
+msgstr ""
+
+#: templates/manager/tickets.html:55 templates/manager/tickets.html:80
+msgid "Pending"
+msgstr ""
+
+#: templates/manager/tickets.html:56
+msgid "On-Hold"
+msgstr ""
+
+#: templates/manager/tickets.html:57 templates/manager/tickets.html:84
+#, fuzzy
+msgid "Solved"
+msgstr "Save"
+
+#: templates/manager/tickets.html:58 templates/manager/tickets.html:88
+msgid "Closed"
+msgstr ""
+
+#: templates/manager/tickets.html:64
+#, fuzzy
+msgid "Statistics"
+msgstr "Status"
+
+#: templates/manager/tickets.html:68
+#, fuzzy
+msgid "Total"
+msgstr "Title"
+
+#: templates/manager/tickets.html:99
+msgid "Your Submitted Tickets"
+msgstr ""
+
+#: templates/manager/tickets.html:105
+#, fuzzy
+msgid "Ticket #"
+msgstr "Ticket Title"
+
+#: templates/manager/tickets.html:106 templates/support/dashboard.html:29
+msgid "Title"
+msgstr "Title"
+
+#: templates/manager/tickets.html:126
+#, fuzzy
+msgid "No tickets found"
+msgstr "Open Tickets"
+
+#: templates/manager/tickets.html:127
+msgid ""
+"You haven't submitted any tickets yet, or no tickets match the current "
+"filter."
+msgstr ""
+
+#: templates/manager/tickets.html:131
+#, fuzzy
+msgid "Create Your First Ticket"
+msgstr "Create New Ticket"
 
 #: templates/support/dashboard.html:2 templates/support/dashboard.html:4
 msgid "Support Helpdesk"
@@ -922,10 +1212,6 @@ msgstr "Refresh"
 #: templates/support/dashboard.html:27
 msgid "ID"
 msgstr "ID"
-
-#: templates/support/dashboard.html:29
-msgid "Title"
-msgstr "Title"
 
 #: templates/support/dashboard.html:30
 msgid "Phone Asset"
@@ -1000,4 +1286,149 @@ msgstr ""
 #: templates/support/ticket_detail.html:131
 msgid "Log Swap"
 msgstr "Log Swap"
+
+#~ msgid "Account Information"
+#~ msgstr "Account Information"
+
+#~ msgid "Upload File"
+#~ msgstr "Upload File"
+
+#~ msgid "Preview & Select"
+#~ msgstr "Preview & Select"
+
+#~ msgid "Processing file..."
+#~ msgstr "Processing file..."
+
+#~ msgid "Step 2: Preview Data & Select Target Table"
+#~ msgstr "Step 2: Preview Data & Select Target Table"
+
+#~ msgid "-- Choose a table --"
+#~ msgstr "-- Choose a table --"
+
+#~ msgid "Field Name"
+#~ msgstr "Field Name"
+
+#~ msgid "Data Type"
+#~ msgstr "Data Type"
+
+#~ msgid "Required"
+#~ msgstr "Required"
+
+#~ msgid "Notes"
+#~ msgstr "Notes"
+
+#~ msgid ""
+#~ "Primary key fields are automatically "
+#~ "generated and don't need to be "
+#~ "included in your CSV."
+#~ msgstr ""
+
+#~ msgid "Data Preview (First 5 rows):"
+#~ msgstr "Data Preview (First 5 rows):"
+
+#~ msgid "Proceed to Column Mapping"
+#~ msgstr "Proceed to Column Mapping"
+
+#~ msgid ""
+#~ "Map each CSV column to the "
+#~ "corresponding database field. Select one "
+#~ "column as the merge key for data"
+#~ " updates."
+#~ msgstr ""
+
+#~ msgid "Auto-mapping Tips"
+#~ msgstr "Auto-mapping Tips"
+
+#~ msgid ""
+#~ "Columns with similar names have been "
+#~ "automatically matched. Review and adjust "
+#~ "as needed."
+#~ msgstr ""
+
+#~ msgid "Re-run Auto-mapping"
+#~ msgstr "Re-run Auto-mapping"
+
+#~ msgid "Field Info"
+#~ msgstr "Field Info"
+
+#~ msgid "Use as Merge Key"
+#~ msgstr "Use as Merge Key"
+
+#~ msgid "Importing data, please wait..."
+#~ msgstr "Importing data, please wait..."
+
+#~ msgid "Primary Key (auto-generated)"
+#~ msgstr "Primary Key (auto-generated)"
+
+#~ msgid "Has default value"
+#~ msgstr "Has default value"
+
+#~ msgid "Optional"
+#~ msgstr "Optional"
+
+#~ msgid "(auto-generated)"
+#~ msgstr "(auto-generated)"
+
+#~ msgid "No field selected"
+#~ msgstr "No field selected"
+
+#~ msgid "Error fetching schema:"
+#~ msgstr "Error fetching schema:"
+
+#~ msgid "Duplicate column mapping:"
+#~ msgstr "Duplicate column mapping:"
+
+#~ msgid "The selected merge key must be mapped to a database column."
+#~ msgstr "The selected merge key must be mapped to a database column."
+
+#~ msgid ""
+#~ "All columns are set to \"Do not"
+#~ " import\". Please map at least one"
+#~ " column."
+#~ msgstr ""
+
+#~ msgid "Error during import:"
+#~ msgstr "Error during import:"
+
+#~ msgid "Import completed!"
+#~ msgstr "Import completed!"
+
+#~ msgid "Processing rows..."
+#~ msgstr "Processing rows..."
+
+#~ msgid "Import Results"
+#~ msgstr "Import Results"
+
+#~ msgid "Import was successful!"
+#~ msgstr "Import was successful!"
+
+#~ msgid "Import was partially successful"
+#~ msgstr "Import was partially successful"
+
+#~ msgid "Import failed"
+#~ msgstr "Import failed"
+
+#~ msgid "Rows processed:"
+#~ msgstr "Rows processed:"
+
+#~ msgid "Rows inserted:"
+#~ msgstr "Rows inserted:"
+
+#~ msgid "Rows updated:"
+#~ msgstr "Rows updated:"
+
+#~ msgid "Rows skipped:"
+#~ msgstr "Rows skipped:"
+
+#~ msgid "Errors:"
+#~ msgstr "Errors:"
+
+#~ msgid "No errors encountered."
+#~ msgstr "No errors encountered."
+
+#~ msgid "Error Details:"
+#~ msgstr "Error Details:"
+
+#~ msgid "Go Back"
+#~ msgstr "Go Back"
 

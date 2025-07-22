@@ -30,10 +30,10 @@
                         <div class="flex items-center gap-x-2 text-sm text-gray-500">
                             <span class="text-gray-400">{{ _('Language') }}:</span>
                             <a href="{{ url_for('set_language', lang='fr') }}" 
-                               class="hover:underline {% if session.language == 'fr' or not session.language %}font-bold text-blue-600{% endif %}">FR</a>
+                               class="hover:underline {% if not session.get('language') or session.get('language') == 'fr' %}font-bold text-blue-600{% endif %}">FR</a>
                             <span>|</span>
                             <a href="{{ url_for('set_language', lang='en') }}" 
-                               class="hover:underline {% if session.language == 'en' %}font-bold text-blue-600{% endif %}">EN</a>
+                               class="hover:underline {% if session.get('language') == 'en' %}font-bold text-blue-600{% endif %}">EN</a>
                         </div>
                         
                         <!-- User Dropdown -->
