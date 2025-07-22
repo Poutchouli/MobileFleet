@@ -1,5 +1,6 @@
 <!-- templates/components/nav/manager_nav.html -->
 <nav>
-    <a href="{{ url_for('manager_dashboard') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'manager_dashboard' %}active{% else %}hover:bg-gray-700{% endif %}">{{ _('Dashboard') }}</a>
-    <a href="{{ url_for('manager_tickets') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'manager_tickets' %}active{% else %}hover:bg-gray-700{% endif %}">{{ _('My Tickets') }}</a>
+    <a href="{{ url_for('manager_dashboard') }}" class="block py-2.5 px-4 {% if request.endpoint == 'manager_dashboard' %}active{% endif %}">{{ _('Dashboard') }}</a>
+    <a href="{{ url_for('manager_tickets') }}" class="block py-2.5 px-4 {% if request.endpoint == 'manager_tickets' %}active{% endif %}">{{ _('My Tickets') }}</a>
+    <a href="{{ url_for('manager_return_phone') }}" class="block py-2.5 px-4 {% if request.endpoint == 'manager_return_phone' %}active{% endif %}">{{ _('Phone Return') }}</a>
 </nav>
