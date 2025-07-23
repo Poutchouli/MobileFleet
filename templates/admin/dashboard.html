@@ -87,23 +87,11 @@
         <canvas id="ticketResolutionChart" width="800" height="300"></canvas>
     </div>
 </div>
-
-<!-- Worker Assignments -->
-<div class="custom-card">
-    <div class="card-header">
-        <h2 class="card-title">{{ _('Worker Assignments') }}</h2>
-        <input type="text" id="worker-search-input" class="custom-input w-full md:w-1/3" placeholder="{{ _('Search by worker name, ID, asset...') }}">
-    </div>
-    <div id="worker-vignettes-grid" class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <!-- JS will populate this -->
-    </div>
-</div>
-{% endblock %}
+{% endblock content %}
 
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        let workerData = [];
         let charts = {}; // Store chart instances
 
         // Chart.js default configuration
@@ -389,60 +377,6 @@
             });
         }
 
-        // Fetch and render worker assignments
-        async function fetchWorkerAssignments() {
-            try {
-                const response = await fetch('/api/reports/worker_assignments');
-                workerData = await response.json();
-                renderWorkerVignettes(workerData);
-            } catch (error) {
-                console.error("Failed to load worker assignments:", error);
-            }
-        }
-
-        function renderWorkerVignettes(data) {
-            const grid = document.getElementById('worker-vignettes-grid');
-            grid.innerHTML = '';
-            if (data.length === 0) {
-                grid.innerHTML = '<p class="text-gray-500 col-span-full text-center">No active workers found.</p>';
-                return;
-            }
-            data.forEach(worker => {
-                let assetHtml = '<p class="text-sm text-gray-500">No assets assigned</p>';
-                if (worker.asset) {
-                    assetHtml = `
-                        <div class="space-y-1 text-sm">
-                            <p><strong>Phone:</strong> ${worker.asset.phone_model} (${worker.asset.phone_asset_tag})</p>
-                            <p><strong>SIM:</strong> ${worker.asset.sim_iccid}</p>
-                            <p><strong>Number:</strong> ${worker.asset.phone_number || 'N/A'}</p>
-                        </div>
-                    `;
-                }
-
-                const vignette = `
-                    <div class="border rounded-lg p-4 bg-gray-50 hover-lift worker-vignette">
-                        <div class="font-bold text-gray-800">${worker.full_name}</div>
-                        <div class="text-sm text-gray-500 mb-2">${worker.worker_id} &middot; ${worker.secteur_name}</div>
-                        <div class="border-t pt-2 mt-2">
-                            ${assetHtml}
-                        </div>
-                    </div>
-                `;
-                grid.insertAdjacentHTML('beforeend', vignette);
-            });
-        }
-
-        // Search functionality
-        const searchInput = document.getElementById('worker-search-input');
-        searchInput.addEventListener('keyup', () => {
-            const searchTerm = searchInput.value.toLowerCase();
-            const filteredData = workerData.filter(worker => {
-                const searchableString = JSON.stringify(worker).toLowerCase();
-                return searchableString.includes(searchTerm);
-            });
-            renderWorkerVignettes(filteredData);
-        });
-
         // Refresh charts function
         function refreshDashboard() {
             // Destroy existing charts
@@ -454,7 +388,6 @@
             // Reload all data
             fetchSummaryStats();
             fetchDashboardCharts();
-            fetchWorkerAssignments();
         }
 
         // Add refresh button functionality if needed
@@ -463,7 +396,6 @@
         // Initial data load
         fetchSummaryStats();
         fetchDashboardCharts();
-        fetchWorkerAssignments();
     });
 </script>
-{% endblock %}
+{% endblock scripts %}
