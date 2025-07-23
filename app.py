@@ -348,6 +348,13 @@ def profile():
 def admin_dashboard():
     return render_template('admin/dashboard.html')
 
+@app.route('/admin/overview')
+@login_required
+@role_required('Administrator')
+def admin_overview():
+    """Serves the overview page with all workers status for administrators."""
+    return render_template('admin/overview.html')
+
 @app.route('/admin/phones')
 @login_required
 @role_required('Administrator')
@@ -1729,10 +1736,18 @@ def get_secteurs():
     """API endpoint to get a list of all secteurs."""
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("SELECT id, secteur_name FROM secteurs ORDER BY secteur_name")
+    cursor.execute("SELECT id, secteur_name AS name FROM secteurs ORDER BY secteur_name")
     secteurs = cursor.fetchall()
     cursor.close()
     return jsonify(secteurs)
+
+# Alias for sectors endpoint (English name)
+@app.route('/api/sectors', methods=['GET'])
+@login_required
+@role_required('Administrator')  
+def get_sectors():
+    """API endpoint to get a list of all sectors (alias for secteurs)."""
+    return get_secteurs()
 
 @app.route('/api/workers', methods=['GET'])
 @login_required
@@ -1820,6 +1835,105 @@ def delete_worker(worker_id):
     cursor.close()
     return jsonify({"message": "Worker has been set to Inactive."}), 200
 
+@app.route('/api/admin/worker/<int:worker_id>', methods=['PUT'])
+@login_required
+@role_required('Administrator')
+def update_admin_worker(worker_id):
+    """API endpoint for admin overview to update worker details including contract info."""
+    data = request.get_json()
+    db = get_db()
+    cursor = db.cursor()
+    
+    try:
+        # Get current worker data first
+        cursor.execute("SELECT worker_id FROM workers WHERE id = %s", (worker_id,))
+        worker = cursor.fetchone()
+        if not worker:
+            return jsonify({"error": "Worker not found"}), 404
+        
+        worker_code = worker['worker_id']
+        
+        # Update workers table
+        worker_fields = []
+        worker_values = []
+        
+        if 'worker_name' in data:
+            worker_fields.append("full_name = %s")
+            worker_values.append(data['worker_name'])
+        
+        if 'status' in data:
+            worker_fields.append("status = %s") 
+            worker_values.append(data['status'])
+            
+        if 'secteur_id' in data:
+            worker_fields.append("secteur_id = %s")
+            worker_values.append(data['secteur_id'])
+        
+        if worker_fields:
+            worker_values.append(worker_id)
+            cursor.execute(f"UPDATE workers SET {', '.join(worker_fields)} WHERE id = %s", worker_values)
+        
+        # Update or insert into rh_data table for contract information
+        if 'contract_type' in data or 'contract_end_date' in data:
+            # Check if rh_data record exists
+            cursor.execute("SELECT id FROM rh_data WHERE worker_id = %s", (worker_code,))
+            rh_exists = cursor.fetchone()
+            
+            if rh_exists:
+                # Update existing record
+                rh_fields = []
+                rh_values = []
+                
+                if 'contract_type' in data:
+                    rh_fields.append("contract_type = %s")
+                    rh_values.append(data['contract_type'])
+                
+                if 'contract_end_date' in data:
+                    rh_fields.append("contract_end_date = %s")
+                    rh_values.append(data['contract_end_date'] if data['contract_end_date'] else None)
+                
+                if rh_fields:
+                    rh_values.append(worker_code)
+                    cursor.execute(f"UPDATE rh_data SET {', '.join(rh_fields)} WHERE worker_id = %s", rh_values)
+            else:
+                # Insert new record
+                cursor.execute("""
+                    INSERT INTO rh_data (worker_id, contract_type, contract_end_date)
+                    VALUES (%s, %s, %s)
+                """, (
+                    worker_code,
+                    data.get('contract_type', 'CDI'),
+                    data.get('contract_end_date') if data.get('contract_end_date') else None
+                ))
+        
+        db.commit()
+        
+        # Return updated worker data
+        cursor.execute("""
+            SELECT 
+                w.id AS worker_db_id,
+                w.worker_id,
+                w.full_name AS worker_name,
+                w.status,
+                COALESCE(rh.contract_type, 'CDI') AS contract_type,
+                rh.contract_end_date,
+                s.secteur_name,
+                s.id AS secteur_id
+            FROM workers w
+            LEFT JOIN secteurs s ON w.secteur_id = s.id
+            LEFT JOIN rh_data rh ON w.worker_id = CAST(rh.worker_id AS VARCHAR)
+            WHERE w.id = %s
+        """, (worker_id,))
+        
+        updated_worker = cursor.fetchone()
+        cursor.close()
+        return jsonify(updated_worker)
+        
+    except Exception as e:
+        db.rollback()
+        cursor.close()
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/api/manager/worker_notes/<int:worker_id>', methods=['PUT'])
 @login_required
 @role_required('Manager')
@@ -1897,6 +2011,77 @@ def test_worker_endpoint(worker_id):
         "user_id": session.get('user_id'),
         "user_role": session.get('role')
     })
+
+@app.route('/api/admin/all_workers_status', methods=['GET'])
+@login_required
+@role_required('Administrator')
+def get_admin_all_workers_status():
+    """
+    API endpoint to get the status of ALL workers and their assigned assets
+    for administrators (no sector limitation).
+    """
+    db = get_db()
+    cursor = db.cursor()
+    
+    # This query fetches ALL workers regardless of sector.
+    # It also gets details of their currently assigned phone, a count of any open tickets,
+    # and information about pending phone swaps.
+    query = """
+        SELECT
+            w.id AS worker_db_id,
+            w.worker_id,
+            w.full_name AS worker_name,
+            w.status,
+            COALESCE(rh.contract_type, 'CDI') AS contract_type,
+            rh.contract_end_date,
+            s.secteur_name,
+            s.id AS secteur_id,
+            p.id AS phone_id,
+            p.asset_tag,
+            p.manufacturer,
+            p.model,
+            p.status AS phone_status,
+            pn.phone_number,
+            sc.carrier,
+            COALESCE(open_tickets.ticket_count, 0) AS open_ticket_count,
+            COALESCE(swap_info.pending_swaps, 0) AS pending_swaps,
+            swap_info.latest_swap_initiated,
+            swap_info.swap_ticket_id
+        FROM workers w
+        LEFT JOIN assignments a ON w.id = a.worker_id AND a.return_date IS NULL
+        LEFT JOIN phones p ON a.phone_id = p.id
+        LEFT JOIN sim_cards sc ON a.sim_card_id = sc.id
+        LEFT JOIN phone_numbers pn ON sc.id = pn.sim_card_id
+        LEFT JOIN secteurs s ON w.secteur_id = s.id
+        LEFT JOIN rh_data rh ON w.worker_id = CAST(rh.worker_id AS VARCHAR)
+        LEFT JOIN (
+            SELECT 
+                t.phone_id,
+                COUNT(*) AS ticket_count
+            FROM tickets t
+            WHERE t.status NOT IN ('Solved', 'Closed')
+            GROUP BY t.phone_id
+        ) open_tickets ON p.id = open_tickets.phone_id
+        LEFT JOIN (
+            SELECT 
+                t.phone_id,
+                COUNT(*) AS pending_swaps,
+                MAX(tu.created_at) AS latest_swap_initiated,
+                MAX(t.id) AS swap_ticket_id
+            FROM tickets t
+            JOIN ticket_updates tu ON t.id = tu.ticket_id
+            WHERE tu.update_text LIKE %s
+            AND t.status NOT IN ('Solved', 'Closed')
+            GROUP BY t.phone_id
+        ) swap_info ON p.id = swap_info.phone_id
+        ORDER BY s.secteur_name, w.full_name;
+    """
+    
+    cursor.execute(query, ('%PHONE SWAP INITIATED%',))
+    all_workers_status = cursor.fetchall()
+    cursor.close()
+    
+    return jsonify(all_workers_status)
 
 # --- API Endpoint for Support Portal ---
 

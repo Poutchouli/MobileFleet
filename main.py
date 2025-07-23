@@ -285,6 +285,20 @@ def add_security_headers(response):
     # Referrer policy
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
     
+    # Permissions Policy - disable privacy-sensitive features
+    response.headers['Permissions-Policy'] = (
+        'browsing-topics=(), '
+        'interest-cohort=(), '
+        'geolocation=(), '
+        'camera=(), '
+        'microphone=(), '
+        'payment=(), '
+        'usb=(), '
+        'magnetometer=(), '
+        'gyroscope=(), '
+        'accelerometer=()'
+    )
+    
     # Content Security Policy (basic)
     if not app.config.get('DEBUG'):
         response.headers['Content-Security-Policy'] = (
@@ -292,7 +306,7 @@ def add_security_headers(response):
             "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; "
             "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; "
             "img-src 'self' data:; "
-            "font-src 'self'"
+            "font-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com"
         )
     
     return response
@@ -542,6 +556,13 @@ def profile():
 @role_required('Administrator')
 def admin_dashboard():
     return render_template('admin/dashboard.html')
+
+@app.route('/admin/overview')
+@login_required
+@role_required('Administrator')
+def admin_overview():
+    """Serves the overview page with all workers status for administrators."""
+    return render_template('admin/overview.html')
 
 @app.route('/admin/phones')
 @login_required
@@ -1383,6 +1404,77 @@ def get_manager_team_status():
     cursor.close()
     
     return jsonify(team_status)
+
+@app.route('/api/admin/all_workers_status', methods=['GET'])
+@login_required
+@role_required('Administrator')
+def get_admin_all_workers_status():
+    """
+    API endpoint to get the status of ALL workers and their assigned assets
+    for administrators (no sector limitation).
+    """
+    db = get_db()
+    cursor = db.cursor()
+    
+    # This query fetches ALL workers regardless of sector.
+    # It also gets details of their currently assigned phone, a count of any open tickets,
+    # and information about pending phone swaps.
+    query = """
+        SELECT
+            w.id AS worker_db_id,
+            w.worker_id,
+            w.full_name AS worker_name,
+            w.status,
+            COALESCE(rh.contract_type, 'CDI') AS contract_type,
+            rh.contract_end_date,
+            s.secteur_name,
+            s.id AS secteur_id,
+            p.id AS phone_id,
+            p.asset_tag,
+            p.manufacturer,
+            p.model,
+            p.status AS phone_status,
+            pn.phone_number,
+            sc.carrier,
+            COALESCE(open_tickets.ticket_count, 0) AS open_ticket_count,
+            COALESCE(swap_info.pending_swaps, 0) AS pending_swaps,
+            swap_info.latest_swap_initiated,
+            swap_info.swap_ticket_id
+        FROM workers w
+        LEFT JOIN assignments a ON w.id = a.worker_id AND a.return_date IS NULL
+        LEFT JOIN phones p ON a.phone_id = p.id
+        LEFT JOIN sim_cards sc ON a.sim_card_id = sc.id
+        LEFT JOIN phone_numbers pn ON sc.id = pn.sim_card_id
+        LEFT JOIN secteurs s ON w.secteur_id = s.id
+        LEFT JOIN rh_data rh ON w.worker_id = rh.worker_id
+        LEFT JOIN (
+            SELECT 
+                t.phone_id,
+                COUNT(*) AS ticket_count
+            FROM tickets t
+            WHERE t.status NOT IN ('Solved', 'Closed')
+            GROUP BY t.phone_id
+        ) open_tickets ON p.id = open_tickets.phone_id
+        LEFT JOIN (
+            SELECT 
+                t.phone_id,
+                COUNT(*) AS pending_swaps,
+                MAX(tu.created_at) AS latest_swap_initiated,
+                MAX(t.id) AS swap_ticket_id
+            FROM tickets t
+            JOIN ticket_updates tu ON t.id = tu.ticket_id
+            WHERE tu.update_text LIKE %s
+            AND t.status NOT IN ('Solved', 'Closed')
+            GROUP BY t.phone_id
+        ) swap_info ON p.id = swap_info.phone_id
+        ORDER BY s.secteur_name, w.full_name;
+    """
+    
+    cursor.execute(query, ('%PHONE SWAP INITIATED%',))
+    all_workers_status = cursor.fetchall()
+    cursor.close()
+    
+    return jsonify(all_workers_status)
 
 @app.route('/api/manager/selectable_phones', methods=['GET'])
 @login_required
