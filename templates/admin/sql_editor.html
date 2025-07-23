@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+{% block title %}SQL Editor{% endblock %}
+{% block page_title %}SQL Editor & Schema{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Left Panel: Editor and Results -->
+    <div class="space-y-6">
+        <!-- Query Editor Card -->
+        <div class="custom-card">
+            <div class="card-header">
+                <h2 class="card-title">{{ _('Query Editor') }}</h2>
+                <div class="text-sm text-gray-500">
+                    {{ _('Execute SQL queries on the database') }}
+                </div>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label for="sql-query" class="form-label">{{ _('SQL Query') }}</label>
+                    <textarea 
+                        id="sql-query" 
+                        class="custom-textarea font-mono" 
+                        rows="10" 
+                        placeholder="SELECT * FROM users;"
+                    ></textarea>
+                </div>
+                <div class="flex justify-end">
+                    <button id="run-query-btn" class="btn-primary">
+                        <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h1m4 0h1"></path>
+                        </svg>
+                        {{ _('Run Query') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Card -->
+        <div class="custom-card">
+            <div class="card-header">
+                <h2 class="card-title">{{ _('Query Results') }}</h2>
+                <div class="text-sm text-gray-500" id="results-info">
+                    {{ _('Results will appear here') }}
+                </div>
+            </div>
+            <div id="results-container" class="overflow-x-auto">
+                <div class="text-center py-8 text-gray-500">
+                    <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    {{ _('No query executed yet') }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Panel: Schema Diagram -->
+    <div class="custom-card">
+        <div class="card-header">
+            <h2 class="card-title">{{ _('Database Schema') }}</h2>
+            <div class="text-sm text-gray-500">
+                {{ _('Entity Relationship Diagram') }}
+            </div>
+        </div>
+        <div class="h-96 overflow-auto">
+            <div id="schema-diagram" class="mermaid min-h-full">
+                <div class="text-center py-8 text-gray-500">
+                    <svg class="w-12 h-12 mx-auto mb-4 text-gray-300 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    {{ _('Loading database schema...') }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Mermaid.js for diagramming -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@9/dist/mermaid.min.js"></script>
+<script>
+    mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const runQueryBtn = document.getElementById('run-query-btn');
+        const sqlQueryInput = document.getElementById('sql-query');
+        const resultsContainer = document.getElementById('results-container');
+        const resultsInfo = document.getElementById('results-info');
+
+        // --- Schema Diagram Logic ---
+        async function fetchAndRenderSchema() {
+            try {
+                const response = await fetch('/api/admin/db_schema');
+                const schema = await response.json();
+                
+                let mermaidSyntax = 'erDiagram\n';
+                
+                // Define all tables first to ensure they are rendered
+                schema.tables.forEach(table => {
+                    mermaidSyntax += `    ${table} {\n    }\n`;
+                });
+
+                // Add relationships
+                schema.relations.forEach(rel => {
+                    mermaidSyntax += `    ${rel.table_name} }o--|| ${rel.foreign_table_name} : "${rel.column_name} -> ${rel.foreign_column_name}"\n`;
+                });
+
+                const diagramElement = document.getElementById('schema-diagram');
+                const { svg } = await mermaid.render('graphDiv', mermaidSyntax);
+                diagramElement.innerHTML = svg;
+
+            } catch (error) {
+                console.error('Failed to render schema:', error);
+                document.getElementById('schema-diagram').innerHTML = `
+                    <div class="text-center py-8 text-red-500">
+                        <svg class="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                        Could not load schema diagram
+                    </div>
+                `;
+            }
+        }
+
+        // --- Query Execution Logic ---
+        runQueryBtn.addEventListener('click', async () => {
+            const query = sqlQueryInput.value.trim();
+            
+            if (!query) {
+                alert('Please enter a SQL query');
+                return;
+            }
+
+            // Update UI for loading state
+            runQueryBtn.disabled = true;
+            runQueryBtn.innerHTML = `
+                <svg class="w-5 h-5 mr-2 inline animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Executing...
+            `;
+            
+            resultsContainer.innerHTML = `
+                <div class="text-center py-8 text-gray-500">
+                    <svg class="w-12 h-12 mx-auto mb-4 text-gray-300 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    Executing query...
+                </div>
+            `;
+            
+            try {
+                const response = await fetch('/api/admin/execute_sql', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: query })
+                });
+                const result = await response.json();
+
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+
+                if (result.columns && result.rows) {
+                    renderResultsTable(result.columns, result.rows);
+                    resultsInfo.textContent = `${result.rows.length} rows returned`;
+                } else {
+                    resultsContainer.innerHTML = `
+                        <div class="text-center py-8 text-green-600">
+                            <svg class="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            ${result.message}
+                        </div>
+                    `;
+                    resultsInfo.textContent = 'Query executed successfully';
+                }
+            } catch (error) {
+                resultsContainer.innerHTML = `
+                    <div class="text-center py-8 text-red-500">
+                        <svg class="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                        <div class="font-mono text-sm bg-red-50 p-4 rounded border border-red-200 mt-4">
+                            ${error.message}
+                        </div>
+                    </div>
+                `;
+                resultsInfo.textContent = 'Query failed';
+            } finally {
+                // Reset button state
+                runQueryBtn.disabled = false;
+                runQueryBtn.innerHTML = `
+                    <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h1m4 0h1"></path>
+                    </svg>
+                    Run Query
+                `;
+            }
+        });
+
+        function renderResultsTable(columns, rows) {
+            if (rows.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        Query executed successfully, but returned no rows
+                    </div>
+                `;
+                return;
+            }
+
+            const table = document.createElement('table');
+            table.className = 'custom-table w-full';
+            
+            let thead = '<thead><tr>';
+            columns.forEach(col => thead += `<th class="px-4 py-3 text-left font-semibold">${col}</th>`);
+            thead += '</tr></thead>';
+            table.innerHTML = thead;
+
+            let tbody = '<tbody>';
+            rows.forEach((row, index) => {
+                tbody += `<tr class="${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}">`;
+                columns.forEach(col => {
+                    const value = row[col];
+                    const displayValue = value !== null ? value : '<span class="text-gray-400 italic">NULL</span>';
+                    tbody += `<td class="px-4 py-3 text-sm">${displayValue}</td>`;
+                });
+                tbody += '</tr>';
+            });
+            tbody += '</tbody>';
+            table.innerHTML += tbody;
+
+            resultsContainer.innerHTML = '';
+            resultsContainer.appendChild(table);
+        }
+
+        // Handle Enter key in textarea (Ctrl+Enter to execute)
+        sqlQueryInput.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                runQueryBtn.click();
+            }
+        });
+
+        // Initial Load
+        fetchAndRenderSchema();
+    });
+</script>
+{% endblock %}

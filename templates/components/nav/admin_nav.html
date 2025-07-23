@@ -11,4 +11,5 @@
     <a href="{{ url_for('admin_assign_secteurs') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin_assign_secteurs' %}active{% else %}hover:bg-gray-700{% endif %}">{{ _('Assign Secteurs') }}</a>
     <a href="{{ url_for('admin_import_csv') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin_import_csv' %}active{% else %}hover:bg-gray-700{% endif %}">{{ _('Data Import') }}</a>
     <a href="{{ url_for('admin_reports') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin_reports' %}active{% else %}hover:bg-gray-700{% endif %}">{{ _('Reports') }}</a>
+    <a href="{{ url_for('admin_sql_editor') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin_sql_editor' %}active{% else %}hover:bg-gray-700{% endif %}">{{ _('SQL Editor') }}</a>
 </nav>
