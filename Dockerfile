@@ -18,8 +18,8 @@ ENV PYTHONUNBUFFERED 1
 WORKDIR /app
 
 # --- Install Dependencies ---
-# First, install system dependencies including netcat for database connectivity checks
-RUN apt-get update && apt-get install -y netcat-openbsd && rm -rf /var/lib/apt/lists/*
+# First, install system dependencies including postgresql-client for database connectivity checks
+RUN apt-get update && apt-get install -y postgresql-client && rm -rf /var/lib/apt/lists/*
 
 # Copy over the requirements file.
 COPY requirements.txt .

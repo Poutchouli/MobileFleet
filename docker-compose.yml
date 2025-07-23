@@ -16,11 +16,24 @@ services:
     command: >
       sh -c "
         echo 'Waiting for PostgreSQL to be ready...' &&
-        while ! nc -z db 5432; do
+        timeout=60;
+        while [ $$timeout -gt 0 ]; do
+          if pg_isready -h db -p 5432 -U postgres -d fleet_db >/dev/null 2>&1; then
+            break;
+          fi;
+          timeout=$$((timeout - 1));
+          if [ $$timeout -le 0 ]; then
+            echo 'Timeout waiting for PostgreSQL';
+            exit 1;
+          fi;
+          echo 'Waiting for PostgreSQL... ($$timeout seconds left)';
           sleep 1;
         done;
         echo 'PostgreSQL is ready.' &&
+        sleep 2 &&
+        echo 'Running database initialization...' &&
         python init_database.py &&
+        echo 'Starting web server...' &&
         gunicorn --bind 0.0.0.0:5000 --timeout 300 --workers 2 --worker-class sync --preload app:app
       "
     # Map port 5000 inside the container to port 5000 on the host machine.
