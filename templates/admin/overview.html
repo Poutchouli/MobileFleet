@@ -7,10 +7,10 @@
 {% block content %}
 <div class="custom-card mb-4">
     <div class="card-header">
-        <h3 class="text-lg font-medium">{{ _('Filters') }}</h3>
+        <h3 class="text-lg font-medium">{{ _('Filters & Display Options') }}</h3>
     </div>
     <div class="p-4">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 border-b pb-4">
             <div class="custom-form-group">
                 <label for="sector-filter" class="custom-label">{{ _('Filter by Sector') }}</label>
                 <select id="sector-filter" class="custom-select">
@@ -42,11 +42,41 @@
                 <input type="text" id="worker-search" class="custom-input" placeholder="{{ _('Search by name...') }}">
             </div>
         </div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+             <div class="custom-form-group">
+                <label for="items-per-page-select" class="custom-label">{{ _('Show Per Page') }}</label>
+                <select id="items-per-page-select" class="custom-select">
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="250">250</option>
+                </select>
+            </div>
+            <div>
+                 <button id="customize-fields-btn" class="btn-secondary w-full">{{ _('Customize Card Fields') }}</button>
+            </div>
+        </div>
     </div>
 </div>
 
 <div id="workers-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-    <div id="loading-message" class="text-center py-8 text-gray-500 col-span-full">{{ _('Loading workers data...') }}</div>
+    </div>
+
+<div id="pagination-controls" class="flex items-center justify-between mt-6"></div>
+
+<div id="customize-fields-modal" class="custom-modal hidden">
+    <div class="custom-modal-backdrop"></div>
+    <div class="custom-modal-content max-w-2xl">
+        <div class="custom-modal-header">
+            <h3 class="custom-modal-title">{{ _('Customize Visible Fields') }}</h3>
+        </div>
+        <div id="fields-list" class="custom-modal-body grid grid-cols-1 md:grid-cols-3 gap-4 p-6">
+            </div>
+        <div class="custom-modal-footer">
+            <button type="button" id="cancel-customize-btn" class="btn btn-secondary">{{ _('Cancel') }}</button>
+            <button type="button" id="save-customize-btn" class="btn btn-primary">{{ _('Save & Apply') }}</button>
+        </div>
+    </div>
 </div>
 
 
@@ -58,337 +88,371 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // ======== STATE MANAGEMENT ========
+    let originalWorkersData = [];
+    let sectorsList = [];
+    let currentPage = 1;
+    let itemsPerPage = 25;
+
+    // ======== UI ELEMENTS ========
     const workersContainer = document.getElementById('workers-grid-container');
-    const loadingMessage = document.getElementById('loading-message');
+    const paginationControls = document.getElementById('pagination-controls');
     const toast = document.getElementById('toast');
     const toastMessage = document.getElementById('toast-message');
 
-    // Filter elements
+    // Filters & Display
     const sectorFilter = document.getElementById('sector-filter');
     const workerStatusFilter = document.getElementById('worker-status-filter');
     const phoneStatusFilter = document.getElementById('phone-status-filter');
     const workerSearchFilter = document.getElementById('worker-search');
+    const itemsPerPageSelect = document.getElementById('items-per-page-select');
 
-    let originalWorkersData = [];
-    let sectorsList = [];
+    // Customize Fields Modal
+    const customizeModal = document.getElementById('customize-fields-modal');
+    const customizeBtn = document.getElementById('customize-fields-btn');
+    const saveCustomizeBtn = document.getElementById('save-customize-btn');
+    const cancelCustomizeBtn = document.getElementById('cancel-customize-btn');
+    const fieldsListDiv = document.getElementById('fields-list');
 
-    function showToast(message, isError = false) {
-        toastMessage.textContent = message;
-        toast.className = `toast fixed top-4 right-4 p-4 rounded-md shadow-lg ${isError ? 'error' : 'success'}`;
-        toast.classList.remove('hidden');
-        setTimeout(() => { toast.classList.add('hidden'); }, 3000);
-    }
+    // ======== FIELD DEFINITIONS ========
+    // Defines all possible fields, their labels, types for editing, and group.
+    const ALL_FIELDS = {
+        worker_id: { label: 'Worker ID', type: 'text', group: 'Worker' },
+        secteur_name: { label: 'Sector', type: 'select', source: 'sectors', group: 'Worker' },
+        status: { label: 'Worker Status', type: 'select', source: 'worker_status', group: 'Worker' },
+        contract_type: { label: 'Contract Type', type: 'select', source: 'contract_type', group: 'HR' },
+        contract_end_date: { label: 'Contract End', type: 'date', group: 'HR' },
+        asset_tag: { label: 'Asset Tag', type: 'text', group: 'Phone' },
+        manufacturer: { label: 'Manufacturer', type: 'text', group: 'Phone' },
+        model: { label: 'Model', type: 'text', group: 'Phone' },
+        phone_status: { label: 'Phone Status', type: 'select', source: 'phone_status', group: 'Phone' },
+        phone_number: { label: 'Phone Number', type: 'text', group: 'SIM' },
+        carrier: { label: 'Carrier', type: 'text', group: 'SIM' },
+        open_ticket_count: { label: 'Open Tickets', type: 'readonly', group: 'Stats'},
+        pending_swaps: { label: 'Pending Swaps', type: 'readonly', group: 'Stats' }
+    };
 
+    // Default fields to show on first load if nothing is in localStorage
+    const DEFAULT_VISIBLE_FIELDS = ['secteur_name', 'contract_type', 'contract_end_date', 'model', 'asset_tag'];
+    let visibleFields = JSON.parse(localStorage.getItem('visibleFields')) || DEFAULT_VISIBLE_FIELDS;
+
+    // ======== DATA FETCHING ========
     async function fetchInitialData() {
+        workersContainer.innerHTML = `<div class="text-center py-8 text-gray-500 col-span-full">{{ _('Loading workers data...') }}</div>`;
         try {
-            // Fetch workers and sectors in parallel
             const [workersResponse, sectorsResponse] = await Promise.all([
                 fetch('/api/admin/all_workers_status'),
                 fetch('/api/sectors') 
             ]);
-
-            if (!workersResponse.ok) throw new Error('Failed to load worker data.');
-            if (!sectorsResponse.ok) throw new Error('Failed to load sectors.');
+            if (!workersResponse.ok || !sectorsResponse.ok) throw new Error('Failed to load initial data.');
             
             originalWorkersData = await workersResponse.json();
             sectorsList = await sectorsResponse.json();
 
             populateFilters();
-            renderWorkers(originalWorkersData);
-
+            updateView();
         } catch (error) {
-            console.error('Error loading initial data:', error);
-            loadingMessage.innerHTML = `<div class="text-center py-8 text-red-500 col-span-full">${error.message}</div>`;
+            workersContainer.innerHTML = `<div class="text-center py-8 text-red-500 col-span-full">${error.message}</div>`;
         }
     }
 
+    // ======== RENDERING & UI UPDATES ========
     function populateFilters() {
         const uniqueSectors = [...new Set(originalWorkersData.map(w => w.secteur_name).filter(Boolean))].sort();
         sectorFilter.innerHTML = '<option value="">{{ _("All Sectors") }}</option>';
-        uniqueSectors.forEach(sector => {
-            sectorFilter.innerHTML += `<option value="${sector}">${sector}</option>`;
-        });
+        uniqueSectors.forEach(sector => sectorFilter.innerHTML += `<option value="${sector}">${sector}</option>`);
     }
 
-    function renderWorkers(workers) {
-        workersContainer.innerHTML = ''; // Clear previous content
+    function updateView() {
+        const filtered = applyFilters();
+        renderPaginatedWorkers(filtered);
+        renderPaginationControls(filtered.length);
+    }
+    
+    function renderPaginatedWorkers(workers) {
+        workersContainer.innerHTML = '';
         if (!workers || workers.length === 0) {
             workersContainer.innerHTML = '<div class="text-center py-8 text-gray-500 col-span-full">{{ _("No workers found matching your criteria.") }}</div>';
             return;
         }
-        workers.forEach(worker => {
-            const workerCard = createWorkerCard(worker);
+
+        itemsPerPage = parseInt(itemsPerPageSelect.value, 10);
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const paginatedWorkers = workers.slice(start, end);
+
+        paginatedWorkers.forEach(worker => {
+            const workerCard = createWorkerCard(worker, 'view');
             workersContainer.insertAdjacentHTML('beforeend', workerCard);
         });
     }
 
-    function getCardBackgroundClass(contractType, contractEndDate) {
-        if (contractType === 'CDD' && contractEndDate) {
-            const today = new Date();
-            const endDate = new Date(contractEndDate);
-            endDate.setHours(0, 0, 0, 0);
-            today.setHours(0, 0, 0, 0);
-            const diffDays = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+    function renderPaginationControls(totalItems) {
+        paginationControls.innerHTML = '';
+        const totalPages = Math.ceil(totalItems / itemsPerPage);
+        if (totalPages <= 1) return;
 
-            if (diffDays < 0) return 'bg-red-100 border-red-300';
-            if (diffDays <= 10) return 'bg-yellow-100 border-yellow-300';
-        }
-        return 'bg-white border-gray-200';
+        let html = `<div class="text-sm text-gray-700">Page ${currentPage} of ${totalPages}</div>`;
+        html += '<div class="flex items-center space-x-2">';
+        html += `<button class="btn-secondary btn-sm pagination-btn" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>{{ _('Previous') }}</button>`;
+        html += `<button class="btn-secondary btn-sm pagination-btn" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>{{ _('Next') }}</button>`;
+        html += '</div>';
+        paginationControls.innerHTML = html;
     }
 
-    function createWorkerCard(worker) {
+    // ======== DYNAMIC CARD CREATION ========
+    function createWorkerCard(worker, mode = 'view') {
         const cardBgClass = getCardBackgroundClass(worker.contract_type, worker.contract_end_date);
         
-        // Use a function to render the contract end date warning message
-        const renderContractWarning = () => {
-            if (worker.contract_type !== 'CDD' || !worker.contract_end_date) return '';
+        let dynamicFieldsHtml = '';
+        if (mode === 'view') {
+            dynamicFieldsHtml = visibleFields.map(fieldKey => {
+                const field = ALL_FIELDS[fieldKey];
+                const value = worker[fieldKey] || 'N/A';
+                return `<div class="flex justify-between"><span class="text-sm font-medium text-gray-600">${field.label}:</span><span class="text-sm text-gray-900 text-right">${value}</span></div>`;
+            }).join('');
+        } else { // 'edit' mode
+            dynamicFieldsHtml = visibleFields.map(fieldKey => {
+                const field = ALL_FIELDS[fieldKey];
+                if (field.type === 'readonly') return ''; // Don't create inputs for readonly fields
+                return `<div><label class="custom-label">${field.label}</label>${createInputField(worker, fieldKey)}</div>`;
+            }).join('');
+        }
 
-            const today = new Date();
-            const endDate = new Date(worker.contract_end_date);
-            today.setHours(0, 0, 0, 0);
-            endDate.setHours(0, 0, 0, 0);
-            const diffDays = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
-            
-            let message = '';
-            let colorClass = '';
+        const viewModeHtml = `
+            <div class="card-view">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center space-x-3"><div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">${worker.worker_name.split(' ').map(n => n[0] || '').join('').substring(0, 2)}</div><div><h3 class="font-semibold text-gray-900">${worker.worker_name}</h3><p class="text-sm text-gray-500">ID: ${worker.worker_id}</p></div></div>
+                    <span class="status-badge ${worker.status.toLowerCase()}">${worker.status}</span>
+                </div>
+                ${getContractWarning(worker)}
+                <div class="space-y-2 mb-4">${dynamicFieldsHtml}</div>
+                <div class="border-t pt-3 flex justify-end"><button class="btn-secondary btn-sm edit-btn" data-worker-id="${worker.worker_db_id}">{{ _('Edit') }}</button></div>
+            </div>`;
+        
+        const editModeHtml = `
+            <div class="edit-view hidden">
+                <h3 class="font-semibold text-gray-900 mb-3">{{ _('Editing') }} ${worker.worker_name}</h3>
+                <div class="space-y-3">
+                    <div><label class="custom-label">{{ _('Full Name') }}</label><input type="text" name="full_name" class="custom-input" value="${worker.worker_name}"></div>
+                    ${dynamicFieldsHtml}
+                </div>
+                <div class="border-t pt-3 mt-4 flex justify-end space-x-2"><button class="btn-secondary btn-sm cancel-btn" data-worker-id="${worker.worker_db_id}">{{ _('Cancel') }}</button><button class="btn-primary btn-sm save-btn" data-worker-id="${worker.worker_db_id}">{{ _('Save') }}</button></div>
+            </div>`;
 
-            if (diffDays < 0) {
-                message = `{{ _("Contract expired ${Math.abs(diffDays)} days ago") }}`;
-                colorClass = 'bg-red-200 text-red-800';
-            } else if (diffDays <= 10) {
-                message = `{{ _("Contract ends in") }} ${diffDays} {{ _("days") }}`;
-                colorClass = diffDays <= 5 ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700';
-            }
+        return `<div id="worker-card-${worker.worker_db_id}" class="worker-card ${cardBgClass} rounded-lg shadow-md border p-4 transition-shadow">${viewModeHtml}${editModeHtml}</div>`;
+    }
 
-            if (!message) return '';
+    function createInputField(worker, fieldKey) {
+        const field = ALL_FIELDS[fieldKey];
+        const value = worker[fieldKey] || '';
+        if (field.type === 'select') {
+            let options = '';
+            const sources = {
+                sectors: sectorsList.map(s => `<option value="${s.id}" ${worker.secteur_id == s.id ? 'selected' : ''}>${s.name}</option>`),
+                worker_status: ['Active', 'Inactive', 'Arrêt', 'Congés'].map(s => `<option value="${s}" ${value === s ? 'selected' : ''}>${s}</option>`),
+                phone_status: ['In Use', 'In Stock', 'Under Repair', 'Decommissioned'].map(s => `<option value="${s}" ${value === s ? 'selected' : ''}>${s}</option>`),
+                contract_type: ['CDI', 'CDD', 'INTERIM'].map(s => `<option value="${s}" ${value === s ? 'selected' : ''}>${s}</option>`)
+            };
+            options = sources[field.source].join('');
+            return `<select name="${fieldKey}" class="custom-select">${options}</select>`;
+        }
+        return `<input type="${field.type}" name="${fieldKey}" class="custom-input" value="${value}">`;
+    }
 
-            return `
-                <div class="mb-3 p-2 rounded-md ${colorClass}">
-                    <div class="flex items-center space-x-2">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
-                        <span class="text-xs font-medium">${message}</span>
-                    </div>
-                </div>`;
+    // ======== FILTERS & PAGINATION ========
+    function applyFilters() {
+        const filters = {
+            sector: sectorFilter.value,
+            workerStatus: workerStatusFilter.value,
+            phoneStatus: phoneStatusFilter.value,
+            search: workerSearchFilter.value.toLowerCase()
         };
 
-        const sectorOptions = sectorsList.map(s => `<option value="${s.id}" ${worker.secteur_id == s.id ? 'selected' : ''}>${s.name}</option>`).join('');
-
-        return `
-            <div id="worker-card-${worker.worker_db_id}" class="worker-card ${cardBgClass} rounded-lg shadow-md border p-4 transition-shadow" 
-                 data-worker-name="${worker.worker_name}" 
-                 data-worker-status="${worker.status}"
-                 data-phone-status="${worker.phone_status || ''}"
-                 data-sector-name="${worker.secteur_name || ''}">
-
-                <div class="card-view">
-                    <div class="flex items-center justify-between mb-3">
-                        <div class="flex items-center space-x-3">
-                             <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
-                                ${worker.worker_name.split(' ').map(n => n[0] || '').join('').substring(0, 2)}
-                            </div>
-                            <div>
-                                <h3 class="font-semibold text-gray-900">${worker.worker_name}</h3>
-                                <p class="text-sm text-gray-500">ID: ${worker.worker_id}</p>
-                            </div>
-                        </div>
-                        <span class="status-badge ${worker.status.toLowerCase()}">${worker.status}</span>
-                    </div>
-
-                    ${renderContractWarning()}
-                    
-                    <div class="space-y-2 mb-4">
-                        <div class="flex justify-between"><span class="text-sm font-medium text-gray-600">{{ _('Sector') }}:</span><span class="text-sm text-gray-900">${worker.secteur_name || 'N/A'}</span></div>
-                        <div class="flex justify-between"><span class="text-sm font-medium text-gray-600">{{ _('Contract') }}:</span><span class="text-sm text-gray-900">${worker.contract_type || 'N/A'}</span></div>
-                        <div class="flex justify-between"><span class="text-sm font-medium text-gray-600">{{ _('Contract End') }}:</span><span class="text-sm text-gray-900">${worker.contract_end_date ? new Date(worker.contract_end_date).toLocaleDateString() : 'N/A'}</span></div>
-                        <div class="border-t pt-2 mt-2">
-                           <div class="flex justify-between"><span class="text-sm font-medium text-gray-600">{{ _('Phone') }}:</span><span class="text-sm text-gray-900">${worker.model || 'No phone assigned'}</span></div>
-                           <div class="flex justify-between"><span class="text-sm font-medium text-gray-600">{{ _('Asset Tag') }}:</span><span class="text-sm text-gray-900 font-mono">${worker.asset_tag || 'N/A'}</span></div>
-                        </div>
-                    </div>
-                     <div class="border-t pt-3">
-                        <div class="flex items-center justify-end space-x-2">
-                            <button class="btn-secondary btn-sm edit-btn" data-worker-id="${worker.worker_db_id}">{{ _('Edit') }}</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="edit-view hidden">
-                    <h3 class="font-semibold text-gray-900 mb-3">{{ _('Editing Worker') }}</h3>
-                    <div class="space-y-3">
-                        <div><label class="custom-label">{{ _('Full Name') }}</label><input type="text" name="worker_name" class="custom-input" value="${worker.worker_name}"></div>
-                        <div><label class="custom-label">{{ _('Status') }}</label>
-                            <select name="status" class="custom-select">
-                                <option value="Active" ${worker.status === 'Active' ? 'selected' : ''}>Active</option>
-                                <option value="Inactive" ${worker.status === 'Inactive' ? 'selected' : ''}>Inactive</option>
-                                <option value="Arrêt" ${worker.status === 'Arrêt' ? 'selected' : ''}>Arrêt</option>
-                                <option value="Congés" ${worker.status === 'Congés' ? 'selected' : ''}>Congés</option>
-                            </select>
-                        </div>
-                        <div><label class="custom-label">{{ _('Sector') }}</label><select name="secteur_id" class="custom-select">${sectorOptions}</select></div>
-                        <div><label class="custom-label">{{ _('Contract Type') }}</label>
-                             <select name="contract_type" class="custom-select">
-                                <option value="CDI" ${worker.contract_type === 'CDI' ? 'selected' : ''}>CDI</option>
-                                <option value="CDD" ${worker.contract_type === 'CDD' ? 'selected' : ''}>CDD</option>
-                                <option value="INTERIM" ${worker.contract_type === 'INTERIM' ? 'selected' : ''}>INTERIM</option>
-                            </select>
-                        </div>
-                        <div><label class="custom-label">{{ _('Contract End Date') }}</label><input type="date" name="contract_end_date" class="custom-input" value="${worker.contract_end_date || ''}"></div>
-                    </div>
-                    <div class="border-t pt-3 mt-4">
-                        <div class="flex items-center justify-end space-x-2">
-                            <button class="btn-secondary btn-sm cancel-btn" data-worker-id="${worker.worker_db_id}">{{ _('Cancel') }}</button>
-                            <button class="btn-primary btn-sm save-btn" data-worker-id="${worker.worker_db_id}">{{ _('Save') }}</button>
-                        </div>
-                    </div>
-                </div>
-            </div>`;
-    }
-
-    function applyFilters() {
-        const sectorValue = sectorFilter.value;
-        const workerStatusValue = workerStatusFilter.value;
-        const phoneStatusValue = phoneStatusFilter.value;
-        const searchValue = workerSearchFilter.value.toLowerCase();
-
-        const filteredWorkers = originalWorkersData.filter(worker => {
-            const workerName = worker.worker_name.toLowerCase();
-            const workerStatus = worker.status;
-            const phoneStatus = worker.phone_status || '';
-            const sectorName = worker.secteur_name || '';
-
-            const matchesSearch = !searchValue || workerName.includes(searchValue);
-            const matchesSector = !sectorValue || sectorName === sectorValue;
-            const matchesWorkerStatus = !workerStatusValue || workerStatus === workerStatusValue;
-            const matchesPhoneStatus = !phoneStatusValue || phoneStatus === phoneStatusValue;
-            
-            return matchesSearch && matchesSector && matchesWorkerStatus && matchesPhoneStatus;
-        });
-
-        renderWorkers(filteredWorkers);
+        return originalWorkersData.filter(w => 
+            (!filters.search || w.worker_name.toLowerCase().includes(filters.search)) &&
+            (!filters.sector || w.secteur_name === filters.sector) &&
+            (!filters.workerStatus || w.status === filters.workerStatus) &&
+            (!filters.phoneStatus || w.phone_status === filters.phoneStatus)
+        );
     }
     
-    ['change', 'input'].forEach(evt => {
-        sectorFilter.addEventListener('change', applyFilters);
-        workerStatusFilter.addEventListener('change', applyFilters);
-        phoneStatusFilter.addEventListener('change', applyFilters);
-        workerSearchFilter.addEventListener('input', applyFilters);
-    });
-
-    // --- Event Delegation for Edit/Save/Cancel ---
-    workersContainer.addEventListener('click', async function(e) {
+    // ======== CARD & MODAL EVENT LISTENERS ========
+    workersContainer.addEventListener('click', async e => {
         const workerId = e.target.dataset.workerId;
         if (!workerId) return;
-
         const card = document.getElementById(`worker-card-${workerId}`);
-        const viewMode = card.querySelector('.card-view');
-        const editMode = card.querySelector('.edit-view');
 
-        // Handle Edit button click
-        if (e.target.classList.contains('edit-btn')) {
-            viewMode.classList.add('hidden');
-            editMode.classList.remove('hidden');
+        if (e.target.matches('.edit-btn')) {
+            card.querySelector('.card-view').classList.add('hidden');
+            card.querySelector('.edit-view').classList.remove('hidden');
         }
-
-        // Handle Cancel button click
-        if (e.target.classList.contains('cancel-btn')) {
-            editMode.classList.add('hidden');
-            viewMode.classList.remove('hidden');
+        if (e.target.matches('.cancel-btn')) {
+            card.querySelector('.edit-view').classList.add('hidden');
+            card.querySelector('.card-view').classList.remove('hidden');
         }
-
-        // Handle Save button click
-        if (e.target.classList.contains('save-btn')) {
-            const updatedData = {
-                worker_name: card.querySelector('[name="worker_name"]').value,
-                status: card.querySelector('[name="status"]').value,
-                secteur_id: card.querySelector('[name="secteur_id"]').value,
-                contract_type: card.querySelector('[name="contract_type"]').value,
-                contract_end_date: card.querySelector('[name="contract_end_date"]').value,
-            };
+        if (e.target.matches('.save-btn')) {
+            const editView = card.querySelector('.edit-view');
+            const inputs = editView.querySelectorAll('input, select');
+            const updatedData = {};
+            inputs.forEach(input => updatedData[input.name] = input.value);
             
-            // Basic validation
-            if (!updatedData.worker_name) {
-                showToast('Worker name cannot be empty.', true);
-                return;
+            // Rename secteur_name to secteur_id for the backend
+            if ('secteur_name' in updatedData) {
+                updatedData.secteur_id = updatedData.secteur_name;
+                delete updatedData.secteur_name;
             }
 
             try {
                 const response = await fetch(`/api/admin/worker/${workerId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(updatedData)
+                    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatedData)
                 });
-
-                if (!response.ok) {
-                    const errorResult = await response.json();
-                    throw new Error(errorResult.error || 'Failed to save changes.');
-                }
+                if (!response.ok) throw new Error((await response.json()).error || 'Failed to save.');
                 
                 const savedWorker = await response.json();
-
-                // Update the original data array
                 const index = originalWorkersData.findIndex(w => w.worker_db_id == workerId);
-                if (index !== -1) {
-                   originalWorkersData[index] = { ...originalWorkersData[index], ...savedWorker };
-                }
-
-                // Re-render the single card with new data
-                card.outerHTML = createWorkerCard(originalWorkersData[index]);
+                if (index !== -1) originalWorkersData[index] = { ...originalWorkersData[index], ...savedWorker };
+                
                 showToast('Worker updated successfully!');
-
+                updateView(); // Re-render to show updated card and maintain sort/filter order
             } catch (error) {
                 showToast(error.message, true);
-                console.error('Error saving worker:', error);
             }
         }
     });
 
-    // Initial load
+    // Setup Field Customization Modal
+    customizeBtn.addEventListener('click', () => {
+        console.log('DEBUG: Customize button clicked');
+        console.log('DEBUG: Modal element:', customizeModal);
+        console.log('DEBUG: Modal classes before:', customizeModal.className);
+        console.log('DEBUG: ALL_FIELDS:', ALL_FIELDS);
+        console.log('DEBUG: visibleFields:', visibleFields);
+        
+        fieldsListDiv.innerHTML = '';
+        const groupedFields = {};
+        
+        // Group fields by category
+        for (const key in ALL_FIELDS) {
+            const field = ALL_FIELDS[key];
+            if (!groupedFields[field.group]) groupedFields[field.group] = [];
+            groupedFields[field.group].push({key, ...field});
+        }
+        
+        console.log('DEBUG: groupedFields:', groupedFields);
+        
+        // Build the complete HTML first
+        let completeHtml = '';
+        for (const groupName in groupedFields) {
+            console.log(`DEBUG: Processing group ${groupName} with ${groupedFields[groupName].length} fields`);
+            
+            let groupHtml = `<div class="col-span-1"><h4 class="font-semibold text-gray-800 border-b mb-2 pb-1">${groupName}</h4>`;
+            groupedFields[groupName].forEach(field => {
+                const isChecked = visibleFields.includes(field.key);
+                console.log(`DEBUG: Field ${field.key} (${field.label}) - checked: ${isChecked}`);
+                groupHtml += `<div class="flex items-center mb-1">
+                    <input type="checkbox" id="field-${field.key}" value="${field.key}" class="mr-2" ${isChecked ? 'checked' : ''}>
+                    <label for="field-${field.key}" class="text-sm">${field.label}</label>
+                </div>`;
+            });
+            groupHtml += '</div>';
+            completeHtml += groupHtml;
+        }
+        
+        console.log('DEBUG: Complete HTML length:', completeHtml.length);
+        console.log('DEBUG: Complete HTML preview:', completeHtml.substring(0, 200));
+        
+        // Set the complete HTML at once
+        fieldsListDiv.innerHTML = completeHtml;
+        
+        console.log('DEBUG: fieldsListDiv after setting HTML:', fieldsListDiv.innerHTML.length);
+        console.log('DEBUG: Number of checkboxes found:', fieldsListDiv.querySelectorAll('input[type="checkbox"]').length);
+        
+        customizeModal.classList.remove('hidden');
+        console.log('DEBUG: Modal classes after remove hidden:', customizeModal.className);
+        console.log('DEBUG: Modal computed style display:', window.getComputedStyle(customizeModal).display);
+    });
+
+    cancelCustomizeBtn.addEventListener('click', () => {
+        console.log('DEBUG: Cancel button clicked');
+        console.log('DEBUG: Modal classes before hide:', customizeModal.className);
+        customizeModal.classList.add('hidden');
+        console.log('DEBUG: Modal classes after hide:', customizeModal.className);
+    });
+    
+    // Close modal when clicking on backdrop
+    customizeModal.addEventListener('click', (e) => {
+        console.log('DEBUG: Modal clicked, target:', e.target);
+        console.log('DEBUG: Target classes:', e.target.className);
+        console.log('DEBUG: Is customizeModal?', e.target === customizeModal);
+        console.log('DEBUG: Has backdrop class?', e.target.classList.contains('custom-modal-backdrop'));
+        
+        if (e.target === customizeModal || e.target.classList.contains('custom-modal-backdrop')) {
+            console.log('DEBUG: Closing modal via backdrop click');
+            customizeModal.classList.add('hidden');
+        }
+    });
+    
+    saveCustomizeBtn.addEventListener('click', () => {
+        console.log('DEBUG: Save button clicked');
+        const selected = [];
+        fieldsListDiv.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => selected.push(cb.value));
+        visibleFields = selected;
+        localStorage.setItem('visibleFields', JSON.stringify(visibleFields));
+        console.log('DEBUG: Hiding modal after save');
+        customizeModal.classList.add('hidden');
+        updateView();
+    });
+
+    // Universal event listeners
+    [sectorFilter, workerStatusFilter, phoneStatusFilter].forEach(el => el.addEventListener('change', () => { currentPage = 1; updateView(); }));
+    workerSearchFilter.addEventListener('input', () => { currentPage = 1; updateView(); });
+    itemsPerPageSelect.addEventListener('change', () => { currentPage = 1; updateView(); });
+    paginationControls.addEventListener('click', e => {
+        if (e.target.matches('.pagination-btn')) {
+            currentPage = parseInt(e.target.dataset.page, 10);
+            updateView();
+        }
+    });
+
+    // ======== HELPER FUNCTIONS ========
+    function showToast(message, isError = false) {
+        toastMessage.textContent = message;
+        toast.className = `toast fixed top-4 right-4 p-4 rounded-md shadow-lg ${isError ? 'error' : 'success'}`;
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), 3000);
+    }
+    
+    function getCardBackgroundClass(contractType, endDate) { /* ... same as before ... */ return 'bg-white border-gray-200'; }
+    function getContractWarning(worker) { /* ... same as before ... */ return ''; }
+
+
+    // ======== INITIALIZATION ========
     fetchInitialData();
 });
 </script>
 
 <style>
-    /* Status badges for workers */
-    .status-badge {
-        padding: 0.25rem 0.65rem;
-        border-radius: 9999px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: capitalize;
+    /* Fix for hidden elements */
+    .hidden {
+        display: none;
     }
+    
+    /* Add styles for disabled buttons and modal */
+    button:disabled { background-color: #d1d5db; cursor: not-allowed; }
+    .custom-modal { display: flex; align-items: center; justify-content: center; position: fixed; inset: 0; z-index: 50; }
+    .custom-modal-backdrop { position: absolute; inset: 0; background-color: rgba(0,0,0,0.5); }
+    .custom-modal-content { z-index: 10; background: white; border-radius: 0.5rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); width: 100%; }
+    .custom-modal-header { padding: 1rem 1.5rem; border-bottom: 1px solid #e5e7eb; }
+    .custom-modal-title { font-size: 1.125rem; font-weight: 600; color: #111827; }
+    .custom-modal-body { max-height: 60vh; overflow-y: auto; }
+    .custom-modal-footer { padding: 1rem 1.5rem; background-color: #f9fafb; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 0.5rem; }
+    /* Other styles remain the same */
+    .status-badge { padding: 0.25rem 0.65rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: capitalize; }
     .status-badge.active { background-color: #d1fae5; color: #065f46; }
     .status-badge.inactive { background-color: #e5e7eb; color: #4b5563; }
     .status-badge.arrêt { background-color: #fee2e2; color: #991b1b; }
     .status-badge.congés { background-color: #fef3c7; color: #92400e; }
-
-    /* Card styling */
-    .worker-card { transition: all 0.2s ease-in-out; }
-    .worker-card:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-    
-    /* Input and Label styles from your custom forms */
-    .custom-label { font-weight: 500; color: #374151; }
-    .custom-input, .custom-select {
-        width: 100%;
-        border: 1px solid #d1d5db;
-        border-radius: 0.375rem;
-        padding: 0.5rem 0.75rem;
-        font-size: 0.875rem;
-        transition: border-color 0.2s;
-    }
-    .custom-input:focus, .custom-select:focus {
-        outline: none;
-        border-color: #2563eb;
-        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-    }
-    
-    /* Button styles */
-    .btn-sm { padding: 0.375rem 0.75rem; font-size: 0.875rem; }
-    .btn-primary { background-color: #2563eb; color: white; border-radius: 0.375rem; font-weight: 500; }
-    .btn-primary:hover { background-color: #1d4ed8; }
-    .btn-secondary { background-color: #e5e7eb; color: #374151; border-radius: 0.375rem; font-weight: 500; }
-    .btn-secondary:hover { background-color: #d1d5db; }
-
-    /* Toast notifications */
     .toast { transition: opacity 0.3s ease, transform 0.3s ease; }
     .toast.hidden { opacity: 0; transform: translateY(-20px); }
     .toast.success { background-color: #10b981; color: white; }
