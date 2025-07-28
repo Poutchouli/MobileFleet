@@ -54,7 +54,7 @@
         </div>
         
         <div class="custom-modal-footer">
-            <button type="button" onclick="window.location.href='{{ url_for('integration_dashboard') }}'" class="btn btn-secondary">Annuler</button>
+            <button type="button" onclick="window.location.href='{{ url_for('api.dashboard') }}'" class="btn btn-secondary">Annuler</button>
             <button type="submit" class="btn btn-primary">Soumettre la Demande</button>
         </div>
     </form>
@@ -109,7 +109,7 @@
                 if (!response.ok) throw new Error(result.error || 'Failed to submit request');
                 
                 alert('Demande de téléphone soumise avec succès !');
-                window.location.href = "{{ url_for('integration_dashboard') }}";
+                window.location.href = "{{ url_for('api.dashboard') }}";
             } catch (error) {
                 console.error('Error submitting request:', error);
                 alert(`Erreur: ${error.message}`);

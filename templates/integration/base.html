@@ -2,7 +2,7 @@
 
 {% block sidebar %}
 <nav>
-    <a href="{{ url_for('integration_dashboard') }}" class="block py-2.5 px-4 {% if request.endpoint == 'integration_dashboard' %}active{% endif %}">Mes Demandes</a>
-    <a href="{{ url_for('integration_new_request') }}" class="block py-2.5 px-4 {% if request.endpoint == 'integration_new_request' %}active{% endif %}">Nouvelle Demande de Téléphone</a>
+    <a href="{{ url_for('api.dashboard') }}" class="block py-2.5 px-4 {% if request.endpoint == 'api.dashboard' %}active{% endif %}">Mes Demandes</a>
+    <a href="{{ url_for('api.new_request') }}" class="block py-2.5 px-4 {% if request.endpoint == 'api.new_request' %}active{% endif %}">Nouvelle Demande de Téléphone</a>
 </nav>
 {% endblock %}

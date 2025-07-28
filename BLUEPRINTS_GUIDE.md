@@ -125,4 +125,112 @@ Le Dockerfile et docker-compose.yml restent inchangés, mais le point d'entrée 
 command: gunicorn --bind 0.0.0.0:5000 main_blueprints:app
 ```
 
+## Problèmes Courants et Dépannage
+
+### ⚠️ **Problèmes Fréquents lors de la Migration vers Blueprints**
+
+#### 1. **Blueprint Non Enregistré**
+**Symptôme**: Routes non trouvées (404 errors)
+**Solution**: Vérifier que tous les blueprints sont enregistrés dans `app/__init__.py`
+```python
+# app/__init__.py - OBLIGATOIRE
+def register_blueprints(app):
+    from app.blueprints.auth import auth_bp
+    from app.blueprints.admin import admin_bp
+    from app.blueprints.manager import manager_bp
+    from app.blueprints.support import support_bp
+    from app.blueprints.api import api_bp
+    
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(manager_bp, url_prefix='/manager')
+    app.register_blueprint(support_bp, url_prefix='/support')
+    app.register_blueprint(api_bp, url_prefix='/api')
+```
+
+#### 2. **Erreurs url_for() dans les Templates**
+**Symptôme**: `BuildError: Could not build url for endpoint 'dashboard'`
+**Cause**: Les endpoints des blueprints nécessitent le préfixe du blueprint
+**Solution**: Mettre à jour TOUS les appels `url_for()` dans les templates
+
+```html
+<!-- ANCIEN (ne fonctionne plus) -->
+<a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+<a href="{{ url_for('logout') }}">Logout</a>
+
+<!-- NOUVEAU (Blueprint format) -->
+<a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
+<a href="{{ url_for('auth.logout') }}">Logout</a>
+```
+
+#### 3. **Chemins des Templates Incorrects**
+**Symptôme**: Templates non trouvés
+**Solution**: Vérifier la configuration des dossiers de templates
+```python
+# app/blueprints/admin/__init__.py
+admin_bp = Blueprint('admin', __name__, template_folder='../../templates')
+```
+
+#### 4. **Imports Circulaires**
+**Symptôme**: `ImportError: cannot import name`
+**Solution**: Utiliser le pattern d'imports tardifs
+```python
+# Dans les routes, importer à l'intérieur des fonctions si nécessaire
+@admin_bp.route('/dashboard')
+def dashboard():
+    from app.utils.helpers import get_db  # Import tardif
+    return render_template('admin/dashboard.html')
+```
+
+### 🔍 **Checklist de Migration Blueprint**
+
+#### Étape 1: Vérifier l'Enregistrement des Blueprints
+- [ ] Tous les blueprints sont importés dans `app/__init__.py`
+- [ ] Tous les blueprints sont enregistrés avec `app.register_blueprint()`
+- [ ] Les préfixes URL sont correctement définis
+
+#### Étape 2: Mise à Jour des Templates
+- [ ] Rechercher tous les `url_for()` dans les templates
+- [ ] Remplacer `url_for('function_name')` par `url_for('blueprint.function_name')`
+- [ ] Tester chaque lien de navigation
+
+#### Étape 3: Vérifier les Chemins de Templates
+- [ ] Vérifier `template_folder` dans chaque Blueprint
+- [ ] S'assurer que les chemins relatifs sont corrects
+- [ ] Tester le rendu de chaque template
+
+#### Étape 4: Tests API
+- [ ] Vérifier que les endpoints API sont accessibles
+- [ ] Tester l'authentification sur les endpoints protégés
+- [ ] Valider les réponses JSON
+
+### 🛠️ **Commandes de Test Rapide**
+
+```bash
+# Tester les endpoints Blueprint
+python test_api_endpoints.py
+
+# Vérifier les routes enregistrées
+python -c "
+from app import create_app
+app = create_app()
+with app.app_context():
+    for rule in app.url_map.iter_rules():
+        print(f'{rule.rule} -> {rule.endpoint}')
+"
+
+# Tester une page spécifique
+curl http://localhost:5000/admin/dashboard
+curl http://localhost:5000/api/sectors
+```
+
+### 🚨 **Erreurs Communes et Solutions**
+
+| Erreur | Cause | Solution |
+|--------|-------|----------|
+| `BuildError: Could not build url` | Endpoint blueprint incorrect | Ajouter le préfixe blueprint |
+| `404 Not Found` | Blueprint non enregistré | Vérifier `register_blueprints()` |
+| `Template not found` | Chemin template incorrect | Corriger `template_folder` |
+| `No module named 'app.blueprints'` | Import circulaire | Utiliser imports tardifs |
+
 Cette architecture Blueprint prépare l'application pour une croissance future tout en gardant le code organisé et maintenable.

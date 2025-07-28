@@ -211,7 +211,7 @@
                 if (!response.ok) throw new Error(result.error);
                 
                 alert('Retour enregistré !');
-                window.location.href = "{{ url_for('manager_dashboard') }}";
+                                    window.location.href = "{{ url_for('manager.dashboard') }}";
             } catch (error) {
                 alert(`Erreur : ${error.message}`);
             }

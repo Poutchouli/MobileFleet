@@ -3,6 +3,6 @@
 
 from flask import Blueprint
 
-support_bp = Blueprint('support', __name__, template_folder='templates')
+support_bp = Blueprint('support', __name__)
 
 from . import routes
