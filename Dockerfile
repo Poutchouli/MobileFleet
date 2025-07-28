@@ -41,6 +41,6 @@ EXPOSE 5000
 # --- Command to Run the Application ---
 # Define the command to run when the container starts.
 # We use gunicorn as a production-ready WSGI server.
-# The 'app:app' refers to the Flask application instance named 'app'
-# inside the 'app.py' file.
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
+# The 'main:app' refers to the Flask application instance named 'app'
+# inside the 'main.py' file.
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "main:app"]
