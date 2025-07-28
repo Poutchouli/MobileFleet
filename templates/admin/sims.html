@@ -207,7 +207,7 @@
                 // Delete (Deactivate) button clicked
                 if (target.classList.contains('delete-btn')) {
                     const iccid = target.dataset.iccid;
-                    if (confirm(`Are you sure you want to deactivate SIM ${iccid}? This action cannot be undone.`)) {
+                    if (confirm(`Êtes-vous sûr de vouloir désactiver la SIM ${iccid} ? Cette action ne peut pas être annulée.`)) {
                         try {
                             const response = await fetch(`/api/sims/${simId}`, { method: 'DELETE' });
                             const result = await response.json();

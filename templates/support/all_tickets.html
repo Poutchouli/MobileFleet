@@ -1,19 +1,19 @@
 {% extends "base.html" %}
-{% block title %}All Tickets - Support{% endblock %}
-{% block page_title %}Complete Ticket History{% endblock %}
+{% block title %}Tous les Tickets - Support{% endblock %}
+{% block page_title %}Historique Complet des Tickets{% endblock %}
 
 {% block content %}
 <div class="custom-card">
     <div class="card-header">
-        <h2 class="card-title">All Tickets (Active & Resolved)</h2>
-        <input type="text" id="search-input" class="custom-input w-full md:w-1/3" placeholder="Search tickets...">
+        <h2 class="card-title">Tous les Tickets (Actifs & Résolus)</h2>
+        <input type="text" id="search-input" class="custom-input w-full md:w-1/3" placeholder="Rechercher des tickets...">
     </div>
     <div class="overflow-x-auto">
         <table class="custom-table">
             <thead>
                 <tr>
-                    <th>ID</th><th>Status</th><th>Priority</th><th>Title</th>
-                    <th>Assigned To</th><th>Date Created</th><th class="text-right">Actions</th>
+                    <th>ID</th><th>Statut</th><th>Priorité</th><th>Titre</th>
+                    <th>Assigné À</th><th>Date de Création</th><th class="text-right">Actions</th>
                 </tr>
             </thead>
             <tbody id="tickets-table-body"></tbody>

@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             phones.forEach(phone => {
                 const option = document.createElement('option');
-                option.value = phone.id;
+                option.value = phone.phone_id;
                 option.textContent = `${phone.asset_tag} - ${phone.manufacturer} ${phone.model} (${phone.worker_name || 'Non assigné'})`;
                 phoneSelect.appendChild(option);
             });

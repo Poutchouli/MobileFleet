@@ -74,27 +74,27 @@
 
             // Basic validation
             if (!requestData.employee_name.trim()) {
-                alert('Please enter the employee name.');
+                alert('Veuillez saisir le nom de l\'employé.');
                 return;
             }
             
             if (!requestData.department.trim()) {
-                alert('Please enter the department.');
+                alert('Veuillez saisir le département.');
                 return;
             }
             
             if (!requestData.position.trim()) {
-                alert('Please enter the position.');
+                alert('Veuillez saisir le poste.');
                 return;
             }
             
             if (!requestData.request_reason.trim()) {
-                alert('Please provide a reason for the request.');
+                alert('Veuillez fournir une raison pour la demande.');
                 return;
             }
             
             if (!requestData.urgency_level) {
-                alert('Please select an urgency level.');
+                alert('Veuillez sélectionner un niveau d\'urgence.');
                 return;
             }
 
@@ -108,11 +108,11 @@
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.error || 'Failed to submit request');
                 
-                alert('Phone request submitted successfully!');
+                alert('Demande de téléphone soumise avec succès !');
                 window.location.href = "{{ url_for('integration_dashboard') }}";
             } catch (error) {
                 console.error('Error submitting request:', error);
-                alert(`Error: ${error.message}`);
+                alert(`Erreur: ${error.message}`);
             }
         });
     });

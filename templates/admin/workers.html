@@ -198,7 +198,7 @@
 
                 if (target.classList.contains('delete-btn')) {
                     const workerName = target.dataset.name;
-                    if (confirm(`Are you sure you want to set ${workerName} as inactive?`)) {
+                    if (confirm(`Êtes-vous sûr de vouloir définir ${workerName} comme inactif ?`)) {
                         try {
                             const response = await fetch(`/api/workers/${workerDbId}`, { method: 'DELETE' });
                             if (!response.ok) throw new Error('Failed to update worker status.');

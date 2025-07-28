@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Reports - Admin{% endblock %}
+{% block title %}Rapports - Admin{% endblock %}
 
-{% block page_title %}Administrative Reports{% endblock %}
+{% block page_title %}Rapports Administratifs{% endblock %}
 
 {% block content %}
 <!-- Reports Navigation -->
@@ -10,16 +10,16 @@
     <div class="border-b border-gray-200">
         <nav class="-mb-px flex">
             <button id="assignments-tab" class="tab-button active" data-tab="assignments">
-                Assignment Overview
+                Vue d'Ensemble des Affectations
             </button>
             <button id="missing-data-tab" class="tab-button" data-tab="missing-data">
-                Missing Data
+                Données Manquantes
             </button>
             <button id="inventory-tab" class="tab-button" data-tab="inventory">
-                Inventory Summary
+                Résumé de l'Inventaire
             </button>
             <button id="asset-lifecycle-tab" class="tab-button" data-tab="asset-lifecycle">
-                Asset Lifecycle
+                Cycle de Vie des Actifs
             </button>
         </nav>
     </div>
@@ -29,12 +29,12 @@
 <div id="assignments-panel" class="tab-panel active">
     <div class="custom-card">
         <div class="flex justify-between items-center mb-6">
-            <h2 class="text-xl font-semibold">Asset Assignment Overview</h2>
+            <h2 class="text-xl font-semibold">Vue d'Ensemble des Affectations d'Actifs</h2>
             <button id="refresh-report-btn" class="btn btn-primary">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                 </svg>
-                Refresh Report
+                Actualiser le Rapport
             </button>
         </div>
         
@@ -46,7 +46,7 @@
                         <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                     </div>
                     <div class="ml-3">
-                        <p class="text-sm text-blue-600 font-medium">Total Active Assignments</p>
+                        <p class="text-sm text-blue-600 font-medium">Total Affectations Actives</p>
                         <p class="text-2xl font-bold text-blue-700" id="total-assignments">-</p>
                     </div>
                 </div>
@@ -57,7 +57,7 @@
                         <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     </div>
                     <div class="ml-3">
-                        <p class="text-sm text-green-600 font-medium">Secteurs Covered</p>
+                        <p class="text-sm text-green-600 font-medium">Secteurs Couverts</p>
                         <p class="text-2xl font-bold text-green-700" id="secteurs-count">-</p>
                     </div>
                 </div>
@@ -68,7 +68,7 @@
                         <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                     </div>
                     <div class="ml-3">
-                        <p class="text-sm text-purple-600 font-medium">Devices Deployed</p>
+                        <p class="text-sm text-purple-600 font-medium">Appareils Déployés</p>
                         <p class="text-2xl font-bold text-purple-700" id="devices-count">-</p>
                     </div>
                 </div>
@@ -78,13 +78,13 @@
         <!-- Search and Filter Controls -->
         <div class="flex flex-col md:flex-row gap-4 mb-4">
             <div class="flex-1">
-                <label for="search-input" class="custom-label">Search Worker or Asset</label>
-                <input type="text" id="search-input" placeholder="Search by worker name, asset tag, or phone number..." class="custom-input">
+                <label for="search-input" class="custom-label">Rechercher un Employé ou un Actif</label>
+                <input type="text" id="search-input" placeholder="Rechercher par nom, matricule, ou numéro de téléphone..." class="custom-input">
             </div>
             <div class="w-full md:w-48">
-                <label for="secteur-filter" class="custom-label">Filter by Secteur</label>
+                <label for="secteur-filter" class="custom-label">Filtrer par Secteur</label>
                 <select id="secteur-filter" class="custom-input">
-                    <option value="">All Secteurs</option>
+                    <option value="">Tous les Secteurs</option>
                 </select>
             </div>
         </div>
@@ -92,7 +92,7 @@
         <!-- Loading State -->
         <div id="loading-state" class="text-center py-8">
             <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
-            <p class="mt-2 text-gray-600">Loading report data...</p>
+            <p class="mt-2 text-gray-600">Chargement des données du rapport...</p>
         </div>
         
         <!-- Report Table -->
@@ -101,11 +101,11 @@
                 <table class="custom-table">
                     <thead>
                         <tr>
-                            <th class="text-left cursor-pointer hover:bg-gray-50" data-sort="worker_name">Worker Name</th>
+                            <th class="text-left cursor-pointer hover:bg-gray-50" data-sort="worker_name">Nom de l'employé</th>
                             <th class="text-left cursor-pointer hover:bg-gray-50" data-sort="secteur_name">Secteur</th>
-                            <th class="text-left cursor-pointer hover:bg-gray-50" data-sort="asset_tag">Asset Tag</th>
-                            <th class="text-left cursor-pointer hover:bg-gray-50" data-sort="phone_number">Phone Number</th>
-                            <th class="text-left cursor-pointer hover:bg-gray-50" data-sort="assignment_date">Assignment Date</th>
+                            <th class="text-left cursor-pointer hover:bg-gray-50" data-sort="asset_tag">Matricule Actif</th>
+                            <th class="text-left cursor-pointer hover:bg-gray-50" data-sort="phone_number">Numéro de Téléphone</th>
+                            <th class="text-left cursor-pointer hover:bg-gray-50" data-sort="assignment_date">Date d'Affectation</th>
                             <th class="text-right">Actions</th>
                         </tr>
                     </thead>
@@ -115,8 +115,8 @@
                 </table>
             </div>
             <div id="no-data-message" class="text-center py-8 hidden">
-                <h3 class="text-lg font-medium text-gray-600 mb-2">No Assignments Found</h3>
-                <p class="text-gray-500">There are no active assignments matching your search criteria.</p>
+                <h3 class="text-lg font-medium text-gray-600 mb-2">Aucune Affectation Trouvée</h3>
+                <p class="text-gray-500">Aucune affectation active ne correspond à vos critères de recherche.</p>
             </div>
         </div>
     </div>
@@ -127,7 +127,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="custom-card">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold">Missing Data Report</h3>
+                <h3 class="text-lg font-semibold">Rapport des Données Manquantes</h3>
                 <button id="refresh-missing-btn" class="text-blue-600 hover:text-blue-800">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
@@ -137,39 +137,39 @@
             
             <div id="missing-data-content" class="space-y-4">
                 <div class="text-center text-gray-500">
-                    <div class="loader">Loading...</div>
+                    <div class="loader">Chargement...</div>
                 </div>
             </div>
         </div>
         
         <div class="custom-card">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold">Data Integrity Actions</h3>
+                <h3 class="text-lg font-semibold">Actions sur l'Intégrité des Données</h3>
             </div>
             
             <div class="space-y-4">
                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 class="font-medium text-blue-800 mb-2">Add Phone Numbers</h4>
-                    <p class="text-sm text-blue-600 mb-3">Add phone numbers to SIM cards or create standalone entries.</p>
-                    <a href="/admin/phone-numbers" class="btn btn-primary btn-sm">Manage Phone Numbers</a>
+                    <h4 class="font-medium text-blue-800 mb-2">Ajouter des Numéros de Téléphone</h4>
+                    <p class="text-sm text-blue-600 mb-3">Ajoutez des numéros aux cartes SIM ou créez des entrées autonomes.</p>
+                    <a href="/admin/phone-numbers" class="btn btn-primary btn-sm">Gérer les Numéros</a>
                 </div>
                 
                 <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <h4 class="font-medium text-green-800 mb-2">Link SIM Cards</h4>
-                    <p class="text-sm text-green-600 mb-3">Associate phone numbers with SIM cards for complete records.</p>
-                    <a href="/admin/sims" class="btn btn-primary btn-sm">Manage SIM Cards</a>
+                    <h4 class="font-medium text-green-800 mb-2">Lier les Cartes SIM</h4>
+                    <p class="text-sm text-green-600 mb-3">Associez des numéros de téléphone aux cartes SIM pour des dossiers complets.</p>
+                    <a href="/admin/sims" class="btn btn-primary btn-sm">Gérer les SIMs</a>
                 </div>
                 
                 <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                    <h4 class="font-medium text-purple-800 mb-2">Assign to Workers</h4>
-                    <p class="text-sm text-purple-600 mb-3">Assign unassigned resources to workers.</p>
-                    <a href="/admin/workers" class="btn btn-primary btn-sm">Manage Workers</a>
+                    <h4 class="font-medium text-purple-800 mb-2">Affecter aux Employés</h4>
+                    <p class="text-sm text-purple-600 mb-3">Affectez les ressources non assignées à des employés.</p>
+                    <a href="/admin/workers" class="btn btn-primary btn-sm">Gérer les Employés</a>
                 </div>
                 
                 <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                    <h4 class="font-medium text-orange-800 mb-2">Data Import</h4>
-                    <p class="text-sm text-orange-600 mb-3">Import bulk data to fix missing information.</p>
-                    <a href="/admin/import" class="btn btn-primary btn-sm">Import Data</a>
+                    <h4 class="font-medium text-orange-800 mb-2">Importer des Données</h4>
+                    <p class="text-sm text-orange-600 mb-3">Importez des données en masse pour corriger les informations manquantes.</p>
+                    <a href="/admin/import" class="btn btn-primary btn-sm">Importer</a>
                 </div>
             </div>
         </div>
@@ -180,7 +180,7 @@
 <div id="inventory-panel" class="tab-panel">
     <div class="custom-card">
         <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold">Inventory Summary</h3>
+            <h3 class="text-lg font-semibold">Résumé de l'Inventaire</h3>
             <button id="refresh-inventory-btn" class="text-blue-600 hover:text-blue-800">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
@@ -190,7 +190,7 @@
         
         <div id="inventory-summary-content" class="space-y-4">
             <div class="text-center text-gray-500">
-                <div class="loader">Loading...</div>
+                <div class="loader">Chargement...</div>
             </div>
         </div>
     </div>
@@ -200,8 +200,8 @@
 <div id="asset-lifecycle-panel" class="tab-panel">
     <div class="custom-card">
         <div class="flex items-center justify-between mb-6">
-            <h3 class="text-lg font-semibold">Asset Lifecycle Tracking</h3>
-            <div class="text-sm text-gray-500">Complete audit trail for any device</div>
+            <h3 class="text-lg font-semibold">Suivi du Cycle de Vie des Actifs</h3>
+            <div class="text-sm text-gray-500">Piste d'audit complète pour n'importe quel appareil</div>
         </div>
         
         <!-- Search Interface -->
@@ -209,22 +209,22 @@
             <div class="flex gap-4 items-end">
                 <div class="flex-1">
                     <label for="asset-search-input" class="block text-sm font-medium text-gray-700 mb-2">
-                        Search by Asset Tag, Serial Number, or IMEI
+                        Rechercher par Matricule, Numéro de Série ou IMEI
                     </label>
                     <input type="text" 
                            id="asset-search-input" 
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                           placeholder="e.g., PHN-001, SN-AAA, 111111111111111">
+                           placeholder="ex: PHN-001, SN-AAA, 111111111111111">
                 </div>
                 <button id="search-asset-btn" class="btn btn-primary">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                     </svg>
-                    Search Asset
+                    Rechercher
                 </button>
             </div>
             <p class="text-xs text-gray-500 mt-2">
-                Enter any identifier to view complete device history including assignments, tickets, and maintenance events.
+                Saisissez n'importe quel identifiant pour voir l'historique complet de l'appareil (affectations, tickets, maintenance).
             </p>
         </div>
         
@@ -234,27 +234,27 @@
             <div id="asset-info-card" class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
                 <div class="flex justify-between items-start mb-4">
                     <div>
-                        <h4 class="text-lg font-semibold" id="asset-title">Asset Information</h4>
-                        <p class="text-sm text-gray-500" id="asset-subtitle">Device details and current status</p>
+                        <h4 class="text-lg font-semibold" id="asset-title">Informations sur l'Actif</h4>
+                        <p class="text-sm text-gray-500" id="asset-subtitle">Détails de l'appareil et statut actuel</p>
                     </div>
-                    <span id="asset-status-badge" class="px-3 py-1 rounded-full text-sm font-medium">Status</span>
+                    <span id="asset-status-badge" class="px-3 py-1 rounded-full text-sm font-medium">Statut</span>
                 </div>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
-                        <p class="text-sm text-gray-500">Asset Tag</p>
+                        <p class="text-sm text-gray-500">Matricule Actif</p>
                         <p class="font-medium" id="asset-tag">-</p>
                     </div>
                     <div>
-                        <p class="text-sm text-gray-500">Serial Number</p>
+                        <p class="text-sm text-gray-500">Numéro de Série</p>
                         <p class="font-medium" id="asset-serial">-</p>
                     </div>
                     <div>
-                        <p class="text-sm text-gray-500">Device</p>
+                        <p class="text-sm text-gray-500">Appareil</p>
                         <p class="font-medium" id="asset-device">-</p>
                     </div>
                     <div>
-                        <p class="text-sm text-gray-500">Current Assignment</p>
+                        <p class="text-sm text-gray-500">Affectation Actuelle</p>
                         <p class="font-medium" id="asset-assignment">-</p>
                     </div>
                 </div>
@@ -270,7 +270,7 @@
                             </svg>
                         </div>
                         <div class="ml-3">
-                            <p class="text-sm text-blue-600 font-medium">Total Assignments</p>
+                            <p class="text-sm text-blue-600 font-medium">Total Affectations</p>
                             <p class="text-2xl font-bold text-blue-700" id="total-assignments-count">-</p>
                         </div>
                     </div>
@@ -284,7 +284,7 @@
                             </svg>
                         </div>
                         <div class="ml-3">
-                            <p class="text-sm text-yellow-600 font-medium">Support Tickets</p>
+                            <p class="text-sm text-yellow-600 font-medium">Tickets de Support</p>
                             <p class="text-2xl font-bold text-yellow-700" id="total-tickets-count">-</p>
                         </div>
                     </div>
@@ -298,7 +298,7 @@
                             </svg>
                         </div>
                         <div class="ml-3">
-                            <p class="text-sm text-green-600 font-medium">Timeline Events</p>
+                            <p class="text-sm text-green-600 font-medium">Événements (Chronologie)</p>
                             <p class="text-2xl font-bold text-green-700" id="timeline-events-count">-</p>
                         </div>
                     </div>
@@ -308,8 +308,8 @@
             <!-- Timeline -->
             <div class="bg-white border border-gray-200 rounded-lg">
                 <div class="px-6 py-4 border-b border-gray-200">
-                    <h4 class="text-lg font-semibold">Complete Device Timeline</h4>
-                    <p class="text-sm text-gray-500">Chronological history of all events</p>
+                    <h4 class="text-lg font-semibold">Chronologie Complète de l'Appareil</h4>
+                    <p class="text-sm text-gray-500">Historique chronologique de tous les événements</p>
                 </div>
                 
                 <div id="timeline-container" class="p-6">
@@ -323,14 +323,14 @@
             <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
             </svg>
-            <h3 class="mt-2 text-sm font-medium text-gray-900">Search for an Asset</h3>
-            <p class="mt-1 text-sm text-gray-500">Enter an asset tag, serial number, or IMEI to view its complete lifecycle.</p>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">Rechercher un Actif</h3>
+            <p class="mt-1 text-sm text-gray-500">Saisissez un matricule, numéro de série ou IMEI pour voir son cycle de vie complet.</p>
         </div>
         
         <!-- Loading State -->
         <div id="asset-lifecycle-loading" class="hidden text-center py-12">
             <div class="loader mx-auto mb-4"></div>
-            <p class="text-sm text-gray-500">Searching for asset and building timeline...</p>
+            <p class="text-sm text-gray-500">Recherche de l'actif et construction de la chronologie...</p>
         </div>
         
         <!-- Error State -->
@@ -338,8 +338,8 @@
             <svg class="mx-auto h-12 w-12 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 6.5c-.77.833-.192 2.5 1.347 2.5z"></path>
             </svg>
-            <h3 class="mt-2 text-sm font-medium text-gray-900">Asset Not Found</h3>
-            <p class="mt-1 text-sm text-gray-500" id="error-message">Please check your search term and try again.</p>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">Actif Non Trouvé</h3>
+            <p class="mt-1 text-sm text-gray-500" id="error-message">Veuillez vérifier votre terme de recherche et réessayer.</p>
         </div>
     </div>
 </div>
@@ -349,7 +349,7 @@
     <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
         <div class="mt-3">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-medium text-gray-900" id="detail-modal-title">Details</h3>
+                <h3 class="text-lg font-medium text-gray-900" id="detail-modal-title">Détails</h3>
                 <button id="close-detail-modal" class="text-gray-400 hover:text-gray-600">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -532,16 +532,17 @@
         const assignmentId = button.dataset.assignmentId;
         const workerName = button.dataset.workerName;
 
-        if (confirm(`Are you sure you want to return the asset assigned to ${workerName}? This will mark the phone and SIM as 'In Stock'.`)) {
+        // Message de confirmation traduit
+        if (confirm(`Êtes-vous sûr de vouloir restituer l'actif affecté à ${workerName} ? Le téléphone et la SIM seront marqués comme 'En Stock'.`)) {
             try {
                 const response = await fetch(`/api/admin/assignments/${assignmentId}`, { method: 'DELETE' });
                 if (!response.ok) {
                     const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to return asset.');
+                    throw new Error(errorData.error || "Échec de la restitution de l'actif.");
                 }
                 const result = await response.json();
                 showToast(result.message);
-                loadReportData(); // Refresh the entire report
+                loadReportData(); // Actualiser le rapport
             } catch (error) {
                 showErrorMessage(error.message);
             }
@@ -603,12 +604,12 @@
                                 </svg>
                             </div>
                             <div class="ml-3">
-                                <h4 class="text-sm font-medium text-yellow-800">SIM Cards without Phone Numbers</h4>
-                                <p class="text-sm text-yellow-700">${data.sim_cards_without_phone_numbers.length} SIM cards found</p>
+                                <h4 class="text-sm font-medium text-yellow-800">Cartes SIM sans numéro de téléphone</h4>
+                                <p class="text-sm text-yellow-700">${data.sim_cards_without_phone_numbers.length} cartes SIM trouvées</p>
                             </div>
                         </div>
-                        <button onclick="showDetails('SIM Cards without Phone Numbers', ${JSON.stringify(data.sim_cards_without_phone_numbers).replace(/"/g, '&quot;')}, 'sim')" class="text-yellow-600 hover:text-yellow-800">
-                            View Details
+                        <button onclick="showDetails('Cartes SIM sans numéro de téléphone', ${JSON.stringify(data.sim_cards_without_phone_numbers).replace(/"/g, '&quot;')}, 'sim')" class="text-yellow-600 hover:text-yellow-800">
+                            Voir Détails
                         </button>
                     </div>
                 </div>
@@ -627,12 +628,12 @@
                                 </svg>
                             </div>
                             <div class="ml-3">
-                                <h4 class="text-sm font-medium text-orange-800">Phone Numbers without SIM Cards</h4>
-                                <p class="text-sm text-orange-700">${data.phone_numbers_without_sim_cards.length} phone numbers found</p>
+                                <h4 class="text-sm font-medium text-orange-800">Numéros de téléphone sans carte SIM</h4>
+                                <p class="text-sm text-orange-700">${data.phone_numbers_without_sim_cards.length} numéros de téléphone trouvés</p>
                             </div>
                         </div>
-                        <button onclick="showDetails('Phone Numbers without SIM Cards', ${JSON.stringify(data.phone_numbers_without_sim_cards).replace(/"/g, '&quot;')}, 'phone')" class="text-orange-600 hover:text-orange-800">
-                            View Details
+                        <button onclick="showDetails('Numéros de téléphone sans carte SIM', ${JSON.stringify(data.phone_numbers_without_sim_cards).replace(/"/g, '&quot;')}, 'phone')" class="text-orange-600 hover:text-orange-800">
+                            Voir Détails
                         </button>
                     </div>
                 </div>
@@ -651,12 +652,12 @@
                                 </svg>
                             </div>
                             <div class="ml-3">
-                                <h4 class="text-sm font-medium text-blue-800">Unassigned SIM Cards</h4>
-                                <p class="text-sm text-blue-700">${data.sim_cards_without_assignments.length} SIM cards available</p>
+                                <h4 class="text-sm font-medium text-blue-800">Cartes SIM non affectées</h4>
+                                <p class="text-sm text-blue-700">${data.sim_cards_without_assignments.length} cartes SIM disponibles</p>
                             </div>
                         </div>
-                        <button onclick="showDetails('Unassigned SIM Cards', ${JSON.stringify(data.sim_cards_without_assignments).replace(/"/g, '&quot;')}, 'sim')" class="text-blue-600 hover:text-blue-800">
-                            View Details
+                        <button onclick="showDetails('Cartes SIM non affectées', ${JSON.stringify(data.sim_cards_without_assignments).replace(/"/g, '&quot;')}, 'sim')" class="text-blue-600 hover:text-blue-800">
+                            Voir Détails
                         </button>
                     </div>
                 </div>
@@ -675,12 +676,12 @@
                                 </svg>
                             </div>
                             <div class="ml-3">
-                                <h4 class="text-sm font-medium text-green-800">Unassigned Phones</h4>
-                                <p class="text-sm text-green-700">${data.phones_without_assignments.length} phones available</p>
+                                <h4 class="text-sm font-medium text-green-800">Téléphones non affectés</h4>
+                                <p class="text-sm text-green-700">${data.phones_without_assignments.length} téléphones disponibles</p>
                             </div>
                         </div>
-                        <button onclick="showDetails('Unassigned Phones', ${JSON.stringify(data.phones_without_assignments).replace(/"/g, '&quot;')}, 'phone')" class="text-green-600 hover:text-green-800">
-                            View Details
+                        <button onclick="showDetails('Téléphones non affectés', ${JSON.stringify(data.phones_without_assignments).replace(/"/g, '&quot;')}, 'phone')" class="text-green-600 hover:text-green-800">
+                            Voir Détails
                         </button>
                     </div>
                 </div>
@@ -699,12 +700,12 @@
                                 </svg>
                             </div>
                             <div class="ml-3">
-                                <h4 class="text-sm font-medium text-purple-800">Workers without Assignments</h4>
-                                <p class="text-sm text-purple-700">${data.workers_without_assignments.length} workers available</p>
+                                <h4 class="text-sm font-medium text-purple-800">Employés sans affectation</h4>
+                                <p class="text-sm text-purple-700">${data.workers_without_assignments.length} employés disponibles</p>
                             </div>
                         </div>
-                        <button onclick="showDetails('Workers without Assignments', ${JSON.stringify(data.workers_without_assignments).replace(/"/g, '&quot;')}, 'worker')" class="text-purple-600 hover:text-purple-800">
-                            View Details
+                        <button onclick="showDetails('Employés sans affectation', ${JSON.stringify(data.workers_without_assignments).replace(/"/g, '&quot;')}, 'worker')" class="text-purple-600 hover:text-purple-800">
+                            Voir Détails
                         </button>
                     </div>
                 </div>
@@ -723,12 +724,12 @@
                                 </svg>
                             </div>
                             <div class="ml-3">
-                                <h4 class="text-sm font-medium text-red-800">Incomplete Phone Records</h4>
-                                <p class="text-sm text-red-700">${data.incomplete_phone_records.length} phones missing data</p>
+                                <h4 class="text-sm font-medium text-red-800">Dossiers de téléphone incomplets</h4>
+                                <p class="text-sm text-red-700">${data.incomplete_phone_records.length} téléphones avec des données manquantes</p>
                             </div>
                         </div>
-                        <button onclick="showDetails('Incomplete Phone Records', ${JSON.stringify(data.incomplete_phone_records).replace(/"/g, '&quot;')}, 'phone')" class="text-red-600 hover:text-red-800">
-                            View Details
+                        <button onclick="showDetails('Dossiers de téléphone incomplets', ${JSON.stringify(data.incomplete_phone_records).replace(/"/g, '&quot;')}, 'phone')" class="text-red-600 hover:text-red-800">
+                            Voir Détails
                         </button>
                     </div>
                 </div>
@@ -747,12 +748,12 @@
                                 </svg>
                             </div>
                             <div class="ml-3">
-                                <h4 class="text-sm font-medium text-red-800">Incomplete SIM Records</h4>
-                                <p class="text-sm text-red-700">${data.incomplete_sim_records.length} SIMs missing data</p>
+                                <h4 class="text-sm font-medium text-red-800">Dossiers de SIM incomplets</h4>
+                                <p class="text-sm text-red-700">${data.incomplete_sim_records.length} SIMs avec des données manquantes</p>
                             </div>
                         </div>
-                        <button onclick="showDetails('Incomplete SIM Records', ${JSON.stringify(data.incomplete_sim_records).replace(/"/g, '&quot;')}, 'sim')" class="text-red-600 hover:text-red-800">
-                            View Details
+                        <button onclick="showDetails('Dossiers de SIM incomplets', ${JSON.stringify(data.incomplete_sim_records).replace(/"/g, '&quot;')}, 'sim')" class="text-red-600 hover:text-red-800">
+                            Voir Détails
                         </button>
                     </div>
                 </div>
@@ -771,12 +772,12 @@
                                 </svg>
                             </div>
                             <div class="ml-3">
-                                <h4 class="text-sm font-medium text-red-800">Incomplete Worker Records</h4>
-                                <p class="text-sm text-red-700">${data.incomplete_worker_records.length} workers missing data</p>
+                                <h4 class="text-sm font-medium text-red-800">Dossiers d'employé incomplets</h4>
+                                <p class="text-sm text-red-700">${data.incomplete_worker_records.length} employés avec des données manquantes</p>
                             </div>
                         </div>
-                        <button onclick="showDetails('Incomplete Worker Records', ${JSON.stringify(data.incomplete_worker_records).replace(/"/g, '&quot;')}, 'worker')" class="text-red-600 hover:text-red-800">
-                            View Details
+                        <button onclick="showDetails('Dossiers d\'employé incomplets', ${JSON.stringify(data.incomplete_worker_records).replace(/"/g, '&quot;')}, 'worker')" class="text-red-600 hover:text-red-800">
+                            Voir Détails
                         </button>
                     </div>
                 </div>
@@ -784,7 +785,7 @@
         }
 
         if (html === '') {
-            html = '<div class="text-center text-green-500 py-8"><svg class="w-16 h-16 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg><h3 class="text-lg font-medium">No missing data found</h3><p class="text-sm text-gray-600 mt-2">All records appear to be complete and properly linked</p></div>';
+            html = '<div class="text-center text-green-500 py-8"><svg class="w-16 h-16 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg><h3 class="text-lg font-medium">Aucune donnée manquante trouvée</h3><p class="text-sm text-gray-600 mt-2">Tous les enregistrements semblent complets et correctement liés</p></div>';
         }
 
         content.innerHTML = html;
@@ -1042,7 +1043,8 @@
 
     function formatDate(dateString) {
         if (!dateString) return 'N/A';
-        return new Date(dateString).toLocaleDateString('en-CA'); // YYYY-MM-DD format
+        // Format de date localisé en français (JJ/MM/AAAA)
+        return new Date(dateString).toLocaleDateString('fr-FR');
     }
 
     function showLoading(isLoading) {
@@ -1057,7 +1059,8 @@
     function searchAssetLifecycle() {
         const searchTerm = document.getElementById('asset-search-input').value.trim();
         if (!searchTerm) {
-            showErrorMessage('Please enter an asset tag, serial number, or IMEI to search.');
+            // Message d'erreur traduit
+            showErrorMessage("Veuillez saisir un matricule, un numéro de série ou un IMEI pour lancer la recherche.");
             return;
         }
 
@@ -1142,19 +1145,16 @@
         const container = document.getElementById('timeline-container');
         
         if (!timeline || timeline.length === 0) {
-            container.innerHTML = '<p class="text-gray-500 text-center py-4">No timeline events found.</p>';
+            container.innerHTML = '<p class="text-gray-500 text-center py-4">Aucun événement trouvé pour cette chronologie.</p>';
             return;
         }
 
         const timelineHTML = timeline.map((event, index) => {
             const isLast = index === timeline.length - 1;
             const eventDate = new Date(event.event_date);
-            const formattedDate = eventDate.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
+            // Format de date et heure localisé
+            const formattedDate = eventDate.toLocaleDateString('fr-FR', {
+                year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
             });
 
             return `
@@ -1182,7 +1182,7 @@
                             ${event.details && Object.keys(event.details).length > 0 ? `
                                 <div class="mt-2">
                                     <button class="text-xs text-blue-600 hover:text-blue-800" onclick="toggleEventDetails(${index})">
-                                        <span id="details-toggle-${index}">Show Details</span>
+                                        <span id="details-toggle-${index}">Afficher les détails</span>
                                     </button>
                                     <div id="details-content-${index}" class="hidden mt-2 p-3 bg-gray-50 rounded text-xs space-y-1">
                                         ${formatEventDetails(event.details)}
@@ -1234,10 +1234,10 @@
         
         if (content.classList.contains('hidden')) {
             content.classList.remove('hidden');
-            toggle.textContent = 'Hide Details';
+            toggle.textContent = 'Masquer les détails';
         } else {
             content.classList.add('hidden');
-            toggle.textContent = 'Show Details';
+            toggle.textContent = 'Afficher les détails';
         }
     }
 </script>

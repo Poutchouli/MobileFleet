@@ -28,13 +28,12 @@
                 </select>
             </div>
             <div class="custom-form-group">
-                <label for="phone-status-filter" class="custom-label">Statut du téléphone</label>
-                <select id="phone-status-filter" class="custom-select">
-                    <option value="">Tous les statuts téléphone</option>
-                    <option value="In Use">En service</option>
-                    <option value="In Stock">En stock</option>
-                    <option value="Under Repair">En réparation</option>
-                    <option value="Decommissioned">Hors service</option>
+                <label for="contract-type-filter" class="custom-label">Type de contrat</label>
+                <select id="contract-type-filter" class="custom-select">
+                    <option value="">Tous les contrats</option>
+                    <option value="CDI">CDI</option>
+                    <option value="CDD">CDD</option>
+                    <option value="INTERIM">Intérim</option>
                 </select>
             </div>
             <div class="custom-form-group">
@@ -46,7 +45,7 @@
              <div class="custom-form-group">
                 <label for="items-per-page-select" class="custom-label">Afficher par page</label>
                 <select id="items-per-page-select" class="custom-select">
-                    <option value="25">25</option>
+                    <option value="25" selected>25</option>
                     <option value="50">50</option>
                     <option value="100">100</option>
                     <option value="250">250</option>
@@ -69,38 +68,35 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // ======== STATE MANAGEMENT ========
+    // ======== GESTION D'ÉTAT ========
     let originalWorkersData = [];
     let sectorsList = [];
     let currentPage = 1;
     let itemsPerPage = 25;
 
-    // ======== UI ELEMENTS ========
+    // ======== ÉLÉMENTS UI ========
     const workersContainer = document.getElementById('workers-grid-container');
     const paginationControls = document.getElementById('pagination-controls');
     const toast = document.getElementById('toast');
     const toastMessage = document.getElementById('toast-message');
 
-    // Filters & Display
+    // Filtres
     const sectorFilter = document.getElementById('sector-filter');
     const workerStatusFilter = document.getElementById('worker-status-filter');
-    const phoneStatusFilter = document.getElementById('phone-status-filter');
+    const contractTypeFilter = document.getElementById('contract-type-filter');
     const workerSearchFilter = document.getElementById('worker-search');
     const itemsPerPageSelect = document.getElementById('items-per-page-select');
 
-    // ======== FIELD DEFINITIONS ========
-    // Fixed visible fields for cards
-    const visibleFields = ['secteur_name', 'contract_type', 'contract_end_date', 'model', 'asset_tag', 'phone_status'];
-
-    // ======== DATA FETCHING ========
+    // ======== RÉCUPÉRATION DES DONNÉES ========
     async function fetchInitialData() {
-        workersContainer.innerHTML = `<div class="text-center py-8 text-gray-500 col-span-full">Chargement des données des travailleurs...</div>`;
+        workersContainer.innerHTML = `<div class="text-center py-8 text-gray-500 col-span-full">Chargement des données...</div>`;
         try {
             const [workersResponse, sectorsResponse] = await Promise.all([
                 fetch('/api/admin/all_workers_status'),
-                fetch('/api/sectors') 
+                fetch('/api/sectors') // API pour lister les secteurs (à créer)
             ]);
-            if (!workersResponse.ok || !sectorsResponse.ok) throw new Error('Échec du chargement des données initiales.');
+            if (!workersResponse.ok) throw new Error('Échec du chargement des travailleurs.');
+            if (!sectorsResponse.ok) throw new Error('Échec du chargement des secteurs.');
             
             originalWorkersData = await workersResponse.json();
             sectorsList = await sectorsResponse.json();
@@ -112,11 +108,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // ======== RENDERING & UI UPDATES ========
+    // ======== AFFICHAGE ET MISES À JOUR UI ========
     function populateFilters() {
-        const uniqueSectors = [...new Set(originalWorkersData.map(w => w.secteur_name).filter(Boolean))].sort();
         sectorFilter.innerHTML = '<option value="">Tous les Secteurs</option>';
-        uniqueSectors.forEach(sector => sectorFilter.innerHTML += `<option value="${sector}">${sector}</option>`);
+        sectorsList.forEach(sector => sectorFilter.innerHTML += `<option value="${sector.name}">${sector.name}</option>`);
     }
 
     function updateView() {
@@ -128,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderPaginatedWorkers(workers) {
         workersContainer.innerHTML = '';
         if (!workers || workers.length === 0) {
-            workersContainer.innerHTML = '<div class="text-center py-8 text-gray-500 col-span-full">Aucun travailleur trouvé correspondant à vos critères.</div>';
+            workersContainer.innerHTML = '<div class="text-center py-8 text-gray-500 col-span-full">Aucun travailleur trouvé.</div>';
             return;
         }
 
@@ -138,8 +133,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const paginatedWorkers = workers.slice(start, end);
 
         paginatedWorkers.forEach(worker => {
-            const workerCard = createWorkerCard(worker, 'view');
-            workersContainer.insertAdjacentHTML('beforeend', workerCard);
+            const workerCardHtml = createWorkerCard(worker);
+            workersContainer.insertAdjacentHTML('beforeend', workerCardHtml);
         });
     }
 
@@ -148,118 +143,94 @@ document.addEventListener('DOMContentLoaded', function() {
         const totalPages = Math.ceil(totalItems / itemsPerPage);
         if (totalPages <= 1) return;
 
-        let html = `<div class="text-sm text-gray-700">Page ${currentPage} of ${totalPages}</div>`;
+        let html = `<div class="text-sm text-gray-700">Page ${currentPage} sur ${totalPages} (${totalItems} résultats)</div>`;
         html += '<div class="flex items-center space-x-2">';
-        html += `<button class="btn-secondary btn-sm pagination-btn" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>Précédent</button>`;
-        html += `<button class="btn-secondary btn-sm pagination-btn" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>Suivant</button>`;
+        html += `<button class="btn btn-secondary btn-sm pagination-btn" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>Précédent</button>`;
+        html += `<button class="btn btn-secondary btn-sm pagination-btn" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>Suivant</button>`;
         html += '</div>';
         paginationControls.innerHTML = html;
     }
 
-    // ======== DYNAMIC CARD CREATION ========
-    function createWorkerCard(worker, mode = 'view') {
+    // ======== CRÉATION DE CARTE DYNAMIQUE ========
+    function createWorkerCard(worker) {
         const cardBgClass = getCardBackgroundClass(worker.contract_type, worker.contract_end_date);
         
-        let dynamicFieldsHtml = '';
-        if (mode === 'view') {
-            const fieldLabels = {
-                secteur_name: 'Sector',
-                contract_type: 'Contract Type', 
-                contract_end_date: 'Contract End',
-                model: 'Model',
-                asset_tag: 'Asset Tag',
-                phone_status: 'Phone Status'
-            };
-            
-            dynamicFieldsHtml = visibleFields.map(fieldKey => {
-                const label = fieldLabels[fieldKey];
-                const value = worker[fieldKey] || 'N/A';
-                return `<div class="flex justify-between"><span class="text-sm font-medium text-gray-600">${label}:</span><span class="text-sm text-gray-900 text-right">${value}</span></div>`;
-            }).join('');
-        } else { // 'edit' mode
-            dynamicFieldsHtml = visibleFields.map(fieldKey => {
-                const fieldLabels = {
-                    secteur_name: 'Sector',
-                    contract_type: 'Contract Type', 
-                    contract_end_date: 'Contract End',
-                    model: 'Model',
-                    asset_tag: 'Asset Tag',
-                    phone_status: 'Phone Status'
-                };
-                const label = fieldLabels[fieldKey];
-                return `<div><label class="custom-label">${label}</label>${createInputField(worker, fieldKey)}</div>`;
-            }).join('');
-        }
-
+        // --- HTML pour le mode VUE ---
         const viewModeHtml = `
             <div class="card-view">
                 <div class="flex items-center justify-between mb-3">
-                    <div class="flex items-center space-x-3"><div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">${worker.worker_name.split(' ').map(n => n[0] || '').join('').substring(0, 2)}</div><div><h3 class="font-semibold text-gray-900">${worker.worker_name}</h3><p class="text-sm text-gray-500">ID: ${worker.worker_id}</p></div></div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">${worker.worker_name.split(' ').map(n => n[0] || '').join('').substring(0, 2)}</div>
+                        <div><h3 class="font-semibold text-gray-900">${worker.worker_name}</h3><p class="text-sm text-gray-500">ID: ${worker.worker_id}</p></div>
+                    </div>
                     <span class="status-badge ${worker.status.toLowerCase()}">${worker.status}</span>
                 </div>
                 ${getContractWarning(worker)}
-                <div class="space-y-2 mb-4">${dynamicFieldsHtml}</div>
-                <div class="border-t pt-3 flex justify-end"><button class="btn-secondary btn-sm edit-btn" data-worker-id="${worker.worker_db_id}">Modifier</button></div>
+                <div class="space-y-2 mb-4 text-sm">
+                    <div class="flex justify-between"><span>Secteur:</span><span class="font-medium">${worker.secteur_name || 'N/A'}</span></div>
+                    <div class="flex justify-between"><span>Contrat:</span><span class="font-medium">${worker.contract_type || 'N/A'}</span></div>
+                    <div class="flex justify-between"><span>Fin de contrat:</span><span class="font-medium">${worker.contract_end_date ? new Date(worker.contract_end_date).toLocaleDateString('fr-FR') : 'N/A'}</span></div>
+                    <div class="flex justify-between"><span>Modèle Tél:</span><span class="font-medium">${worker.model || 'N/A'}</span></div>
+                    <div class="flex justify-between"><span>ID Philia:</span><span class="font-mono bg-gray-100 px-1 rounded">${worker.id_philia || 'N/A'}</span></div>
+                    <div class="flex justify-between"><span>Total Tickets:</span><span class="font-semibold text-blue-600">${worker.total_tickets || 0}</span></div>
+                    <div class="flex justify-between"><span>Historique Tél:</span><span class="font-semibold text-green-600">${worker.total_phones || 0}</span></div>
+                </div>
+                <div class="border-t pt-3 flex justify-end"><button class="btn btn-secondary btn-sm edit-btn" data-worker-id="${worker.worker_db_id}">Modifier</button></div>
             </div>`;
         
+        // --- HTML pour le mode ÉDITION ---
         const editModeHtml = `
             <div class="edit-view hidden">
-                <h3 class="font-semibold text-gray-900 mb-3">Modification de ${worker.worker_name}</h3>
+                <h3 class="font-semibold text-gray-900 mb-4">Modification de ${worker.worker_name}</h3>
                 <div class="space-y-3">
-                    <div><label class="custom-label">Nom Complet</label><input type="text" name="full_name" class="custom-input" value="${worker.worker_name}"></div>
-                    ${dynamicFieldsHtml}
+                    ${createInputField('Nom complet', 'full_name', 'text', worker.worker_name)}
+                    ${createInputField('Secteur', 'secteur_id', 'select', worker.secteur_id, { options: sectorsList.map(s => ({value: s.id, text: s.name})) })}
+                    ${createInputField('Statut', 'status', 'select', worker.status, { options: ['Active', 'Inactive', 'Arrêt', 'Congés'].map(s => ({value: s, text: s})) })}
+                    ${createInputField('ID Philia', 'id_philia', 'text', worker.id_philia)}
+                    ${createInputField('MDP Philia', 'mdp_philia', 'password', worker.mdp_philia)}
+                    ${createInputField('Type Contrat', 'contract_type', 'select', worker.contract_type, { options: ['CDI', 'CDD', 'INTERIM'].map(s => ({value: s, text: s})) })}
+                    ${createInputField('Fin Contrat', 'contract_end_date', 'date', worker.contract_end_date)}
                 </div>
-                <div class="border-t pt-3 mt-4 flex justify-end space-x-2"><button class="btn-secondary btn-sm cancel-btn" data-worker-id="${worker.worker_db_id}">Annuler</button><button class="btn-primary btn-sm save-btn" data-worker-id="${worker.worker_db_id}">Enregistrer</button></div>
+                <div class="border-t pt-3 mt-4 flex justify-end space-x-2">
+                    <button class="btn btn-secondary btn-sm cancel-btn" data-worker-id="${worker.worker_db_id}">Annuler</button>
+                    <button class="btn btn-primary btn-sm save-btn" data-worker-id="${worker.worker_db_id}">Enregistrer</button>
+                </div>
             </div>`;
 
         return `<div id="worker-card-${worker.worker_db_id}" class="worker-card ${cardBgClass} rounded-lg shadow-md border p-4 transition-shadow">${viewModeHtml}${editModeHtml}</div>`;
     }
 
-    function createInputField(worker, fieldKey) {
-        const value = worker[fieldKey] || '';
-        
-        if (fieldKey === 'secteur_name') {
-            const options = sectorsList.map(s => `<option value="${s.id}" ${worker.secteur_id == s.id ? 'selected' : ''}>${s.name}</option>`).join('');
-            return `<select name="${fieldKey}" class="custom-select">${options}</select>`;
+    function createInputField(label, name, type, value, config = {}) {
+        let inputHtml = '';
+        if (type === 'select') {
+            const options = config.options.map(opt => `<option value="${opt.value}" ${value == opt.value ? 'selected' : ''}>${opt.text}</option>`).join('');
+            inputHtml = `<select name="${name}" class="custom-select">${options}</select>`;
+        } else {
+            const val = (type === 'date' && value) ? value.split('T')[0] : value;
+            inputHtml = `<input type="${type}" name="${name}" class="custom-input" value="${val || ''}" ${type === 'password' ? 'placeholder="Entrer une nouvelle valeur"' : ''}>`;
         }
-        
-        if (fieldKey === 'contract_type') {
-            const options = ['CDI', 'CDD', 'INTERIM'].map(s => `<option value="${s}" ${value === s ? 'selected' : ''}>${s}</option>`).join('');
-            return `<select name="${fieldKey}" class="custom-select">${options}</select>`;
-        }
-        
-        if (fieldKey === 'phone_status') {
-            const options = ['In Use', 'In Stock', 'Under Repair', 'Decommissioned'].map(s => `<option value="${s}" ${value === s ? 'selected' : ''}>${s}</option>`).join('');
-            return `<select name="${fieldKey}" class="custom-select">${options}</select>`;
-        }
-        
-        if (fieldKey === 'contract_end_date') {
-            return `<input type="date" name="${fieldKey}" class="custom-input" value="${value}">`;
-        }
-        
-        return `<input type="text" name="${fieldKey}" class="custom-input" value="${value}">`;
+        return `<div><label class="custom-label">${label}</label>${inputHtml}</div>`;
     }
 
-    // ======== FILTERS & PAGINATION ========
+    // ======== FILTRES & PAGINATION ========
     function applyFilters() {
         const filters = {
             sector: sectorFilter.value,
             workerStatus: workerStatusFilter.value,
-            phoneStatus: phoneStatusFilter.value,
+            contractType: contractTypeFilter.value,
             search: workerSearchFilter.value.toLowerCase()
         };
-
         return originalWorkersData.filter(w => 
             (!filters.search || w.worker_name.toLowerCase().includes(filters.search)) &&
             (!filters.sector || w.secteur_name === filters.sector) &&
             (!filters.workerStatus || w.status === filters.workerStatus) &&
-            (!filters.phoneStatus || w.phone_status === filters.phoneStatus)
+            (!filters.contractType || w.contract_type === filters.contractType)
         );
     }
     
-    // ======== CARD EVENT LISTENERS ========
+    // ======== GESTIONNAIRES D'ÉVÉNEMENTS ========
     workersContainer.addEventListener('click', async e => {
-        const workerId = e.target.dataset.workerId;
+        const workerId = e.target.closest('[data-worker-id]')?.dataset.workerId;
         if (!workerId) return;
         const card = document.getElementById(`worker-card-${workerId}`);
 
@@ -275,80 +246,170 @@ document.addEventListener('DOMContentLoaded', function() {
             const editView = card.querySelector('.edit-view');
             const inputs = editView.querySelectorAll('input, select');
             const updatedData = {};
-            inputs.forEach(input => updatedData[input.name] = input.value);
-            
-            // Rename secteur_name to secteur_id for the backend
-            if ('secteur_name' in updatedData) {
-                updatedData.secteur_id = updatedData.secteur_name;
-                delete updatedData.secteur_name;
-            }
+            inputs.forEach(input => {
+                // Ne pas envoyer le mot de passe s'il est vide
+                if (input.type === 'password' && !input.value) return;
+                updatedData[input.name] = input.value;
+            });
 
             try {
                 const response = await fetch(`/api/admin/worker/${workerId}`, {
                     method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatedData)
                 });
-                if (!response.ok) throw new Error((await response.json()).error || 'Failed to save.');
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || 'Échec de la sauvegarde.');
                 
-                const savedWorker = await response.json();
+                // Mettre à jour les données locales sans recharger toute la page
                 const index = originalWorkersData.findIndex(w => w.worker_db_id == workerId);
-                if (index !== -1) originalWorkersData[index] = { ...originalWorkersData[index], ...savedWorker };
+                if (index !== -1) {
+                    // Trouver le nom du secteur mis à jour pour l'affichage
+                    const newSecteur = sectorsList.find(s => s.id == result.secteur_id);
+                    originalWorkersData[index] = { ...originalWorkersData[index], ...result, secteur_name: newSecteur.name };
+                }
                 
-                showToast('Worker updated successfully!');
-                updateView(); // Re-render to show updated card and maintain sort/filter order
+                showToast('Travailleur mis à jour !');
+                updateView(); // Re-render pour afficher la carte mise à jour
             } catch (error) {
                 showToast(error.message, true);
             }
         }
     });
 
-    // Universal event listeners
-    [sectorFilter, workerStatusFilter, phoneStatusFilter].forEach(el => el.addEventListener('change', () => { currentPage = 1; updateView(); }));
-    workerSearchFilter.addEventListener('input', () => { currentPage = 1; updateView(); });
-    itemsPerPageSelect.addEventListener('change', () => { currentPage = 1; updateView(); });
+    // Écouteurs pour les filtres et la pagination
+    [sectorFilter, workerStatusFilter, contractTypeFilter, itemsPerPageSelect].forEach(el => el.addEventListener('change', () => { currentPage = 1; updateView(); }));
+    
+    let searchTimeout;
+    workerSearchFilter.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => { currentPage = 1; updateView(); }, 300);
+    });
+
     paginationControls.addEventListener('click', e => {
-        if (e.target.matches('.pagination-btn')) {
+        if (e.target.matches('.pagination-btn') && !e.target.disabled) {
             currentPage = parseInt(e.target.dataset.page, 10);
             updateView();
+            window.scrollTo(0, 0); // Remonter en haut de la page
         }
     });
 
-    // ======== HELPER FUNCTIONS ========
+    // ======== FONCTIONS UTILITAIRES ========
     function showToast(message, isError = false) {
         toastMessage.textContent = message;
-        toast.className = `toast fixed top-4 right-4 p-4 rounded-md shadow-lg ${isError ? 'error' : 'success'}`;
+        toast.className = `toast fixed top-4 right-4 p-4 rounded-md shadow-lg ${isError ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`;
         toast.classList.remove('hidden');
         setTimeout(() => toast.classList.add('hidden'), 3000);
     }
     
-    function getCardBackgroundClass(contractType, endDate) { /* ... same as before ... */ return 'bg-white border-gray-200'; }
-    function getContractWarning(worker) { /* ... same as before ... */ return ''; }
+    function getCardBackgroundClass(contractType, endDate) {
+        if (contractType === 'CDD' && endDate) {
+            const today = new Date();
+            const contractEnd = new Date(endDate);
+            const timeDiff = contractEnd.getTime() - today.getTime();
+            const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+            
+            if (daysDiff <= 30 && daysDiff > 0) {
+                return 'bg-yellow-50 border-yellow-200'; // Contrat expire bientôt
+            } else if (daysDiff <= 0) {
+                return 'bg-red-50 border-red-200'; // Contrat expiré
+            }
+        }
+        return 'bg-white border-gray-200';
+    }
+    
+    function getContractWarning(worker) {
+        if (worker.contract_type === 'CDD' && worker.contract_end_date) {
+            const today = new Date();
+            const contractEnd = new Date(worker.contract_end_date);
+            const timeDiff = contractEnd.getTime() - today.getTime();
+            const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+            
+            if (daysDiff <= 30 && daysDiff > 0) {
+                return `<div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-2 mb-3 text-sm">
+                    ⚠️ Contrat expire dans ${daysDiff} jour${daysDiff > 1 ? 's' : ''}
+                </div>`;
+            } else if (daysDiff <= 0) {
+                return `<div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-2 mb-3 text-sm">
+                    ❌ Contrat expiré depuis ${Math.abs(daysDiff)} jour${Math.abs(daysDiff) > 1 ? 's' : ''}
+                </div>`;
+            }
+        }
+        return '';
+    }
 
-
-    // ======== INITIALIZATION ========
+    // ======== INITIALISATION ========
     fetchInitialData();
 });
 </script>
 
 <style>
-    /* Fix for hidden elements */
-    .hidden {
-        display: none;
+    .hidden { display: none !important; }
+    
+    .status-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
     }
     
-    /* Add styles for disabled buttons */
-    button:disabled { background-color: #d1d5db; cursor: not-allowed; }
+    .status-badge.active { background-color: #dcfce7; color: #166534; }
+    .status-badge.inactive { background-color: #f3f4f6; color: #6b7280; }
+    .status-badge.arrêt { background-color: #fef3c7; color: #d97706; }
+    .status-badge.congés { background-color: #dbeafe; color: #2563eb; }
     
-    /* Status badges */
-    .status-badge { padding: 0.25rem 0.65rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: capitalize; }
-    .status-badge.active { background-color: #d1fae5; color: #065f46; }
-    .status-badge.inactive { background-color: #e5e7eb; color: #4b5563; }
-    .status-badge.arrêt { background-color: #fee2e2; color: #991b1b; }
-    .status-badge.congés { background-color: #fef3c7; color: #92400e; }
+    .toast {
+        z-index: 9999;
+        transition: all 0.3s ease;
+    }
     
-    /* Toast notifications */
-    .toast { transition: opacity 0.3s ease, transform 0.3s ease; }
-    .toast.hidden { opacity: 0; transform: translateY(-20px); }
-    .toast.success { background-color: #10b981; color: white; }
-    .toast.error { background-color: #ef4444; color: white; }
+    .worker-card {
+        transition: all 0.2s ease;
+    }
+    
+    .worker-card:hover {
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .btn {
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid transparent;
+        transition: all 0.2s;
+    }
+    
+    .btn-primary {
+        background-color: #3b82f6;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background-color: #2563eb;
+    }
+    
+    .btn-secondary {
+        background-color: #f3f4f6;
+        color: #374151;
+        border-color: #d1d5db;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #e5e7eb;
+    }
+    
+    .btn-sm {
+        padding: 0.25rem 0.75rem;
+        font-size: 0.875rem;
+    }
+    
+    .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
 </style>
 {% endblock %}

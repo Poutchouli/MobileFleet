@@ -52,7 +52,7 @@
                     </div>
                     <div class="mt-4 sm:mt-0 sm:ml-4 flex flex-col items-end">
                         <span class="inline-flex px-3 py-1 text-sm font-semibold rounded-full" id="ticket-status-badge"></span>
-                        <span class="mt-1 text-sm text-gray-500">Priority: <span class="font-medium" id="ticket-priority"></span></span>
+                        <span class="mt-1 text-sm text-gray-500">Priorité: <span class="font-medium" id="ticket-priority"></span></span>
                     </div>
                 </div>
             </div>
@@ -60,18 +60,18 @@
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <!-- Device Information -->
                     <div>
-                        <h5 class="text-lg font-medium text-gray-900 mb-3">Informations du Compte</h5>
+                        <h5 class="text-lg font-medium text-gray-900 mb-3">Informations de l'Appareil</h5>
                         <dl class="space-y-2">
                             <div>
                                 <dt class="text-sm font-medium text-gray-500">Étiquette d'Actif</dt>
                                 <dd class="text-sm text-gray-900" id="asset-tag"></dd>
                             </div>
                             <div>
-                                <dt class="text-sm font-medium text-gray-500">Sélectionner l'Appareil</dt>
+                                <dt class="text-sm font-medium text-gray-500">Appareil</dt>
                                 <dd class="text-sm text-gray-900" id="device-info"></dd>
                             </div>
                             <div>
-                                <dt class="text-sm font-medium text-gray-500">Téléphone Assigné</dt>
+                                <dt class="text-sm font-medium text-gray-500">Employé Assigné</dt>
                                 <dd class="text-sm text-gray-900" id="worker-name"></dd>
                             </div>
                         </dl>
@@ -79,18 +79,18 @@
                     
                     <!-- Ticket Information -->
                     <div>
-                        <h5 class="text-lg font-medium text-gray-900 mb-3">Informations du Compte</h5>
+                        <h5 class="text-lg font-medium text-gray-900 mb-3">Informations du Ticket</h5>
                         <dl class="space-y-2">
                             <div>
                                 <dt class="text-sm font-medium text-gray-500">Créé</dt>
                                 <dd class="text-sm text-gray-900" id="created-date"></dd>
                             </div>
                             <div>
-                                <dt class="text-sm font-medium text-gray-500">Téléphone Assigné</dt>
+                                <dt class="text-sm font-medium text-gray-500">Assigné à</dt>
                                 <dd class="text-sm text-gray-900" id="assigned-to"></dd>
                             </div>
                             <div>
-                                <dt class="text-sm font-medium text-gray-500">Lignes mises à jour :</dt>
+                                <dt class="text-sm font-medium text-gray-500">Dernière mise à jour</dt>
                                 <dd class="text-sm text-gray-900" id="last-updated"></dd>
                             </div>
                         </dl>
@@ -109,7 +109,7 @@
         <!-- Ticket Updates -->
         <div class="bg-white shadow rounded-lg">
             <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900">Ticket Updates</h3>
+                <h3 class="text-lg font-medium text-gray-900">Mises à Jour du Ticket</h3>
             </div>
             <div class="px-6 py-4">
                 <div id="updates-container" class="space-y-4">
@@ -120,7 +120,7 @@
                     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
                     </svg>
-                    <p class="mt-2 text-sm text-gray-500">No public updates available for this ticket.</p>
+                    <p class="mt-2 text-sm text-gray-500">Aucune mise à jour publique disponible pour ce ticket.</p>
                 </div>
             </div>
         </div>
@@ -128,17 +128,17 @@
         <!-- Manager Actions (Comment & Resolve) -->
         <div id="manager-actions" class="bg-white shadow rounded-lg">
             <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900">Manager Actions</h3>
+                <h3 class="text-lg font-medium text-gray-900">Actions Manager</h3>
             </div>
             <div class="px-6 py-4 space-y-4">
                 <!-- Add Comment Section -->
                 <div>
-                    <label for="comment-text" class="block text-sm font-medium text-gray-700 mb-2">Add Comment</label>
+                    <label for="comment-text" class="block text-sm font-medium text-gray-700 mb-2">Ajouter un Commentaire</label>
                     <textarea 
                         id="comment-text" 
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                         rows="3"
-                        placeholder="Add a comment or update to this ticket..."
+                        placeholder="Ajouter un commentaire ou une mise à jour à ce ticket..."
                     ></textarea>
                     <button 
                         id="add-comment-btn"
@@ -148,7 +148,7 @@
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
                         </svg>
-                        Add Comment
+                        Ajouter un Commentaire
                     </button>
                 </div>
 
@@ -156,8 +156,8 @@
                 <div id="resolve-section" class="pt-4 border-t border-gray-200">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h4 class="text-sm font-medium text-gray-900">Mark as Resolved</h4>
-                            <p class="text-sm text-gray-500">Close this ticket if the issue has been resolved</p>
+                            <h4 class="text-sm font-medium text-gray-900">Marquer comme Résolu</h4>
+                            <p class="text-sm text-gray-500">Fermer ce ticket si le problème a été résolu</p>
                         </div>
                         <button 
                             id="resolve-ticket-btn"
@@ -167,7 +167,7 @@
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
-                            Mark as Resolved
+                            Marquer comme Résolu
                         </button>
                     </div>
                 </div>
@@ -177,12 +177,12 @@
         <!-- Action Required Section -->
         <div id="manager-actions-card" class="bg-white shadow rounded-lg hidden">
             <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900">Action Required</h3>
+                <h3 class="text-lg font-medium text-gray-900">Action Requise</h3>
             </div>
             <div class="px-6 py-4">
-                <p class="text-sm text-gray-600 mb-4">Support has sent a replacement device. Please confirm when you have received it.</p>
+                <p class="text-sm text-gray-600 mb-4">Le support a envoyé un appareil de remplacement. Veuillez confirmer quand vous l'avez reçu.</p>
                 <button id="confirm-receipt-btn" class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 w-full">
-                    Confirm Device Receipt
+                    Confirmer la Réception de l'Appareil
                 </button>
             </div>
         </div>
@@ -194,7 +194,7 @@
     <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
         <div class="mt-3">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-medium text-gray-900">Device Return Method</h3>
+                <h3 class="text-lg font-medium text-gray-900">Méthode de Retour de l'Appareil</h3>
                 <button type="button" class="text-gray-400 hover:text-gray-600" onclick="closeReturnMethodModal()">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -203,13 +203,13 @@
             </div>
             <div class="mt-2 px-1 py-3">
                 <p class="text-sm text-gray-500 mb-3">
-                    Please describe how the old device will be returned:
+                    Veuillez décrire comment l'ancien appareil sera retourné :
                 </p>
                 <textarea 
                     id="return-method-input" 
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     rows="3"
-                    placeholder="e.g., 'Internal mail pouch #4' or 'Dropped off at IT by the worker'"
+                    placeholder="ex: 'Courrier interne sacoche #4' ou 'Déposé à l'IT par l'employé'"
                 ></textarea>
             </div>
             <div class="flex items-center justify-end px-1 py-3 space-x-3">
@@ -218,14 +218,14 @@
                     class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
                     onclick="closeReturnMethodModal()"
                 >
-                    Cancel
+                    Annuler
                 </button>
                 <button 
                     type="button" 
                     class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
                     onclick="submitReturnMethod()"
                 >
-                    Confirm Receipt
+                    Confirmer la Réception
                 </button>
             </div>
         </div>
@@ -271,7 +271,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Failed to load ticket details');
+                    throw new Error('Échec du chargement des détails du ticket');
                 }
                 return response.json();
             })
@@ -352,7 +352,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('add-comment-btn').addEventListener('click', function() {
         const commentText = document.getElementById('comment-text').value.trim();
         if (!commentText) {
-            alert('Please enter a comment before submitting.');
+            alert('Veuillez saisir un commentaire avant de soumettre.');
             return;
         }
 
@@ -380,7 +380,7 @@ document.addEventListener('DOMContentLoaded', function() {
             debouncedRefresh();
         })
         .catch(error => {
-            alert('Error adding comment: ' + error.message);
+            alert('Erreur lors de l\'ajout du commentaire: ' + error.message);
         })
         .finally(() => {
             btn.disabled = false;
@@ -390,7 +390,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Resolve ticket event listener
     document.getElementById('resolve-ticket-btn').addEventListener('click', function() {
-        if (!confirm('Are you sure you want to mark this ticket as resolved? This action cannot be undone.')) {
+        if (!confirm('Êtes-vous sûr de vouloir marquer ce ticket comme résolu ? Cette action ne peut pas être annulée.')) {
             return;
         }
 
@@ -414,7 +414,7 @@ document.addEventListener('DOMContentLoaded', function() {
             debouncedRefresh();
         })
         .catch(error => {
-            alert('Error resolving ticket: ' + error.message);
+            alert('Erreur lors de la résolution du ticket: ' + error.message);
         })
         .finally(() => {
             btn.disabled = false;
@@ -436,7 +436,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function submitReturnMethod() {
         const returnMethod = document.getElementById('return-method-input').value.trim();
         if (returnMethod === '') {
-            alert('Please describe how the old device will be returned');
+            alert('Veuillez décrire comment l\'ancien appareil sera retourné');
             return;
         }
 

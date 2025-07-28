@@ -1346,7 +1346,7 @@ def get_admin_all_workers_status():
     
     # This query fetches ALL workers regardless of sector.
     # It also gets details of their currently assigned phone, a count of any open tickets,
-    # and information about pending phone swaps.
+    # and information about pending phone swaps, plus id_philia, mdp_philia, total tickets and total phones.
     query = """
         SELECT
             w.id AS worker_db_id,
@@ -1355,6 +1355,8 @@ def get_admin_all_workers_status():
             w.status,
             COALESCE(rh.contract_type, 'CDI') AS contract_type,
             rh.contract_end_date,
+            rh.id_philia,
+            rh.mdp_philia,
             s.secteur_name,
             s.id AS secteur_id,
             p.id AS phone_id,
@@ -1367,7 +1369,9 @@ def get_admin_all_workers_status():
             COALESCE(open_tickets.ticket_count, 0) AS open_ticket_count,
             COALESCE(swap_info.pending_swaps, 0) AS pending_swaps,
             swap_info.latest_swap_initiated,
-            swap_info.swap_ticket_id
+            swap_info.swap_ticket_id,
+            COALESCE(total_tickets.total_tickets, 0) AS total_tickets,
+            COALESCE(phone_history.total_phones, 0) AS total_phones
         FROM workers w
         LEFT JOIN assignments a ON w.id = a.worker_id AND a.return_date IS NULL
         LEFT JOIN phones p ON a.phone_id = p.id
@@ -1395,6 +1399,21 @@ def get_admin_all_workers_status():
             AND t.status NOT IN ('Solved', 'Closed')
             GROUP BY t.phone_id
         ) swap_info ON p.id = swap_info.phone_id
+        LEFT JOIN (
+            SELECT 
+                p2.id as phone_id,
+                COUNT(DISTINCT t2.id) AS total_tickets
+            FROM phones p2
+            LEFT JOIN tickets t2 ON p2.id = t2.phone_id
+            GROUP BY p2.id
+        ) total_tickets ON p.id = total_tickets.phone_id
+        LEFT JOIN (
+            SELECT 
+                a2.worker_id,
+                COUNT(*) AS total_phones
+            FROM assignments a2
+            GROUP BY a2.worker_id
+        ) phone_history ON w.id = phone_history.worker_id
         ORDER BY s.secteur_name, w.full_name;
     """
     
@@ -1403,6 +1422,117 @@ def get_admin_all_workers_status():
     cursor.close()
     
     return jsonify(all_workers_status)
+
+@app.route('/api/sectors', methods=['GET'])
+@login_required
+@role_required('Admin')
+def get_all_sectors():
+    """
+    Retourne une liste de tous les secteurs pour peupler les listes déroulantes.
+    """
+    db = get_db()
+    cursor = db.cursor()
+    
+    cursor.execute("SELECT id, secteur_name as name FROM secteurs ORDER BY secteur_name;")
+    sectors = cursor.fetchall()
+    cursor.close()
+    
+    return jsonify(sectors)
+
+@app.route('/api/admin/worker/<int:worker_db_id>', methods=['PUT'])
+@login_required
+@role_required('Admin')
+def update_worker_details(worker_db_id):
+    """
+    Met à jour les informations complètes d'un travailleur.
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Données invalides"}), 400
+
+    # Debug: Afficher les données reçues
+    print(f"🔍 Données reçues pour le travailleur {worker_db_id}: {data}")
+
+    try:
+        db = get_db()
+        cursor = db.cursor()
+
+        # 1. Mettre à jour la table 'workers'
+        worker_fields = []
+        worker_values = []
+        
+        if 'full_name' in data:
+            worker_fields.append("full_name = %s")
+            worker_values.append(data['full_name'])
+        if 'secteur_id' in data:
+            worker_fields.append("secteur_id = %s")
+            worker_values.append(data['secteur_id'])
+        if 'status' in data:
+            worker_fields.append("status = %s")
+            worker_values.append(data['status'])
+            
+        if worker_fields:
+            worker_query = f"UPDATE workers SET {', '.join(worker_fields)} WHERE id = %s"
+            worker_values.append(worker_db_id)
+            print(f"🔍 Requête workers: {worker_query} avec valeurs: {worker_values}")
+            cursor.execute(worker_query, worker_values)
+
+        # 2. Mettre à jour la table 'rh_data' 
+        # D'abord vérifier si une entrée existe pour ce worker_db_id
+        cursor.execute("SELECT id FROM rh_data WHERE worker_id = %s", (worker_db_id,))
+        rh_exists = cursor.fetchone()
+        status_text = "existe" if rh_exists else "n'existe pas"
+        print(f"🔍 Vérification rh_data pour worker_id={worker_db_id}: {status_text}")
+        
+        rh_fields = []
+        rh_values = []
+        
+        if 'id_philia' in data:
+            rh_fields.append("id_philia = %s")
+            rh_values.append(data['id_philia'])
+        if 'contract_type' in data:
+            rh_fields.append("contract_type = %s")
+            rh_values.append(data['contract_type'])
+        if 'contract_end_date' in data:
+            rh_fields.append("contract_end_date = %s")
+            rh_values.append(data['contract_end_date'] if data['contract_end_date'] else None)
+        if 'mdp_philia' in data and data['mdp_philia']:  # Seulement si un mot de passe est fourni
+            rh_fields.append("mdp_philia = %s")
+            rh_values.append(data['mdp_philia'])
+            
+        if rh_fields:
+            if rh_exists:
+                # Mettre à jour l'entrée existante
+                rh_query = f"UPDATE rh_data SET {', '.join(rh_fields)} WHERE worker_id = %s"
+                rh_values.append(worker_db_id)
+                print(f"🔍 Requête rh_data (UPDATE): {rh_query} avec valeurs: {rh_values}")
+                cursor.execute(rh_query, rh_values)
+            else:
+                # Créer une nouvelle entrée
+                rh_fields_insert = ['worker_id'] + [field.split(' = ')[0] for field in rh_fields]
+                rh_values_insert = [worker_db_id] + [val for val in rh_values]
+                placeholders = ', '.join(['%s'] * len(rh_values_insert))
+                rh_query = f"INSERT INTO rh_data ({', '.join(rh_fields_insert)}) VALUES ({placeholders})"
+                print(f"🔍 Requête rh_data (INSERT): {rh_query} avec valeurs: {rh_values_insert}")
+                cursor.execute(rh_query, rh_values_insert)
+
+        db.commit()
+        cursor.close()
+        
+        # Retourner les données mises à jour
+        response_data = data.copy()
+        response_data['worker_db_id'] = worker_db_id
+        print(f"✅ Mise à jour réussie pour le travailleur {worker_db_id}")
+        
+        return jsonify(response_data), 200
+
+    except Exception as e:
+        db.rollback()
+        print(f"❌ ERREUR lors de la mise à jour du travailleur {worker_db_id}: {str(e)}")
+        print(f"❌ Type d'erreur: {type(e).__name__}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Erreur serveur: {str(e)}"}), 500
 
 @app.route('/api/manager/selectable_phones', methods=['GET'])
 @login_required
