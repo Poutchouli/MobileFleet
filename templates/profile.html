@@ -52,7 +52,7 @@
                         id="profile-submit-btn"
                         class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-md transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
                     >
-                        Rôles
+                        Mettre à jour
                     </button>
                 </div>
             </form>
@@ -67,7 +67,7 @@
                     </div>
                     <div>
                         <label class="text-sm font-medium text-gray-600">Nom d'utilisateur</label>
-                        <p class="text-gray-900">{{ session.username or 'Not set' }}</p>
+                        <p class="text-gray-900">{{ session.username or 'Non défini' }}</p>
                     </div>
                 </div>
             </div>
@@ -83,7 +83,7 @@
             <form id="change-password-form" class="space-y-4">
                 <div>
                     <label for="current_password" class="block text-sm font-medium text-gray-700 mb-1">
-                        Current Password *
+                        Mot de Passe Actuel *
                     </label>
                     <input 
                         type="password" 
@@ -91,13 +91,13 @@
                         name="current_password" 
                         required
                         class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Enter your current password"
+                        placeholder="Entrez votre mot de passe actuel"
                     >
                 </div>
 
                 <div>
                     <label for="new_password" class="block text-sm font-medium text-gray-700 mb-1">
-                        New Password *
+                        Nouveau Mot de Passe *
                     </label>
                     <input 
                         type="password" 
@@ -106,7 +106,7 @@
                         required
                         minlength="8"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Enter new password (min. 8 characters)"
+                        placeholder="Entrez le nouveau mot de passe (min. 8 caractères)"
                     >
                     <p class="text-xs text-gray-500 mt-1">Le mot de passe doit contenir au moins 8 caractères</p>
                 </div>
@@ -236,7 +236,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             console.error('Error updating profile:', error);
-            showMessage('', 'error');
+            showMessage('Une erreur s\'est produite lors de la mise à jour de votre profil.', 'error');
         } finally {
             // Re-enable submit button
             profileSubmitBtn.disabled = false;
@@ -257,7 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Client-side validation
         if (data.new_password !== data.confirm_password) {
-            showMessage('', 'error');
+            showMessage('Les nouveaux mots de passe ne correspondent pas.', 'error');
             return;
         }
         
@@ -286,11 +286,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 showMessage(result.message, 'success');
                 passwordForm.reset();
             } else {
-                showMessage(result.error || '', 'error');
+                showMessage(result.error || 'Une erreur s\'est produite lors du changement de mot de passe.', 'error');
             }
         } catch (error) {
             console.error('Error changing password:', error);
-            showMessage('', 'error');
+            showMessage('Une erreur s\'est produite lors du changement de mot de passe.', 'error');
         } finally {
             // Re-enable submit button
             passwordSubmitBtn.disabled = false;
@@ -304,7 +304,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function validatePasswordMatch() {
         if (confirmPassword.value && newPassword.value !== confirmPassword.value) {
-            confirmPassword.setCustomValidity('');
+            confirmPassword.setCustomValidity('Les mots de passe ne correspondent pas');
         } else {
             confirmPassword.setCustomValidity('');
         }

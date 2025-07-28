@@ -203,13 +203,13 @@
     </div>
     <div class="flex justify-between mt-6">
         <button type="button" class="btn btn-secondary" onclick="showStep(2)">Retour à la Vue d'Ensemble</button>
-        <button type="button" class="btn btn-primary" id="run-import-btn">{{ _('Run Import') }}</button>
+        <button type="button" class="btn btn-primary" id="run-import-btn">Exécuter l'Import</button>
     </div>
 </div>
 
 <!-- Step 4: Import Progress and Results -->
 <div class="custom-card hidden" id="step4-section">
-    <h2 class="card-title mb-4">{{ _('Step 4: Import Results') }}</h2>
+    <h2 class="card-title mb-4">Étape 4: Résultats de l'Import</h2>
     <div id="import-progress" class="text-center"></div>
     <div class="hidden" id="import-results"></div>
 </div>
@@ -377,13 +377,13 @@
                 <td class="font-medium">${csvHeader}</td>
                 <td>
                     <select class="custom-select column-select" id="db-column-${index}" onchange="updateFieldDescription(${index})">
-                        <option value="">{{ _('Do not import') }}</option>
+                        <option value="">Ne pas importer</option>
                         ${fieldOptions}
                     </select>
                 </td>
                 <td>
                     <span id="field-description-${index}" class="text-sm text-gray-600">
-                        ${bestMatch ? multiTableFields[bestMatch]?.description || '' : '{{ _("Select a field to see description") }}'}
+                        ${bestMatch ? multiTableFields[bestMatch]?.description || '' : 'Sélectionnez un champ pour voir la description'}
                     </span>
                 </td>
             `;
@@ -470,7 +470,7 @@
         if (selectedField && multiTableFields[selectedField]) {
             descriptionSpan.textContent = multiTableFields[selectedField].description;
         } else {
-            descriptionSpan.textContent = selectedField ? 'Field description not available' : '{{ _("Select a field to see description") }}';
+            descriptionSpan.textContent = selectedField ? 'Description du champ non disponible' : 'Sélectionnez un champ pour voir la description';
         }
     }
 
@@ -478,7 +478,7 @@
         showStep(4);
         const progressDiv = document.getElementById('import-progress');
         const resultsDiv = document.getElementById('import-results');
-        progressDiv.innerHTML = `<p>{{ _('Multi-table import started...') }}</p>`;
+        progressDiv.innerHTML = `<p>Import multi-tables démarré...</p>`;
         resultsDiv.classList.add('hidden');
         progressDiv.classList.remove('hidden');
 
@@ -495,7 +495,7 @@
         });
 
         if (!hasValidMapping) {
-            alert('{{ _("Please map at least one CSV column to a database field.") }}');
+            alert('Veuillez mapper au moins une colonne CSV à un champ de base de données.');
             showStep(3);
             return;
         }
@@ -506,7 +506,7 @@
         const missingRequired = requiredFields.filter(field => !mappedFields.includes(field));
         
         if (missingRequired.length > 0) {
-            if (!confirm(`{{ _('Warning: Missing recommended fields') }}: ${missingRequired.join(', ')}. {{ _('Continue anyway?') }}`)) {
+            if (!confirm(`Attention: Champs recommandés manquants: ${missingRequired.join(', ')}. Continuer quand même?`)) {
                 showStep(3);
                 return;
             }
