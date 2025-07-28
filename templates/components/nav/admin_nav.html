@@ -1,12 +1,12 @@
 <!-- templates/components/nav/admin_nav.html -->
 <nav>
-    <a href="{{ url_for('admin_dashboard') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin_dashboard' %}active{% else %}hover:bg-gray-700{% endif %}">Tableau de Bord</a>
-    <a href="{{ url_for('admin_overview') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin_overview' %}active{% else %}hover:bg-gray-700{% endif %}">Vue d'ensemble</a>
-    <a href="{{ url_for('admin_phone_requests') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin_phone_requests' %}active{% else %}hover:bg-gray-700{% endif %}">Statut du Téléphone</a>
-    <a href="{{ url_for('admin_users') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin_users' %}active{% else %}hover:bg-gray-700{% endif %}">Utilisateurs</a>
-    <a href="{{ url_for('admin_roles') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin_roles' %}active{% else %}hover:bg-gray-700{% endif %}">Rôles</a>
-    <a href="{{ url_for('admin_assign_secteurs') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin_assign_secteurs' %}active{% else %}hover:bg-gray-700{% endif %}">Téléphone Assigné</a>
-    <a href="{{ url_for('admin_import_csv') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin_import_csv' %}active{% else %}hover:bg-gray-700{% endif %}">Importation de Données</a>
-    <a href="{{ url_for('admin_reports') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin_reports' %}active{% else %}hover:bg-gray-700{% endif %}">Rapports</a>
-    <a href="{{ url_for('admin_sql_editor') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin_sql_editor' %}active{% else %}hover:bg-gray-700{% endif %}">Éditeur SQL</a>
+    <a href="{{ url_for('admin.dashboard') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin.dashboard' %}active{% else %}hover:bg-gray-700{% endif %}">Tableau de Bord</a>
+    <a href="{{ url_for('admin.overview') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin.overview' %}active{% else %}hover:bg-gray-700{% endif %}">Vue d'ensemble</a>
+    <a href="{{ url_for('admin.phone_requests') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin.phone_requests' %}active{% else %}hover:bg-gray-700{% endif %}">Statut du Téléphone</a>
+    <a href="{{ url_for('admin.users') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin.users' %}active{% else %}hover:bg-gray-700{% endif %}">Utilisateurs</a>
+    <a href="{{ url_for('admin.roles') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin.roles' %}active{% else %}hover:bg-gray-700{% endif %}">Rôles</a>
+    <a href="{{ url_for('admin.workers') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin.workers' %}active{% else %}hover:bg-gray-700{% endif %}">Téléphone Assigné</a>
+    <a href="{{ url_for('admin.import_csv') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin.import_csv' %}active{% else %}hover:bg-gray-700{% endif %}">Importation de Données</a>
+    <a href="{{ url_for('admin.provision_wizard') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin.provision_wizard' %}active{% else %}hover:bg-gray-700{% endif %}">Rapports</a>
+    <a href="{{ url_for('admin.phones') }}" class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'admin.phones' %}active{% else %}hover:bg-gray-700{% endif %}">Téléphones</a>
 </nav>

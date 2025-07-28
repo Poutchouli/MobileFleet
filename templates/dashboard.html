@@ -12,7 +12,7 @@
         <div class="bg-gray-800 text-white w-64 space-y-6 py-7 px-2">
             <a href="#" class="text-white text-2xl font-extrabold px-4">Administration Flotte</a>
             <nav>
-                <a href="{{ url_for('admin_dashboard') }}" class="block py-2.5 px-4 rounded transition duration-200 bg-gray-700">Tableau de Bord</a>
+                <a href="{{ url_for('admin.dashboard') }}" class="block py-2.5 px-4 rounded transition duration-200 bg-gray-700">Tableau de Bord</a>
                 <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Téléphones</a>
                 <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Cartes SIM</a>
                 <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Travailleurs</a>
@@ -26,7 +26,7 @@
                 <h1 class="text-3xl font-bold">Tableau de Bord Équipe</h1>
                 <div>
                     <span>Bienvenue, {{ session.username }}</span>
-                    <a href="{{ url_for('logout') }}" class="ml-4 text-indigo-600 hover:text-indigo-900">Déconnexion</a>
+                    <a href="{{ url_for('auth.logout') }}" class="ml-4 text-indigo-600 hover:text-indigo-900">Déconnexion</a>
                 </div>
             </div>
 

@@ -1,6 +1,6 @@
 <!-- templates/components/nav/manager_nav.html -->
 <nav>
-    <a href="{{ url_for('manager_dashboard') }}" class="block py-2.5 px-4 {% if request.endpoint == 'manager_dashboard' %}active{% endif %}">Tableau de Bord</a>
-    <a href="{{ url_for('manager_tickets') }}" class="block py-2.5 px-4 {% if request.endpoint == 'manager_tickets' %}active{% endif %}">Mes Tickets</a>
-    <a href="{{ url_for('manager_return_phone') }}" class="block py-2.5 px-4 {% if request.endpoint == 'manager_return_phone' %}active{% endif %}">Retour de Téléphone</a>
+    <a href="{{ url_for('manager.dashboard') }}" class="block py-2.5 px-4 {% if request.endpoint == 'manager.dashboard' %}active{% endif %}">Tableau de Bord</a>
+    <a href="{{ url_for('manager.tickets') }}" class="block py-2.5 px-4 {% if request.endpoint == 'manager.tickets' %}active{% endif %}">Mes Tickets</a>
+    <a href="{{ url_for('manager.create_ticket') }}" class="block py-2.5 px-4 {% if request.endpoint == 'manager.create_ticket' %}active{% endif %}">Retour de Téléphone</a>
 </nav>

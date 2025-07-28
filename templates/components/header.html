@@ -3,6 +3,6 @@
     <h1 class="text-3xl font-bold">{% block page_title %}{% endblock %}</h1>
     <div>
         <span>Bienvenue, {{ session.username }}</span>
-        <a href="{{ url_for('logout') }}" class="ml-4 text-indigo-600 hover:text-indigo-900">Déconnexion</a>
+        <a href="{{ url_for('auth.logout') }}" class="ml-4 text-indigo-600 hover:text-indigo-900">Déconnexion</a>
     </div>
 </div>
