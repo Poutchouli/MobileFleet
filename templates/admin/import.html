@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('CSV Import Wizard') }}{% endblock %}
+{% block title %}Assistant d'Importation CSV{% endblock %}
 
-{% block page_title %}{{ _('CSV Import Wizard') }}{% endblock %}
+{% block page_title %}Assistant d'Importation CSV{% endblock %}
 
 {% block content %}
 <!-- Progress Indicator -->
@@ -10,32 +10,32 @@
     <div class="grid grid-cols-4 gap-4 text-center">
         <div class="step-indicator active" id="step1-indicator">
             <div class="step-number">1</div>
-            <div class="step-label">{{ _('Options & Upload') }}</div>
+            <div class="step-label">Options & Téléchargement</div>
         </div>
         <div class="step-indicator" id="step2-indicator">
             <div class="step-number">2</div>
-            <div class="step-label">{{ _('Select Table') }}</div>
+            <div class="step-label">Sélectionner la Table</div>
         </div>
         <div class="step-indicator" id="step3-indicator">
             <div class="step-number">3</div>
-            <div class="step-label">{{ _('Map Columns') }}</div>
+            <div class="step-label">Mapper les Colonnes</div>
         </div>
         <div class="step-indicator" id="step4-indicator">
             <div class="step-number">4</div>
-            <div class="step-label">{{ _('Import') }}</div>
+            <div class="step-label">Importer</div>
         </div>
     </div>
 </div>
 
 <!-- Step 1: File Upload & Options -->
 <div class="custom-card" id="step1-section">
-    <h2 class="card-title mb-4">{{ _('Step 1: Configure and Upload CSV File') }}</h2>
+    <h2 class="card-title mb-4">Étape 1: Configurer et Télécharger le Fichier CSV</h2>
 
     <!-- File Upload Area -->
     <div class="upload-area border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-indigo-500 hover:bg-gray-50 transition-colors" id="upload-area">
-        <p class="text-gray-500 mb-4">{{ _('Select or drag your CSV file here.') }}</p>
+        <p class="text-gray-500 mb-4">Sélectionnez ou glissez votre fichier CSV ici.</p>
         <input type="file" id="csv-file-input" class="hidden" accept=".csv, .txt">
-        <button type="button" class="btn btn-primary" onclick="document.getElementById('csv-file-input').click()">{{ _('Choose File') }}</button>
+        <button type="button" class="btn btn-primary" onclick="document.getElementById('csv-file-input').click()">Choisir un Fichier</button>
         <p id="file-name-display" class="mt-4 text-sm text-gray-600 font-medium"></p>
     </div>
 
@@ -44,10 +44,10 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 border-t pt-6">
             <!-- Parsing Options -->
             <div>
-                <h3 class="text-lg font-medium mb-3">{{ _('Parsing Options') }}</h3>
+                <h3 class="text-lg font-medium mb-3">Options d'Analyse</h3>
                 <div class="space-y-4">
                     <div>
-                        <label for="encoding-select" class="custom-label">{{ _('Character Set') }}</label>
+                        <label for="encoding-select" class="custom-label">Jeu de Caractères</label>
                         <select id="encoding-select" class="custom-select">
                             <option value="utf-8">Unicode (UTF-8)</option>
                             <option value="iso-8859-1">Western European (ISO-8859-1)</option>
@@ -55,23 +55,23 @@
                         </select>
                     </div>
                     <div>
-                        <label class="custom-label">{{ _('Separator') }}</label>
+                        <label class="custom-label">Séparateur</label>
                         <div class="flex flex-wrap items-center gap-x-4 gap-y-2 mt-1">
                             <div class="flex items-center">
                                 <input type="radio" id="delimiter-comma" name="delimiter" value="," class="h-4 w-4" checked>
-                                <label for="delimiter-comma" class="ml-2">{{ _('Comma') }}</label>
+                                <label for="delimiter-comma" class="ml-2">Virgule</label>
                             </div>
                             <div class="flex items-center">
                                 <input type="radio" id="delimiter-semicolon" name="delimiter" value=";" class="h-4 w-4">
-                                <label for="delimiter-semicolon" class="ml-2">{{ _('Semicolon') }}</label>
+                                <label for="delimiter-semicolon" class="ml-2">Point-virgule</label>
                             </div>
                             <div class="flex items-center">
                                 <input type="radio" id="delimiter-tab" name="delimiter" value="\t" class="h-4 w-4">
-                                <label for="delimiter-tab" class="ml-2">{{ _('Tab') }}</label>
+                                <label for="delimiter-tab" class="ml-2">Tabulation</label>
                             </div>
                             <div class="flex items-center">
                                 <input type="radio" id="delimiter-other" name="delimiter" value="other" class="h-4 w-4">
-                                <label for="delimiter-other" class="ml-2">{{ _('Other:') }}</label>
+                                <label for="delimiter-other" class="ml-2">Autre :</label>
                                 <input type="text" id="delimiter-other-input" class="ml-2 custom-select w-16" maxlength="1">
                             </div>
                         </div>
@@ -80,30 +80,30 @@
             </div>
             <!-- Data Cleaning Tools -->
             <div>
-                <h3 class="text-lg font-medium mb-3">{{ _('Data Cleaning Tools') }}</h3>
+                <h3 class="text-lg font-medium mb-3">Outils de Nettoyage des Données</h3>
                 <div class="space-y-3">
                     <div class="flex items-start">
                         <input type="checkbox" id="trim-header-whitespace" class="h-4 w-4 mt-1" checked>
-                        <label for="trim-header-whitespace" class="ml-2">{{ _('Trim whitespace from column headers') }}</label>
+                        <label for="trim-header-whitespace" class="ml-2">Supprimer les espaces des en-têtes de colonnes</label>
                     </div>
                     <div class="flex items-start">
                         <input type="checkbox" id="trim-value-whitespace" class="h-4 w-4 mt-1" checked>
-                        <label for="trim-value-whitespace" class="ml-2">{{ _('Trim whitespace from data values') }}</label>
+                        <label for="trim-value-whitespace" class="ml-2">Supprimer les espaces des valeurs de données</label>
                     </div>
                      <div class="flex items-start">
                         <input type="checkbox" id="blanks-as-null" class="h-4 w-4 mt-1" checked>
-                        <label for="blanks-as-null" class="ml-2">{{ _('Treat empty strings as NULL') }}</label>
+                        <label for="blanks-as-null" class="ml-2">Traiter les chaînes vides comme NULL</label>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="flex justify-center my-4">
-             <button type="button" id="refresh-preview-btn" class="btn btn-secondary">{{ _('Refresh Preview') }}</button>
+             <button type="button" id="refresh-preview-btn" class="btn btn-secondary">Actualiser l'Aperçu</button>
         </div>
 
         <!-- Live Preview Table -->
-        <h3 class="text-lg font-medium mb-3">{{ _('Data Preview') }}</h3>
+        <h3 class="text-lg font-medium mb-3">Aperçu des Données</h3>
         <div id="preview-container" class="overflow-x-auto max-h-96 border rounded-lg">
             <table class="custom-table" id="preview-table">
                 <thead id="preview-headers"></thead>
@@ -113,79 +113,79 @@
          <div id="preview-error" class="hidden mt-4"></div>
 
         <div class="flex justify-end mt-6 border-t pt-4">
-            <button type="button" id="next-to-tables-btn" class="btn btn-primary">{{ _('Next: Multi-Table Import') }}</button>
+            <button type="button" id="next-to-tables-btn" class="btn btn-primary">Suivant : Import Multi-Tables</button>
         </div>
     </div>
 </div>
 
 <!-- Step 2: Multi-Table Import Overview -->
 <div class="custom-card hidden" id="step2-section">
-    <h2 class="card-title mb-4">{{ _('Step 2: Multi-Table Import Overview') }}</h2>
+    <h2 class="card-title mb-4">Étape 2: Vue d'Ensemble de l'Import Multi-Tables</h2>
     
     <div class="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
-        <h3 class="font-medium text-green-800 mb-3">{{ _('Smart Multi-Table Import') }}</h3>
+        <h3 class="font-medium text-green-800 mb-3">Import Multi-Tables Intelligent</h3>
         <p class="text-sm text-green-700 mb-4">
-            {{ _('Your CSV data will be intelligently distributed across multiple database tables to maintain proper relationships:') }}
+            Vos données CSV seront distribuées intelligemment à travers plusieurs tables de base de données pour maintenir les relations appropriées :
         </p>
         
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div class="bg-white border border-green-200 rounded-lg p-4">
-                <h4 class="font-medium text-green-800 mb-2">{{ _('Workers Table') }}</h4>
+                <h4 class="font-medium text-green-800 mb-2">Table des Travailleurs</h4>
                 <ul class="text-xs text-green-600 space-y-1">
-                    <li>• {{ _('Worker names') }}</li>
-                    <li>• {{ _('Worker IDs') }}</li>
-                    <li>• {{ _('Sector assignments') }}</li>
+                    <li>• Noms des travailleurs</li>
+                    <li>• IDs des travailleurs</li>
+                    <li>• Affectations de secteur</li>
                 </ul>
             </div>
             
             <div class="bg-white border border-green-200 rounded-lg p-4">
-                <h4 class="font-medium text-green-800 mb-2">{{ _('SIM Cards Table') }}</h4>
+                <h4 class="font-medium text-green-800 mb-2">Table des Cartes SIM</h4>
                 <ul class="text-xs text-green-600 space-y-1">
-                    <li>• {{ _('ICCID numbers') }}</li>
-                    <li>• {{ _('PIN/PUK codes') }}</li>
-                    <li>• {{ _('Carrier information') }}</li>
+                    <li>• Numéros ICCID</li>
+                    <li>• Codes PIN/PUK</li>
+                    <li>• Informations de l'opérateur</li>
                 </ul>
             </div>
             
             <div class="bg-white border border-green-200 rounded-lg p-4">
-                <h4 class="font-medium text-green-800 mb-2">{{ _('Phones Table') }}</h4>
+                <h4 class="font-medium text-green-800 mb-2">Table des Téléphones</h4>
                 <ul class="text-xs text-green-600 space-y-1">
-                    <li>• {{ _('IMEI numbers') }}</li>
-                    <li>• {{ _('Device models') }}</li>
-                    <li>• {{ _('Asset tags') }}</li>
+                    <li>• Numéros IMEI</li>
+                    <li>• Modèles d'appareils</li>
+                    <li>• Étiquettes d'actifs</li>
                 </ul>
             </div>
         </div>
         
         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 class="font-medium text-blue-800 mb-2">{{ _('Automatic Relationships') }}</h4>
+            <h4 class="font-medium text-blue-800 mb-2">Relations Automatiques</h4>
             <p class="text-xs text-blue-600">
-                {{ _('The system will automatically create assignments linking phones, SIM cards, and workers together, maintaining data integrity and relationships.') }}
+                Le système créera automatiquement des affectations reliant les téléphones, cartes SIM et travailleurs ensemble, maintenant l'intégrité des données et les relations.
             </p>
         </div>
     </div>
     
     <div class="flex justify-between mt-6">
-        <button type="button" class="btn btn-secondary" onclick="showStep(1)">{{ _('Back to Options') }}</button>
-        <button type="button" class="btn btn-primary" id="proceed-to-mapping">{{ _('Next: Map Columns') }}</button>
+        <button type="button" class="btn btn-secondary" onclick="showStep(1)">Retour aux Options</button>
+        <button type="button" class="btn btn-primary" id="proceed-to-mapping">Suivant : Mapper les Colonnes</button>
     </div>
 </div>
 
 <!-- Step 3: Column Mapping -->
 <div class="custom-card hidden" id="step3-section">
-    <h2 class="card-title mb-4">{{ _('Step 3: Map CSV Columns to Database Fields') }}</h2>
+    <h2 class="card-title mb-4">Étape 3: Mapper les Colonnes CSV aux Champs de Base de Données</h2>
     
     <!-- Multi-Table Import Notice -->
     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-        <h3 class="font-medium text-blue-800 mb-2">{{ _('Multi-Table Import') }}</h3>
+        <h3 class="font-medium text-blue-800 mb-2">Import Multi-Tables</h3>
         <p class="text-sm text-blue-600 mb-3">
-            {{ _('This import will intelligently distribute your CSV data across multiple related tables (Workers, SIM Cards, Phones) and create the necessary relationships.') }}
+            Cet import distribuera intelligemment vos données CSV à travers plusieurs tables liées (Travailleurs, Cartes SIM, Téléphones) et créera les relations nécessaires.
         </p>
         <div class="text-xs text-blue-500">
-            <strong>{{ _('Available Fields:') }}</strong><br>
-            <span class="font-medium">{{ _('Worker:') }}</span> name, worker_id<br>
-            <span class="font-medium">{{ _('SIM Card:') }}</span> iccid, pin, puk, carrier<br>
-            <span class="font-medium">{{ _('Phone:') }}</span> imei, model, asset_tag, manufacturer, serial_number, status
+            <strong>Champs Disponibles :</strong><br>
+            <span class="font-medium">Travailleur :</span> name, worker_id<br>
+            <span class="font-medium">Carte SIM :</span> iccid, pin, puk, carrier<br>
+            <span class="font-medium">Téléphone :</span> imei, model, asset_tag, manufacturer, serial_number, status
         </div>
     </div>
     
@@ -193,16 +193,16 @@
         <table class="custom-table">
             <thead>
                 <tr>
-                    <th>{{ _('CSV Column') }}</th>
-                    <th>{{ _('Maps To Database Field') }}</th>
-                    <th>{{ _('Field Description') }}</th>
+                    <th>Colonne CSV</th>
+                    <th>Mappé au Champ de Base de Données</th>
+                    <th>Description du Champ</th>
                 </tr>
             </thead>
             <tbody id="column-mapping-body"></tbody>
         </table>
     </div>
     <div class="flex justify-between mt-6">
-        <button type="button" class="btn btn-secondary" onclick="showStep(2)">{{ _('Back to Overview') }}</button>
+        <button type="button" class="btn btn-secondary" onclick="showStep(2)">Retour à la Vue d'Ensemble</button>
         <button type="button" class="btn btn-primary" id="run-import-btn">{{ _('Run Import') }}</button>
     </div>
 </div>

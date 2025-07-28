@@ -1,59 +1,56 @@
 {% extends "base.html" %}
 
-{% block title %}Admin Overview{% endblock %}
+{% block title %}Vue d'ensemble Admin{% endblock %}
 
-{% block page_title %}Global Worker Overview{% endblock %}
+{% block page_title %}Vue d'ensemble globale des travailleurs{% endblock %}
 
 {% block content %}
 <div class="custom-card mb-4">
     <div class="card-header">
-        <h3 class="text-lg font-medium">{{ _('Filters & Display Options') }}</h3>
+        <h3 class="text-lg font-medium">Options de filtrage et d'affichage</h3>
     </div>
     <div class="p-4">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 border-b pb-4">
             <div class="custom-form-group">
-                <label for="sector-filter" class="custom-label">{{ _('Filter by Sector') }}</label>
+                <label for="sector-filter" class="custom-label">Filtrer par secteur</label>
                 <select id="sector-filter" class="custom-select">
-                    <option value="">{{ _('All Sectors') }}</option>
+                    <option value="">Tous les secteurs</option>
                 </select>
             </div>
             <div class="custom-form-group">
-                <label for="worker-status-filter" class="custom-label">{{ _('Worker Status') }}</label>
+                <label for="worker-status-filter" class="custom-label">Statut du travailleur</label>
                 <select id="worker-status-filter" class="custom-select">
-                    <option value="">{{ _('All Statuses') }}</option>
-                    <option value="Active">{{ _('Active') }}</option>
-                    <option value="Inactive">{{ _('Inactive') }}</option>
-                    <option value="Arrêt">{{ _('Arrêt') }}</option>
-                    <option value="Congés">{{ _('Congés') }}</option>
+                    <option value="">Tous les statuts</option>
+                    <option value="Active">Actif</option>
+                    <option value="Inactive">Inactif</option>
+                    <option value="Arrêt">Arrêt</option>
+                    <option value="Congés">Congés</option>
                 </select>
             </div>
             <div class="custom-form-group">
-                <label for="phone-status-filter" class="custom-label">{{ _('Phone Status') }}</label>
+                <label for="phone-status-filter" class="custom-label">Statut du téléphone</label>
                 <select id="phone-status-filter" class="custom-select">
-                    <option value="">{{ _('All Phone Statuses') }}</option>
-                    <option value="In Use">{{ _('In Use') }}</option>
-                    <option value="In Stock">{{ _('In Stock') }}</option>
-                    <option value="Under Repair">{{ _('Under Repair') }}</option>
-                    <option value="Decommissioned">{{ _('Decommissioned') }}</option>
+                    <option value="">Tous les statuts téléphone</option>
+                    <option value="In Use">En service</option>
+                    <option value="In Stock">En stock</option>
+                    <option value="Under Repair">En réparation</option>
+                    <option value="Decommissioned">Hors service</option>
                 </select>
             </div>
             <div class="custom-form-group">
-                <label for="worker-search" class="custom-label">{{ _('Search Worker') }}</label>
-                <input type="text" id="worker-search" class="custom-input" placeholder="{{ _('Search by name...') }}">
+                <label for="worker-search" class="custom-label">Rechercher un travailleur</label>
+                <input type="text" id="worker-search" class="custom-input" placeholder="Rechercher par nom...">
             </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
              <div class="custom-form-group">
-                <label for="items-per-page-select" class="custom-label">{{ _('Show Per Page') }}</label>
+                <label for="items-per-page-select" class="custom-label">Afficher par page</label>
                 <select id="items-per-page-select" class="custom-select">
                     <option value="25">25</option>
                     <option value="50">50</option>
                     <option value="100">100</option>
                     <option value="250">250</option>
                 </select>
-            </div>
-            <div>
-                 <button id="customize-fields-btn" class="btn-secondary w-full">{{ _('Customize Card Fields') }}</button>
             </div>
         </div>
     </div>
@@ -63,22 +60,6 @@
     </div>
 
 <div id="pagination-controls" class="flex items-center justify-between mt-6"></div>
-
-<div id="customize-fields-modal" class="custom-modal hidden">
-    <div class="custom-modal-backdrop"></div>
-    <div class="custom-modal-content max-w-2xl">
-        <div class="custom-modal-header">
-            <h3 class="custom-modal-title">{{ _('Customize Visible Fields') }}</h3>
-        </div>
-        <div id="fields-list" class="custom-modal-body grid grid-cols-1 md:grid-cols-3 gap-4 p-6">
-            </div>
-        <div class="custom-modal-footer">
-            <button type="button" id="cancel-customize-btn" class="btn btn-secondary">{{ _('Cancel') }}</button>
-            <button type="button" id="save-customize-btn" class="btn btn-primary">{{ _('Save & Apply') }}</button>
-        </div>
-    </div>
-</div>
-
 
 <div id="toast" class="toast fixed top-4 right-4 p-4 rounded-md shadow-lg hidden">
     <span id="toast-message"></span>
@@ -107,44 +88,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const workerSearchFilter = document.getElementById('worker-search');
     const itemsPerPageSelect = document.getElementById('items-per-page-select');
 
-    // Customize Fields Modal
-    const customizeModal = document.getElementById('customize-fields-modal');
-    const customizeBtn = document.getElementById('customize-fields-btn');
-    const saveCustomizeBtn = document.getElementById('save-customize-btn');
-    const cancelCustomizeBtn = document.getElementById('cancel-customize-btn');
-    const fieldsListDiv = document.getElementById('fields-list');
-
     // ======== FIELD DEFINITIONS ========
-    // Defines all possible fields, their labels, types for editing, and group.
-    const ALL_FIELDS = {
-        worker_id: { label: 'Worker ID', type: 'text', group: 'Worker' },
-        secteur_name: { label: 'Sector', type: 'select', source: 'sectors', group: 'Worker' },
-        status: { label: 'Worker Status', type: 'select', source: 'worker_status', group: 'Worker' },
-        contract_type: { label: 'Contract Type', type: 'select', source: 'contract_type', group: 'HR' },
-        contract_end_date: { label: 'Contract End', type: 'date', group: 'HR' },
-        asset_tag: { label: 'Asset Tag', type: 'text', group: 'Phone' },
-        manufacturer: { label: 'Manufacturer', type: 'text', group: 'Phone' },
-        model: { label: 'Model', type: 'text', group: 'Phone' },
-        phone_status: { label: 'Phone Status', type: 'select', source: 'phone_status', group: 'Phone' },
-        phone_number: { label: 'Phone Number', type: 'text', group: 'SIM' },
-        carrier: { label: 'Carrier', type: 'text', group: 'SIM' },
-        open_ticket_count: { label: 'Open Tickets', type: 'readonly', group: 'Stats'},
-        pending_swaps: { label: 'Pending Swaps', type: 'readonly', group: 'Stats' }
-    };
-
-    // Default fields to show on first load if nothing is in localStorage
-    const DEFAULT_VISIBLE_FIELDS = ['secteur_name', 'contract_type', 'contract_end_date', 'model', 'asset_tag'];
-    let visibleFields = JSON.parse(localStorage.getItem('visibleFields')) || DEFAULT_VISIBLE_FIELDS;
+    // Fixed visible fields for cards
+    const visibleFields = ['secteur_name', 'contract_type', 'contract_end_date', 'model', 'asset_tag', 'phone_status'];
 
     // ======== DATA FETCHING ========
     async function fetchInitialData() {
-        workersContainer.innerHTML = `<div class="text-center py-8 text-gray-500 col-span-full">{{ _('Loading workers data...') }}</div>`;
+        workersContainer.innerHTML = `<div class="text-center py-8 text-gray-500 col-span-full">Chargement des données des travailleurs...</div>`;
         try {
             const [workersResponse, sectorsResponse] = await Promise.all([
                 fetch('/api/admin/all_workers_status'),
                 fetch('/api/sectors') 
             ]);
-            if (!workersResponse.ok || !sectorsResponse.ok) throw new Error('Failed to load initial data.');
+            if (!workersResponse.ok || !sectorsResponse.ok) throw new Error('Échec du chargement des données initiales.');
             
             originalWorkersData = await workersResponse.json();
             sectorsList = await sectorsResponse.json();
@@ -159,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ======== RENDERING & UI UPDATES ========
     function populateFilters() {
         const uniqueSectors = [...new Set(originalWorkersData.map(w => w.secteur_name).filter(Boolean))].sort();
-        sectorFilter.innerHTML = '<option value="">{{ _("All Sectors") }}</option>';
+        sectorFilter.innerHTML = '<option value="">Tous les Secteurs</option>';
         uniqueSectors.forEach(sector => sectorFilter.innerHTML += `<option value="${sector}">${sector}</option>`);
     }
 
@@ -172,7 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderPaginatedWorkers(workers) {
         workersContainer.innerHTML = '';
         if (!workers || workers.length === 0) {
-            workersContainer.innerHTML = '<div class="text-center py-8 text-gray-500 col-span-full">{{ _("No workers found matching your criteria.") }}</div>';
+            workersContainer.innerHTML = '<div class="text-center py-8 text-gray-500 col-span-full">Aucun travailleur trouvé correspondant à vos critères.</div>';
             return;
         }
 
@@ -194,8 +150,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let html = `<div class="text-sm text-gray-700">Page ${currentPage} of ${totalPages}</div>`;
         html += '<div class="flex items-center space-x-2">';
-        html += `<button class="btn-secondary btn-sm pagination-btn" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>{{ _('Previous') }}</button>`;
-        html += `<button class="btn-secondary btn-sm pagination-btn" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>{{ _('Next') }}</button>`;
+        html += `<button class="btn-secondary btn-sm pagination-btn" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>Précédent</button>`;
+        html += `<button class="btn-secondary btn-sm pagination-btn" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>Suivant</button>`;
         html += '</div>';
         paginationControls.innerHTML = html;
     }
@@ -206,16 +162,32 @@ document.addEventListener('DOMContentLoaded', function() {
         
         let dynamicFieldsHtml = '';
         if (mode === 'view') {
+            const fieldLabels = {
+                secteur_name: 'Sector',
+                contract_type: 'Contract Type', 
+                contract_end_date: 'Contract End',
+                model: 'Model',
+                asset_tag: 'Asset Tag',
+                phone_status: 'Phone Status'
+            };
+            
             dynamicFieldsHtml = visibleFields.map(fieldKey => {
-                const field = ALL_FIELDS[fieldKey];
+                const label = fieldLabels[fieldKey];
                 const value = worker[fieldKey] || 'N/A';
-                return `<div class="flex justify-between"><span class="text-sm font-medium text-gray-600">${field.label}:</span><span class="text-sm text-gray-900 text-right">${value}</span></div>`;
+                return `<div class="flex justify-between"><span class="text-sm font-medium text-gray-600">${label}:</span><span class="text-sm text-gray-900 text-right">${value}</span></div>`;
             }).join('');
         } else { // 'edit' mode
             dynamicFieldsHtml = visibleFields.map(fieldKey => {
-                const field = ALL_FIELDS[fieldKey];
-                if (field.type === 'readonly') return ''; // Don't create inputs for readonly fields
-                return `<div><label class="custom-label">${field.label}</label>${createInputField(worker, fieldKey)}</div>`;
+                const fieldLabels = {
+                    secteur_name: 'Sector',
+                    contract_type: 'Contract Type', 
+                    contract_end_date: 'Contract End',
+                    model: 'Model',
+                    asset_tag: 'Asset Tag',
+                    phone_status: 'Phone Status'
+                };
+                const label = fieldLabels[fieldKey];
+                return `<div><label class="custom-label">${label}</label>${createInputField(worker, fieldKey)}</div>`;
             }).join('');
         }
 
@@ -227,37 +199,45 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 ${getContractWarning(worker)}
                 <div class="space-y-2 mb-4">${dynamicFieldsHtml}</div>
-                <div class="border-t pt-3 flex justify-end"><button class="btn-secondary btn-sm edit-btn" data-worker-id="${worker.worker_db_id}">{{ _('Edit') }}</button></div>
+                <div class="border-t pt-3 flex justify-end"><button class="btn-secondary btn-sm edit-btn" data-worker-id="${worker.worker_db_id}">Modifier</button></div>
             </div>`;
         
         const editModeHtml = `
             <div class="edit-view hidden">
-                <h3 class="font-semibold text-gray-900 mb-3">{{ _('Editing') }} ${worker.worker_name}</h3>
+                <h3 class="font-semibold text-gray-900 mb-3">Modification de ${worker.worker_name}</h3>
                 <div class="space-y-3">
-                    <div><label class="custom-label">{{ _('Full Name') }}</label><input type="text" name="full_name" class="custom-input" value="${worker.worker_name}"></div>
+                    <div><label class="custom-label">Nom Complet</label><input type="text" name="full_name" class="custom-input" value="${worker.worker_name}"></div>
                     ${dynamicFieldsHtml}
                 </div>
-                <div class="border-t pt-3 mt-4 flex justify-end space-x-2"><button class="btn-secondary btn-sm cancel-btn" data-worker-id="${worker.worker_db_id}">{{ _('Cancel') }}</button><button class="btn-primary btn-sm save-btn" data-worker-id="${worker.worker_db_id}">{{ _('Save') }}</button></div>
+                <div class="border-t pt-3 mt-4 flex justify-end space-x-2"><button class="btn-secondary btn-sm cancel-btn" data-worker-id="${worker.worker_db_id}">Annuler</button><button class="btn-primary btn-sm save-btn" data-worker-id="${worker.worker_db_id}">Enregistrer</button></div>
             </div>`;
 
         return `<div id="worker-card-${worker.worker_db_id}" class="worker-card ${cardBgClass} rounded-lg shadow-md border p-4 transition-shadow">${viewModeHtml}${editModeHtml}</div>`;
     }
 
     function createInputField(worker, fieldKey) {
-        const field = ALL_FIELDS[fieldKey];
         const value = worker[fieldKey] || '';
-        if (field.type === 'select') {
-            let options = '';
-            const sources = {
-                sectors: sectorsList.map(s => `<option value="${s.id}" ${worker.secteur_id == s.id ? 'selected' : ''}>${s.name}</option>`),
-                worker_status: ['Active', 'Inactive', 'Arrêt', 'Congés'].map(s => `<option value="${s}" ${value === s ? 'selected' : ''}>${s}</option>`),
-                phone_status: ['In Use', 'In Stock', 'Under Repair', 'Decommissioned'].map(s => `<option value="${s}" ${value === s ? 'selected' : ''}>${s}</option>`),
-                contract_type: ['CDI', 'CDD', 'INTERIM'].map(s => `<option value="${s}" ${value === s ? 'selected' : ''}>${s}</option>`)
-            };
-            options = sources[field.source].join('');
+        
+        if (fieldKey === 'secteur_name') {
+            const options = sectorsList.map(s => `<option value="${s.id}" ${worker.secteur_id == s.id ? 'selected' : ''}>${s.name}</option>`).join('');
             return `<select name="${fieldKey}" class="custom-select">${options}</select>`;
         }
-        return `<input type="${field.type}" name="${fieldKey}" class="custom-input" value="${value}">`;
+        
+        if (fieldKey === 'contract_type') {
+            const options = ['CDI', 'CDD', 'INTERIM'].map(s => `<option value="${s}" ${value === s ? 'selected' : ''}>${s}</option>`).join('');
+            return `<select name="${fieldKey}" class="custom-select">${options}</select>`;
+        }
+        
+        if (fieldKey === 'phone_status') {
+            const options = ['In Use', 'In Stock', 'Under Repair', 'Decommissioned'].map(s => `<option value="${s}" ${value === s ? 'selected' : ''}>${s}</option>`).join('');
+            return `<select name="${fieldKey}" class="custom-select">${options}</select>`;
+        }
+        
+        if (fieldKey === 'contract_end_date') {
+            return `<input type="date" name="${fieldKey}" class="custom-input" value="${value}">`;
+        }
+        
+        return `<input type="text" name="${fieldKey}" class="custom-input" value="${value}">`;
     }
 
     // ======== FILTERS & PAGINATION ========
@@ -277,7 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
         );
     }
     
-    // ======== CARD & MODAL EVENT LISTENERS ========
+    // ======== CARD EVENT LISTENERS ========
     workersContainer.addEventListener('click', async e => {
         const workerId = e.target.dataset.workerId;
         if (!workerId) return;
@@ -321,89 +301,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Setup Field Customization Modal
-    customizeBtn.addEventListener('click', () => {
-        console.log('DEBUG: Customize button clicked');
-        console.log('DEBUG: Modal element:', customizeModal);
-        console.log('DEBUG: Modal classes before:', customizeModal.className);
-        console.log('DEBUG: ALL_FIELDS:', ALL_FIELDS);
-        console.log('DEBUG: visibleFields:', visibleFields);
-        
-        fieldsListDiv.innerHTML = '';
-        const groupedFields = {};
-        
-        // Group fields by category
-        for (const key in ALL_FIELDS) {
-            const field = ALL_FIELDS[key];
-            if (!groupedFields[field.group]) groupedFields[field.group] = [];
-            groupedFields[field.group].push({key, ...field});
-        }
-        
-        console.log('DEBUG: groupedFields:', groupedFields);
-        
-        // Build the complete HTML first
-        let completeHtml = '';
-        for (const groupName in groupedFields) {
-            console.log(`DEBUG: Processing group ${groupName} with ${groupedFields[groupName].length} fields`);
-            
-            let groupHtml = `<div class="col-span-1"><h4 class="font-semibold text-gray-800 border-b mb-2 pb-1">${groupName}</h4>`;
-            groupedFields[groupName].forEach(field => {
-                const isChecked = visibleFields.includes(field.key);
-                console.log(`DEBUG: Field ${field.key} (${field.label}) - checked: ${isChecked}`);
-                groupHtml += `<div class="flex items-center mb-1">
-                    <input type="checkbox" id="field-${field.key}" value="${field.key}" class="mr-2" ${isChecked ? 'checked' : ''}>
-                    <label for="field-${field.key}" class="text-sm">${field.label}</label>
-                </div>`;
-            });
-            groupHtml += '</div>';
-            completeHtml += groupHtml;
-        }
-        
-        console.log('DEBUG: Complete HTML length:', completeHtml.length);
-        console.log('DEBUG: Complete HTML preview:', completeHtml.substring(0, 200));
-        
-        // Set the complete HTML at once
-        fieldsListDiv.innerHTML = completeHtml;
-        
-        console.log('DEBUG: fieldsListDiv after setting HTML:', fieldsListDiv.innerHTML.length);
-        console.log('DEBUG: Number of checkboxes found:', fieldsListDiv.querySelectorAll('input[type="checkbox"]').length);
-        
-        customizeModal.classList.remove('hidden');
-        console.log('DEBUG: Modal classes after remove hidden:', customizeModal.className);
-        console.log('DEBUG: Modal computed style display:', window.getComputedStyle(customizeModal).display);
-    });
-
-    cancelCustomizeBtn.addEventListener('click', () => {
-        console.log('DEBUG: Cancel button clicked');
-        console.log('DEBUG: Modal classes before hide:', customizeModal.className);
-        customizeModal.classList.add('hidden');
-        console.log('DEBUG: Modal classes after hide:', customizeModal.className);
-    });
-    
-    // Close modal when clicking on backdrop
-    customizeModal.addEventListener('click', (e) => {
-        console.log('DEBUG: Modal clicked, target:', e.target);
-        console.log('DEBUG: Target classes:', e.target.className);
-        console.log('DEBUG: Is customizeModal?', e.target === customizeModal);
-        console.log('DEBUG: Has backdrop class?', e.target.classList.contains('custom-modal-backdrop'));
-        
-        if (e.target === customizeModal || e.target.classList.contains('custom-modal-backdrop')) {
-            console.log('DEBUG: Closing modal via backdrop click');
-            customizeModal.classList.add('hidden');
-        }
-    });
-    
-    saveCustomizeBtn.addEventListener('click', () => {
-        console.log('DEBUG: Save button clicked');
-        const selected = [];
-        fieldsListDiv.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => selected.push(cb.value));
-        visibleFields = selected;
-        localStorage.setItem('visibleFields', JSON.stringify(visibleFields));
-        console.log('DEBUG: Hiding modal after save');
-        customizeModal.classList.add('hidden');
-        updateView();
-    });
-
     // Universal event listeners
     [sectorFilter, workerStatusFilter, phoneStatusFilter].forEach(el => el.addEventListener('change', () => { currentPage = 1; updateView(); }));
     workerSearchFilter.addEventListener('input', () => { currentPage = 1; updateView(); });
@@ -438,21 +335,17 @@ document.addEventListener('DOMContentLoaded', function() {
         display: none;
     }
     
-    /* Add styles for disabled buttons and modal */
+    /* Add styles for disabled buttons */
     button:disabled { background-color: #d1d5db; cursor: not-allowed; }
-    .custom-modal { display: flex; align-items: center; justify-content: center; position: fixed; inset: 0; z-index: 50; }
-    .custom-modal-backdrop { position: absolute; inset: 0; background-color: rgba(0,0,0,0.5); }
-    .custom-modal-content { z-index: 10; background: white; border-radius: 0.5rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); width: 100%; }
-    .custom-modal-header { padding: 1rem 1.5rem; border-bottom: 1px solid #e5e7eb; }
-    .custom-modal-title { font-size: 1.125rem; font-weight: 600; color: #111827; }
-    .custom-modal-body { max-height: 60vh; overflow-y: auto; }
-    .custom-modal-footer { padding: 1rem 1.5rem; background-color: #f9fafb; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 0.5rem; }
-    /* Other styles remain the same */
+    
+    /* Status badges */
     .status-badge { padding: 0.25rem 0.65rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: capitalize; }
     .status-badge.active { background-color: #d1fae5; color: #065f46; }
     .status-badge.inactive { background-color: #e5e7eb; color: #4b5563; }
     .status-badge.arrêt { background-color: #fee2e2; color: #991b1b; }
     .status-badge.congés { background-color: #fef3c7; color: #92400e; }
+    
+    /* Toast notifications */
     .toast { transition: opacity 0.3s ease, transform 0.3s ease; }
     .toast.hidden { opacity: 0; transform: translateY(-20px); }
     .toast.success { background-color: #10b981; color: white; }

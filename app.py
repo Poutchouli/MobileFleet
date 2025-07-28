@@ -16,7 +16,6 @@ from flask import (
 )
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from flask_babel import Babel
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -25,18 +24,6 @@ load_dotenv()
 # --- App Initialization ---
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
-
-# --- Babel Configuration ---
-app.config['LANGUAGES'] = ['en', 'fr', 'nl']  # Supported: English, French, Dutch
-
-def get_locale():
-    # Check if the user has a language stored in their session
-    if 'language' in session and session['language'] in app.config['LANGUAGES']:
-        return session['language']
-    # Default to French if no language preference is set
-    return 'fr'
-
-babel = Babel(app, locale_selector=get_locale)
 
 # --- Database Configuration for Migrations ---
 # Configure SQLAlchemy to work alongside existing psycopg2 connections
@@ -314,13 +301,6 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
-@app.route('/set_language/<lang>')
-def set_language(lang):
-    if lang in app.config['LANGUAGES']:
-        session['language'] = lang
-    # Redirect back to the previous page, or to the dashboard as a fallback
-    return redirect(request.referrer or url_for('index'))
-
 @app.route('/')
 @login_required
 def index():
@@ -422,13 +402,6 @@ def admin_enhanced_csv_import():
 def admin_sql_editor():
     """Serves the SQL query editor page for administrators."""
     return render_template('admin/sql_editor.html')
-
-@app.route('/admin/flotte')
-@login_required
-@role_required('Administrator')
-def admin_flotte():
-    """Serves the fleet management page with tabs for phones, SIMs, phone numbers, and workers."""
-    return render_template('admin/flotte.html')
 
 @app.route('/admin/assign-secteurs')
 @login_required

@@ -9,14 +9,14 @@
         <!-- Query Editor Card -->
         <div class="custom-card">
             <div class="card-header">
-                <h2 class="card-title">{{ _('Query Editor') }}</h2>
+                <h2 class="card-title">Éditeur de Requêtes</h2>
                 <div class="text-sm text-gray-500">
-                    {{ _('Execute SQL queries on the database') }}
+                    Exécuter des requêtes SQL sur la base de données
                 </div>
             </div>
             <div class="space-y-4">
                 <div>
-                    <label for="sql-query" class="form-label">{{ _('SQL Query') }}</label>
+                    <label for="sql-query" class="form-label">Requête SQL</label>
                     <textarea 
                         id="sql-query" 
                         class="custom-textarea font-mono" 
@@ -29,7 +29,7 @@
                         <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h1m4 0h1"></path>
                         </svg>
-                        {{ _('Run Query') }}
+                        Exécuter la Requête
                     </button>
                 </div>
             </div>
@@ -38,9 +38,9 @@
         <!-- Results Card -->
         <div class="custom-card">
             <div class="card-header">
-                <h2 class="card-title">{{ _('Query Results') }}</h2>
+                <h2 class="card-title">Résultats de la Requête</h2>
                 <div class="text-sm text-gray-500" id="results-info">
-                    {{ _('Results will appear here') }}
+                    Les résultats apparaîtront ici
                 </div>
             </div>
             <div id="results-container" class="overflow-x-auto">
@@ -48,7 +48,7 @@
                     <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
-                    {{ _('No query executed yet') }}
+                    Aucune requête exécutée pour le moment
                 </div>
             </div>
         </div>
@@ -57,9 +57,9 @@
     <!-- Right Panel: Schema Diagram -->
     <div class="custom-card">
         <div class="card-header">
-            <h2 class="card-title">{{ _('Database Schema') }}</h2>
+            <h2 class="card-title">            <h6 class="text-muted">Schéma de la Base de Données</h6></h2>
             <div class="text-sm text-gray-500">
-                {{ _('Entity Relationship Diagram') }}
+                Diagramme des Relations Entre Entités
             </div>
         </div>
         <div class="h-96 overflow-auto">
@@ -68,7 +68,7 @@
                     <svg class="w-12 h-12 mx-auto mb-4 text-gray-300 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                     </svg>
-                    {{ _('Loading database schema...') }}
+                    Chargement du schéma de la base de données...
                 </div>
             </div>
         </div>

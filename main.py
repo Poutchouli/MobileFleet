@@ -15,7 +15,6 @@ from flask import (
 )
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from flask_babel import Babel
 from dotenv import load_dotenv
 import time
 from collections import defaultdict, deque
@@ -102,18 +101,6 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # CSRF protection
 
 # Remember me configuration
 app.config['REMEMBER_ME_DAYS'] = int(os.environ.get('REMEMBER_ME_DAYS', 30))
-
-# --- Babel Configuration ---
-app.config['LANGUAGES'] = ['fr', 'en']  # Supported: French (default), English
-
-def get_locale():
-    # Check if the user has a language stored in their session
-    if 'language' in session and session['language'] in app.config['LANGUAGES']:
-        return session['language']
-    # Otherwise, return French as default language
-    return request.accept_languages.best_match(app.config['LANGUAGES']) or 'fr'
-
-babel = Babel(app, locale_selector=get_locale)
 
 # --- Database Configuration for Migrations ---
 # Configure SQLAlchemy to work alongside existing psycopg2 connections
@@ -422,34 +409,10 @@ def login():
                 return render_template('login.html', error=error)
                 
             # Successful login
-            # Preserve language preference before clearing session
-            current_language = session.get('language')
-            
             session.clear()
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['role'] = user['role_name']
-            
-            # Restore or set default language preference
-            if current_language and current_language in app.config['LANGUAGES']:
-                session['language'] = current_language
-            else:
-                # Try to get user's previously saved language preference from database
-                try:
-                    cursor = db.cursor()
-                    cursor.execute("SELECT language_preference FROM users WHERE id = %s", (user['id'],))
-                    user_lang = cursor.fetchone()
-                    cursor.close()
-                    
-                    if user_lang and user_lang['language_preference'] and user_lang['language_preference'] in app.config['LANGUAGES']:
-                        session['language'] = user_lang['language_preference']
-                    else:
-                        # Default to browser preference or English
-                        session['language'] = request.accept_languages.best_match(app.config['LANGUAGES']) or 'en'
-                except Exception as e:
-                    # Fallback to English if database query fails
-                    session['language'] = 'en'
-                    app.logger.debug("Could not retrieve language preference for user %s: %s", user['username'], e)
             
             # Session management - set activity tracking and remember me
             from datetime import datetime
@@ -495,40 +458,6 @@ def logout():
     app.logger.info("User logout: %s (ID: %s) from IP: %s", username, user_id, request.remote_addr)
     session.clear()
     return redirect(url_for('login'))
-
-@app.route('/set_language/<lang>')
-def set_language(lang):
-    if lang in app.config['LANGUAGES']:
-        session['language'] = lang
-        
-        # If user is logged in, save language preference to database
-        if 'user_id' in session:
-            try:
-                db = get_db()
-                cursor = db.cursor()
-                
-                # Try to update the language preference
-                cursor.execute("""
-                    UPDATE users 
-                    SET language_preference = %s, updated_at = NOW() 
-                    WHERE id = %s
-                """, (lang, session['user_id']))
-                
-                db.commit()
-                cursor.close()
-                
-                app.logger.info("Language preference updated to %s for user %s", 
-                              lang, session.get('username', 'Unknown'))
-                
-            except Exception as e:
-                # If the column doesn't exist, we'll handle it gracefully
-                app.logger.debug("Could not save language preference for user %s: %s", 
-                               session.get('username', 'Unknown'), e)
-                if 'cursor' in locals():
-                    cursor.close()
-    
-    # Redirect back to the previous page, or to the dashboard as a fallback
-    return redirect(request.referrer or url_for('index'))
 
 @app.route('/')
 @login_required
@@ -1063,7 +992,7 @@ def get_profile_info():
     
     try:
         cursor.execute(
-            "SELECT username, full_name, email, language_preference FROM users WHERE id = %s",
+            "SELECT username, full_name, email FROM users WHERE id = %s",
             (user_id,)
         )
         user = cursor.fetchone()
@@ -1075,8 +1004,7 @@ def get_profile_info():
         return jsonify({
             "username": user['username'],
             "full_name": user['full_name'],
-            "email": user['email'],
-            "language_preference": user['language_preference']
+            "email": user['email']
         }), 200
         
     except Exception as e:

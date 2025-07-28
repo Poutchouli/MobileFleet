@@ -1,23 +1,23 @@
 {% extends "base.html" %}
-{% block title %}{{ _('Manager Dashboard') }}{% endblock %}
-{% block page_title %}{{ _('Team Dashboard') }}{% endblock %}
+{% block title %}Tableau de Bord Manager{% endblock %}
+{% block page_title %}Tableau de Bord Équipe{% endblock %}
 
 {% block content %}
 <div class="custom-card">
     <div class="card-header">
-        <h2 class="card-title">{{ _("My Team's Status") }}</h2>
-        <button id="create-ticket-btn" class="btn btn-primary">{{ _('Create New Ticket') }}</button>
+        <h2 class="card-title">Statut de Mon Équipe</h2>
+        <button id="create-ticket-btn" class="btn btn-primary">Créer un Nouveau Ticket</button>
     </div>
     <div class="overflow-x-auto">
         <table class="custom-table">
             <thead>
                 <tr>
-                    <th>{{ _('Worker Name') }}</th>
-                    <th>{{ _('Contract End') }}</th>
-                    <th>{{ _('ID Philia') }}</th>
-                    <th>{{ _('Assigned Phone') }}</th>
-                    <th>{{ _('Manager Notes') }}</th>
-                    <th class="text-right">{{ _('Actions') }}</th>
+                    <th>Nom du Travailleur</th>
+                    <th>Fin de Contrat</th>
+                    <th>ID Philia</th>
+                    <th>Téléphone Assigné</th>
+                    <th>Notes du Manager</th>
+                    <th class="text-right">Actions</th>
                 </tr>
             </thead>
             <tbody id="team-status-table-body"></tbody>
@@ -30,23 +30,23 @@
     <div class="custom-modal-backdrop"></div>
     <div class="custom-modal-content">
         <form id="ticket-form" class="custom-form">
-            <div class="custom-modal-header"><h3 class="custom-modal-title">{{ _('Create New Support Ticket') }}</h3></div>
+            <div class="custom-modal-header"><h3 class="custom-modal-title">Créer un Nouveau Ticket</h3></div>
             <div class="custom-modal-body">
                 <div class="custom-form-grid">
                     <div class="custom-form-group custom-form-group-full">
-                        <label for="phone_search" class="custom-label">{{ _('Search Worker / Phone') }}*</label>
-                        <input type="text" id="phone_search" class="custom-input" placeholder="{{ _('Start typing worker name or asset tag...') }}">
+                        <label for="phone_search" class="custom-label">Rechercher Travailleur / Téléphone*</label>
+                        <input type="text" id="phone_search" class="custom-input" placeholder="Commencez à taper le nom du travailleur ou le numéro d'actif...">
                         <div id="search-results" class="border border-gray-300 rounded-md mt-1 max-h-40 overflow-y-auto hidden"></div>
                         <input type="hidden" id="phone_id" name="phone_id">
                     </div>
-                    <div class="custom-form-group"><label for="title" class="custom-label">{{ _('Issue Title') }}*</label><input type="text" name="title" id="title" required class="custom-input"></div>
-                    <div class="custom-form-group"><label for="priority" class="custom-label">{{ _('Priority') }}*</label><select id="priority" name="priority" required class="custom-select"><option>{{ _('Low') }}</option><option>{{ _('Medium') }}</option><option>{{ _('High') }}</option><option>{{ _('Urgent') }}</option></select></div>
-                    <div class="custom-form-group custom-form-group-full"><label for="description" class="custom-label">{{ _('Full Description') }}*</label><textarea id="description" name="description" rows="4" required class="custom-textarea"></textarea></div>
+                    <div class="custom-form-group"><label for="title" class="custom-label">Titre du Problème*</label><input type="text" name="title" id="title" required class="custom-input"></div>
+                    <div class="custom-form-group"><label for="priority" class="custom-label">Priorité*</label><select id="priority" name="priority" required class="custom-select"><option></option><option>IMEI</option><option></option><option>Urgence</option></select></div>
+                    <div class="custom-form-group custom-form-group-full"><label for="description" class="custom-label">Description*</label><textarea id="description" name="description" rows="4" required class="custom-textarea"></textarea></div>
                 </div>
             </div>
             <div class="custom-modal-footer">
-                <button type="button" id="cancel-ticket-btn" class="btn btn-secondary">{{ _('Cancel') }}</button>
-                <button type="submit" class="btn btn-primary">{{ _('Submit Ticket') }}</button>
+                <button type="button" id="cancel-ticket-btn" class="btn btn-secondary">Annuler</button>
+                <button type="submit" class="btn btn-primary">Vos Tickets Soumis</button>
             </div>
         </form>
     </div>
@@ -83,7 +83,7 @@
         async function fetchTeamStatus() {
             try {
                 const response = await fetch('/api/manager/team_status');
-                if (!response.ok) throw new Error('{{ _("Failed to fetch team status") }}');
+                if (!response.ok) throw new Error('Échec de récupération du statut de l\'équipe');
                 const teamStatus = await response.json();
                 renderTable(teamStatus);
             } catch (error) {
@@ -94,23 +94,23 @@
         function renderTable(teamStatus) {
             tableBody.innerHTML = '';
             if (teamStatus.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4">{{ _("No workers found in your sectors.") }}</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4">Travailleurs par Secteur</td></tr>';
                 return;
             }
             teamStatus.forEach(member => {
-                const phoneInfo = member.asset_tag ? `${member.model} (${member.asset_tag})` : '{{ _("N/A") }}';
-                const contractEnd = member.contract_end_date ? new Date(member.contract_end_date).toLocaleDateString() : '{{ _("N/A") }}';
+                const phoneInfo = member.asset_tag ? `${member.model} (${member.asset_tag})` : '';
+                const contractEnd = member.contract_end_date ? new Date(member.contract_end_date).toLocaleDateString() : '';
                 const row = `
                     <tr>
                         <td class="font-medium">${member.worker_name}</td>
                         <td>${contractEnd}</td>
-                        <td>${member.id_philia || '{{ _("N/A") }}'}</td>
+                        <td>${member.id_philia || ''}</td>
                         <td>${phoneInfo}</td>
                         <td>
-                            <textarea class="custom-input text-sm p-1 note-area" data-worker-id="${member.worker_id}" rows="2" placeholder="{{ _('Add a note...') }}">${member.notes || ''}</textarea>
+                            <textarea class="custom-input text-sm p-1 note-area" data-worker-id="${member.worker_id}" rows="2" placeholder="Ajouter une note...">${member.notes || ''}</textarea>
                         </td>
                         <td class="text-right">
-                            <button class="btn-link text-sm save-note-btn" data-worker-id="${member.worker_id}">{{ _('Save Note') }}</button>
+                            <button class="btn-link text-sm save-note-btn" data-worker-id="${member.worker_id}">Enregistrer Note</button>
                         </td>
                     </tr>
                 `;
@@ -169,7 +169,7 @@
                             });
                             searchResultsDiv.classList.remove('hidden');
                         } else {
-                            searchResultsDiv.innerHTML = '<div class="p-2 text-gray-500">{{ _("No results found.") }}</div>';
+                            searchResultsDiv.innerHTML = '<div class="p-2 text-gray-500">Aucun résultat trouvé.</div>';
                             searchResultsDiv.classList.remove('hidden');
                         }
                     });
@@ -189,7 +189,7 @@
             const formData = new FormData(ticketForm);
             const ticketData = Object.fromEntries(formData.entries());
             if (!ticketData.phone_id) {
-                showToast('{{ _("Please select a worker/phone from the search results.") }}', true);
+                showToast('Veuillez sélectionner un travailleur/téléphone dans les résultats de recherche.', true);
                 return;
             }
             try {
@@ -200,7 +200,7 @@
                 });
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.error);
-                showToast('{{ _("Ticket created successfully!") }}');
+                showToast('Ticket créé avec succès !');
                 closeTicketModal();
                 fetchTeamStatus();
             } catch (error) {

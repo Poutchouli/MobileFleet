@@ -1,72 +1,72 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Profile') }} - MobileFleet{% endblock %}
+{% block title %}Rôles - MobileFleet{% endblock %}
 
 {% block content %}
 <div class="max-w-2xl mx-auto py-8">
     <div class="bg-white shadow-md rounded-lg p-6">
         <div class="mb-6">
-            <h1 class="text-2xl font-bold text-gray-900 mb-2">{{ _('Profile Settings') }}</h1>
-            <p class="text-gray-600">{{ _('Manage your account security and personal information') }}</p>
+            <h1 class="text-2xl font-bold text-gray-900 mb-2">Paramètres du Profil</h1>
+            <p class="text-gray-600">Gérez la sécurité de votre compte et vos informations personnelles</p>
         </div>
 
         <!-- User Information Display and Edit -->
         <div class="mb-8">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4">{{ _('Personal Information') }}</h2>
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Informations Personnelles</h2>
             
             <!-- Profile Edit Form -->
             <form id="profile-form" class="space-y-4 mb-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label for="full_name" class="block text-sm font-medium text-gray-700 mb-1">
-                            {{ _('Full Name') }}
+                            Nom Complet
                         </label>
                         <input 
                             type="text" 
                             id="full_name" 
                             name="full_name" 
                             class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="{{ _('Enter your full name') }}"
+                            placeholder="Entrez le nom complet de l'employé"
                         >
                     </div>
                     <div>
                         <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
-                            {{ _('Email Address') }}
+                            Envoyer Email au Manager
                         </label>
                         <input 
                             type="email" 
                             id="email" 
                             name="email" 
                             class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="{{ _('Enter your email address') }}"
+                            placeholder="Entrez votre adresse email"
                         >
                     </div>
                 </div>
                 
                 <div class="flex items-center justify-between pt-2">
                     <div class="text-sm text-gray-600">
-                        {{ _('Update your personal information') }}
+                        Gérez la sécurité de votre compte et vos informations personnelles
                     </div>
                     <button 
                         type="submit" 
                         id="profile-submit-btn"
                         class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-md transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
                     >
-                        {{ _('Update Profile') }}
+                        Rôles
                     </button>
                 </div>
             </form>
 
             <!-- Current Account Information (Read-only) -->
             <div class="p-4 bg-gray-50 rounded-lg">
-                <h3 class="text-sm font-semibold text-gray-700 mb-3">{{ _('Account Details') }}</h3>
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">Étiquette d'Actif</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="text-sm font-medium text-gray-600">{{ _('Role') }}</label>
-                        <p class="text-gray-900">{{ session.role or _('Not set') }}</p>
+                        <label class="text-sm font-medium text-gray-600">Rôles</label>
+                        <p class="text-gray-900">{{ session.role or 'Non défini' }}</p>
                     </div>
                     <div>
-                        <label class="text-sm font-medium text-gray-600">{{ _('Username') }}</label>
+                        <label class="text-sm font-medium text-gray-600">Nom d'utilisateur</label>
                         <p class="text-gray-900">{{ session.username or 'Not set' }}</p>
                     </div>
                 </div>
@@ -78,7 +78,7 @@
 
         <!-- Password Change Form -->
         <div class="border-t pt-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4">{{ _('Change Password') }}</h2>
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Mot de passe</h2>
             
             <form id="change-password-form" class="space-y-4">
                 <div>
@@ -108,12 +108,12 @@
                         class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="Enter new password (min. 8 characters)"
                     >
-                    <p class="text-xs text-gray-500 mt-1">{{ _('Password must be at least 8 characters long') }}</p>
+                    <p class="text-xs text-gray-500 mt-1">Le mot de passe doit contenir au moins 8 caractères</p>
                 </div>
 
                 <div>
                     <label for="confirm_password" class="block text-sm font-medium text-gray-700 mb-1">
-                        {{ _('Confirm New Password') }} *
+                        Confirmer le Nouveau Mot de Passe *
                     </label>
                     <input 
                         type="password" 
@@ -122,7 +122,7 @@
                         required
                         minlength="8"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="{{ _('Confirm your new password') }}"
+                        placeholder="Confirmez votre nouveau mot de passe"
                     >
                 </div>
 
@@ -131,14 +131,14 @@
                         <svg class="w-5 h-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                         </svg>
-                        <span class="text-sm text-gray-600">{{ _('Your password will be encrypted') }}</span>
+                        <span class="text-sm text-gray-600">Votre mot de passe sera chiffré</span>
                     </div>
                     <button 
                         type="submit" 
                         id="submit-btn"
                         class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                     >
-                        {{ _('Change Password') }}
+                        Mot de passe
                     </button>
                 </div>
             </form>
@@ -146,12 +146,12 @@
 
         <!-- Security Best Practices -->
         <div class="mt-8 p-4 bg-blue-50 rounded-lg">
-            <h3 class="text-sm font-semibold text-blue-800 mb-2">{{ _('Security Tips') }}</h3>
+            <h3 class="text-sm font-semibold text-blue-800 mb-2">Conseils de Sécurité</h3>
             <ul class="text-sm text-blue-700 space-y-1">
-                <li>• {{ _('Use a unique password that you don\'t use elsewhere') }}</li>
-                <li>• {{ _('Include a mix of uppercase, lowercase, numbers, and symbols') }}</li>
-                <li>• {{ _('Avoid personal information like names or birthdays') }}</li>
-                <li>• {{ _('Consider using a password manager') }}</li>
+                <li>• Utilisez un mot de passe unique que vous n'utilisez nulle part ailleurs</li>
+                <li>• Incluez un mélange de majuscules, minuscules, chiffres et symboles</li>
+                <li>• Évitez les informations personnelles comme les noms ou dates de naissance</li>
+                <li>• Considérez l'utilisation d'un gestionnaire de mots de passe</li>
             </ul>
         </div>
     </div>
@@ -198,19 +198,19 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Validate at least one field is provided
         if (!data.full_name && !data.email) {
-            showMessage('{{ _("Please provide at least your name or email address.") }}', 'error');
+            showMessage('Veuillez fournir au moins votre nom ou votre adresse e-mail.', 'error');
             return;
         }
         
         // Basic email validation
         if (data.email && !data.email.includes('@')) {
-            showMessage('{{ _("Please provide a valid email address.") }}', 'error');
+            showMessage('Veuillez fournir une adresse e-mail valide.', 'error');
             return;
         }
         
         // Disable submit button and show loading state
         profileSubmitBtn.disabled = true;
-        profileSubmitBtn.textContent = '{{ _("Updating...") }}';
+        profileSubmitBtn.textContent = 'Chargement...';
         
         try {
             const response = await fetch('/api/profile/update', {
@@ -232,15 +232,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('email').value = result.user.email || '';
                 }
             } else {
-                showMessage(result.error || '{{ _("An error occurred while updating your profile.") }}', 'error');
+                showMessage(result.error || 'Une erreur s\'est produite lors de la mise à jour de votre profil.', 'error');
             }
         } catch (error) {
             console.error('Error updating profile:', error);
-            showMessage('{{ _("Network error. Please try again.") }}', 'error');
+            showMessage('', 'error');
         } finally {
             // Re-enable submit button
             profileSubmitBtn.disabled = false;
-            profileSubmitBtn.textContent = '{{ _("Update Profile") }}';
+            profileSubmitBtn.textContent = 'Rôles';
         }
     });
     
@@ -257,18 +257,18 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Client-side validation
         if (data.new_password !== data.confirm_password) {
-            showMessage('{{ _("New passwords do not match.") }}', 'error');
+            showMessage('', 'error');
             return;
         }
         
         if (data.new_password.length < 8) {
-            showMessage('{{ _("New password must be at least 8 characters long.") }}', 'error');
+            showMessage('Le mot de passe doit contenir au moins 8 caractères', 'error');
             return;
         }
         
         // Disable submit button and show loading state
         passwordSubmitBtn.disabled = true;
-        passwordSubmitBtn.textContent = '{{ _("Changing Password...") }}';
+        passwordSubmitBtn.textContent = 'Mot de passe';
         
         try {
             const response = await fetch('/api/profile/change_password', {
@@ -286,15 +286,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 showMessage(result.message, 'success');
                 passwordForm.reset();
             } else {
-                showMessage(result.error || '{{ _("An error occurred while changing your password.") }}', 'error');
+                showMessage(result.error || '', 'error');
             }
         } catch (error) {
             console.error('Error changing password:', error);
-            showMessage('{{ _("Network error. Please try again.") }}', 'error');
+            showMessage('', 'error');
         } finally {
             // Re-enable submit button
             passwordSubmitBtn.disabled = false;
-            passwordSubmitBtn.textContent = '{{ _("Change Password") }}';
+            passwordSubmitBtn.textContent = 'Mot de passe';
         }
     });
     
@@ -304,7 +304,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function validatePasswordMatch() {
         if (confirmPassword.value && newPassword.value !== confirmPassword.value) {
-            confirmPassword.setCustomValidity('{{ _("Passwords do not match") }}');
+            confirmPassword.setCustomValidity('');
         } else {
             confirmPassword.setCustomValidity('');
         }

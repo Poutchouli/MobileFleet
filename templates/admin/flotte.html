@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Flotte Télégestion - Admin{% end<!-- Phones Tab -->
-<div id="phones-panel" class="tab-panel">`ock %}
+{% block title %}Flotte Télégestion - Admin{% endblock %}
 
 {% block page_title %}Flotte Télégestion{% endblock %}
 
@@ -11,16 +10,16 @@
     <div class="border-b border-gray-200">
         <nav class="-mb-px flex">
             <button id="phones-tab" class="tab-button active" data-tab="phones">
-                {{ _('Phones') }}
+                Téléphones
             </button>
             <button id="sims-tab" class="tab-button" data-tab="sims">
-                {{ _('SIM Cards') }}
+                Cartes SIM
             </button>
             <button id="phone-numbers-tab" class="tab-button" data-tab="phone-numbers">
-                {{ _('Phone Numbers') }}
+                Numéros de Téléphone
             </button>
             <button id="workers-tab" class="tab-button" data-tab="workers">
-                {{ _('Workers') }}
+                Travailleurs
             </button>
         </nav>
     </div>
@@ -31,19 +30,19 @@
     <div class="custom-card">
         <div class="card-header">
             <h2 class="card-title">{{ _('Phone Management') }}</h2>
-            <button id="add-phone-btn" class="btn-primary">{{ _('Add New Phone') }}</button>
+            <button id="add-phone-btn" class="btn-primary">Ajouter un Nouvel Utilisateur</button>
         </div>
         <div class="p-4">
             <div class="overflow-x-auto">
                 <table id="phones-table" class="custom-table w-full">
                     <thead>
                         <tr>
-                            <th>{{ _('Asset Tag') }}</th>
-                            <th>{{ _('IMEI') }}</th>
+                            <th>Étiquette d'Actif</th>
+                            <th>IMEI</th>
                             <th>{{ _('Manufacturer') }}</th>
-                            <th>{{ _('Model') }}</th>
-                            <th>{{ _('Status') }}</th>
-                            <th>{{ _('Actions') }}</th>
+                            <th>Modèle</th>
+                            <th>Statut du Téléphone</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -60,18 +59,18 @@
     <div class="custom-card">
         <div class="card-header">
             <h2 class="card-title">{{ _('SIM Card Management') }}</h2>
-            <button id="add-sim-btn" class="btn-primary">{{ _('Add New SIM') }}</button>
+            <button id="add-sim-btn" class="btn-primary">Ajouter un Nouvel Utilisateur</button>
         </div>
         <div class="p-4">
             <div class="overflow-x-auto">
                 <table id="sims-table" class="custom-table w-full">
                     <thead>
                         <tr>
-                            <th>{{ _('ICCID') }}</th>
-                            <th>{{ _('Carrier') }}</th>
-                            <th>{{ _('Phone Number') }}</th>
-                            <th>{{ _('Status') }}</th>
-                            <th>{{ _('Actions') }}</th>
+                            <th>ICCID</th>
+                            <th>Opérateur</th>
+                            <th>Numéros de Téléphone</th>
+                            <th>Statut du Téléphone</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -95,12 +94,12 @@
                 <table id="phone-numbers-table" class="custom-table w-full">
                     <thead>
                         <tr>
-                            <th>{{ _('Phone Number') }}</th>
+                            <th>Numéros de Téléphone</th>
                             <th>{{ _('SIM ICCID') }}</th>
-                            <th>{{ _('Carrier') }}</th>
+                            <th>Opérateur</th>
                             <th>{{ _('Assignment Status') }}</th>
-                            <th>{{ _('Assigned To') }}</th>
-                            <th>{{ _('Actions') }}</th>
+                            <th>Téléphone Assigné</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -117,18 +116,18 @@
     <div class="custom-card">
         <div class="card-header">
             <h2 class="card-title">{{ _('Workers Management') }}</h2>
-            <button id="add-worker-btn" class="btn-primary">{{ _('Add New Worker') }}</button>
+            <button id="add-worker-btn" class="btn-primary">Ajouter un Nouvel Utilisateur</button>
         </div>
         <div class="p-4">
             <div class="overflow-x-auto">
                 <table id="workers-table" class="custom-table w-full">
                     <thead>
                         <tr>
-                            <th>{{ _('Worker ID') }}</th>
-                            <th>{{ _('Full Name') }}</th>
-                            <th>{{ _('Sector') }}</th>
-                            <th>{{ _('Status') }}</th>
-                            <th>{{ _('Actions') }}</th>
+                            <th>Travailleurs</th>
+                            <th>Nom Complet</th>
+                            <th>Secteur</th>
+                            <th>Statut du Téléphone</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -612,7 +611,7 @@
         const sectorFilter = document.getElementById('overview-sector-filter');
         const sectors = [...new Set(originalData.map(w => w.secteur_name || 'No Sector'))].sort();
         
-        sectorFilter.innerHTML = '<option value="">{{ _("All Sectors") }}</option>';
+        sectorFilter.innerHTML = '<option value="">Tous les Secteurs</option>';
         sectors.forEach(sector => {
             sectorFilter.innerHTML += `<option value="${sector}">${sector}</option>`;
         });

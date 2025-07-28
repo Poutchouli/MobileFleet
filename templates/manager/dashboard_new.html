@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}{{ _('Manager Dashboard') }}{% endblock %}
-{% block page_title %}{{ _('Team Dashboard') }}{% endblock %}
+{% block title %}Tableau de Bord Manager{% endblock %}
+{% block page_title %}Tableau de Bord Équipe{% endblock %}
 
 {% block content %}
 <div class="space-y-4" id="dashboard-sectors-container">
-    <div class="text-center py-8 text-gray-500">{{ _('Loading team data...') }}</div>
+    <div class="text-center py-8 text-gray-500">Chargement des données d'équipe...</div>
 </div>
 
 <!-- Create Ticket Modal -->
@@ -12,23 +12,23 @@
     <div class="custom-modal-backdrop"></div>
     <div class="custom-modal-content">
         <form id="ticket-form" class="custom-form">
-            <div class="custom-modal-header"><h3 class="custom-modal-title">{{ _('Create New Support Ticket') }}</h3></div>
+            <div class="custom-modal-header"><h3 class="custom-modal-title">Créer un Nouveau Ticket</h3></div>
             <div class="custom-modal-body">
                 <div class="custom-form-grid">
                     <div class="custom-form-group custom-form-group-full">
-                        <label for="phone_search" class="custom-label">{{ _('Search Worker / Phone') }}*</label>
-                        <input type="text" id="phone_search" class="custom-input" placeholder="{{ _('Start typing worker name or asset tag...') }}">
+                        <label for="phone_search" class="custom-label">Rechercher Travailleur / Téléphone*</label>
+                        <input type="text" id="phone_search" class="custom-input" placeholder="Commencez à taper le nom du travailleur ou le numéro d'actif...">
                         <div id="search-results" class="border border-gray-300 rounded-md mt-1 max-h-40 overflow-y-auto hidden"></div>
                         <input type="hidden" id="phone_id" name="phone_id">
                     </div>
-                    <div class="custom-form-group"><label for="title" class="custom-label">{{ _('Issue Title') }}*</label><input type="text" name="title" id="title" required class="custom-input"></div>
-                    <div class="custom-form-group"><label for="priority" class="custom-label">{{ _('Priority') }}*</label><select id="priority" name="priority" required class="custom-select"><option>{{ _('Low') }}</option><option>{{ _('Medium') }}</option><option>{{ _('High') }}</option><option>{{ _('Urgent') }}</option></select></div>
-                    <div class="custom-form-group custom-form-group-full"><label for="description" class="custom-label">{{ _('Full Description') }}*</label><textarea id="description" name="description" rows="4" required class="custom-textarea"></textarea></div>
+                    <div class="custom-form-group"><label for="title" class="custom-label">Titre du Problème*</label><input type="text" name="title" id="title" required class="custom-input"></div>
+                    <div class="custom-form-group"><label for="priority" class="custom-label">Priorité*</label><select id="priority" name="priority" required class="custom-select"><option></option><option>IMEI</option><option></option><option>Urgence</option></select></div>
+                    <div class="custom-form-group custom-form-group-full"><label for="description" class="custom-label">Description*</label><textarea id="description" name="description" rows="4" required class="custom-textarea"></textarea></div>
                 </div>
             </div>
             <div class="custom-modal-footer">
-                <button type="button" id="cancel-ticket-btn" class="btn btn-secondary">{{ _('Cancel') }}</button>
-                <button type="submit" class="btn btn-primary">{{ _('Submit Ticket') }}</button>
+                <button type="button" id="cancel-ticket-btn" class="btn btn-secondary">Annuler</button>
+                <button type="submit" class="btn btn-primary">Vos Tickets Soumis</button>
             </div>
         </form>
     </div>
@@ -64,7 +64,7 @@
         async function fetchTeamData() {
             try {
                 const response = await fetch('/api/manager/team_by_sector');
-                if (!response.ok) throw new Error('{{ _("Failed to fetch team data.") }}');
+                if (!response.ok) throw new Error('Échec de récupération des données d\'équipe.');
                 const data = await response.json();
                 renderSectors(data);
             } catch (error) {
@@ -76,7 +76,7 @@
         function renderSectors(data) {
             sectorsContainer.innerHTML = ''; // Clear loading message
             if (Object.keys(data).length === 0) {
-                sectorsContainer.innerHTML = '<div class="text-center py-8 text-gray-500">{{ _("You are not assigned to manage any sectors.") }}</div>';
+                sectorsContainer.innerHTML = '<div class="text-center py-8 text-gray-500">Vous n\'êtes affecté à aucun secteur.</div>';
                 return;
             }
 
@@ -87,9 +87,9 @@
                 const accordionHtml = `
                     <div class="custom-card">
                         <div class="card-header cursor-pointer accordion-header" data-target="#accordion-${sectorId}">
-                            <h2 class="card-title">${sectorName} (${workers.length} {{ _('Workers') }})</h2>
+                            <h2 class="card-title">${sectorName} (${workers.length} Travailleurs)</h2>
                             <div class="flex items-center space-x-2">
-                                <button class="btn btn-primary btn-sm create-ticket-btn" data-sector="${sectorName}">{{ _('Create Ticket') }}</button>
+                                <button class="btn btn-primary btn-sm create-ticket-btn" data-sector="${sectorName}">Créer un Ticket</button>
                                 <svg class="w-6 h-6 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                 </svg>
@@ -99,15 +99,15 @@
                             <table class="custom-table">
                                 <thead>
                                     <tr>
-                                        <th>{{ _('Worker ID') }}</th>
-                                        <th>{{ _('Full Name') }}</th>
-                                        <th>{{ _('Contract Type') }}</th>
-                                        <th>{{ _('Contract End') }}</th>
-                                        <th>{{ _('Status') }}</th>
-                                        <th>{{ _('Phone Model') }}</th>
-                                        <th>{{ _('Phone Number') }}</th>
-                                        <th>{{ _('Assigned On') }}</th>
-                                        <th style="width: 20%;">{{ _('Notes') }}</th>
+                                        <th>Travailleurs</th>
+                                        <th>Nom Complet</th>
+                                        <th>Type de Contrat</th>
+                                        <th>Fin de Contrat</th>
+                                        <th>Statut du Téléphone</th>
+                                        <th>Modèle de Téléphone</th>
+                                        <th>Numéros de Téléphone</th>
+                                        <th>Assigné Le</th>
+                                        <th style="width: 20%;">Notes</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -123,21 +123,21 @@
 
         function renderWorkerRows(workers) {
             if (workers.length === 0) {
-                return '<tr><td colspan="9" class="text-center py-4">{{ _("No workers in this sector.") }}</td></tr>';
+                return '<tr><td colspan="9" class="text-center py-4">Aucun travailleur dans ce secteur.</td></tr>';
             }
             return workers.map(worker => `
                 <tr>
                     <td>${worker.worker_id}</td>
                     <td class="font-medium">${worker.full_name}</td>
-                    <td>${worker.contract_type || '{{ _("N/A") }}'}</td>
-                    <td>${worker.contract_end_date ? new Date(worker.contract_end_date).toLocaleDateString() : '{{ _("N/A") }}'}</td>
+                    <td>${worker.contract_type || ''}</td>
+                    <td>${worker.contract_end_date ? new Date(worker.contract_end_date).toLocaleDateString() : ''}</td>
                     <td><span class="status-badge ${worker.status.toLowerCase()}">${worker.status}</span></td>
-                    <td>${worker.model || '{{ _("N/A") }}'}</td>
-                    <td>${worker.phone_number || '{{ _("N/A") }}'}</td>
-                    <td>${worker.assignment_date ? new Date(worker.assignment_date).toLocaleDateString() : '{{ _("N/A") }}'}</td>
+                    <td>${worker.model || ''}</td>
+                    <td>${worker.phone_number || ''}</td>
+                    <td>${worker.assignment_date ? new Date(worker.assignment_date).toLocaleDateString() : ''}</td>
                     <td>
-                        <textarea class="custom-input text-sm p-1 note-area" data-worker-id="${worker.worker_db_id}" rows="2" placeholder="{{ _('Add a note...') }}">${worker.notes || ''}</textarea>
-                        <button class="btn-link text-sm save-note-btn mt-1" data-worker-id="${worker.worker_db_id}">{{ _('Save Note') }}</button>
+                        <textarea class="custom-input text-sm p-1 note-area" data-worker-id="${worker.worker_db_id}" rows="2" placeholder="Ajouter une note...">${worker.notes || ''}</textarea>
+                        <button class="btn-link text-sm save-note-btn mt-1" data-worker-id="${worker.worker_db_id}">Enregistrer Note</button>
                     </td>
                 </tr>
             `).join('');
@@ -167,7 +167,7 @@
                     });
                     const result = await response.json();
                     if (!response.ok) throw new Error(result.error);
-                    showToast('{{ _("Note saved successfully!") }}');
+                    showToast('Note sauvegardée avec succès !');
                 } catch (error) {
                     showToast(error.message, true);
                 }
@@ -210,7 +210,7 @@
                             });
                             searchResultsDiv.classList.remove('hidden');
                         } else {
-                            searchResultsDiv.innerHTML = '<div class="p-2 text-gray-500">{{ _("No results found.") }}</div>';
+                            searchResultsDiv.innerHTML = '<div class="p-2 text-gray-500">Aucun résultat trouvé.</div>';
                             searchResultsDiv.classList.remove('hidden');
                         }
                     });
@@ -230,7 +230,7 @@
             const formData = new FormData(ticketForm);
             const ticketData = Object.fromEntries(formData.entries());
             if (!ticketData.phone_id) {
-                showToast('{{ _("Please select a worker/phone from the search results.") }}', true);
+                showToast('Veuillez sélectionner un travailleur/téléphone dans les résultats de recherche.', true);
                 return;
             }
             try {
@@ -241,7 +241,7 @@
                 });
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.error);
-                showToast('{{ _("Ticket created successfully!") }}');
+                showToast('Ticket créé avec succès !');
                 closeTicketModal();
                 fetchTeamData(); // Refresh data
             } catch (error) {

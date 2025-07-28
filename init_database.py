@@ -1,6 +1,7 @@
 # init_database.py
 # This script initializes the fleet management database in PostgreSQL.
 # It creates the schema and populates it with sample data, including hashed passwords.
+# In production mode (FLASK_ENV=production), this script will not run to preserve existing data.
 
 import os
 import psycopg2
@@ -11,6 +12,15 @@ from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
+
+# --- Environment Check ---
+FLASK_ENV = os.environ.get("FLASK_ENV", "development")
+if FLASK_ENV == "production":
+    print("🚫 Production environment detected. Skipping database initialization to preserve existing data.")
+    print("   If you need to initialize the database in production, run this script manually with FLASK_ENV=development")
+    exit(0)
+
+print(f"🔧 Running database initialization in {FLASK_ENV} mode...")
 
 # --- Database Connection Configuration ---
 # This will be provided by the .env file.

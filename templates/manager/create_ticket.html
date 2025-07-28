@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Create New Ticket') }}{% endblock %}
+{% block title %}Créer un Nouveau Ticket{% endblock %}
 
-{% block page_title %}{{ _('Create New Ticket') }}{% endblock %}
+{% block page_title %}Créer un Nouveau Ticket{% endblock %}
 
 {% block content %}
 <div class="space-y-6">
@@ -13,50 +13,50 @@
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
             </svg>
-            {{ _('Back to My Tickets') }}
+            Mes Tickets
         </a>
     </div>
 
     <!-- Create Ticket Form -->
     <div class="bg-white shadow rounded-lg">
         <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-medium text-gray-900">{{ _('Submit New Support Ticket') }}</h3>
-            <p class="mt-1 text-sm text-gray-500">{{ _('Provide details about the issue you\'re experiencing with a device.') }}</p>
+            <h3 class="text-lg font-medium text-gray-900">Soumettre un Nouveau Ticket de Support</h3>
+            <p class="mt-1 text-sm text-gray-500">Fournissez des détails sur le problème que vous rencontrez avec un appareil.</p>
         </div>
         
         <form id="create-ticket-form" class="px-6 py-4 space-y-6">
             <!-- Device Selection -->
             <div>
-                <label for="phone_id" class="block text-sm font-medium text-gray-700">{{ _('Select Device') }}</label>
+                <label for="phone_id" class="block text-sm font-medium text-gray-700">Sélectionner l'Appareil</label>
                 <select id="phone_id" name="phone_id" required 
                         class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                    <option value="">{{ _('Choose a device...') }}</option>
+                    <option value="">Choisissez un appareil...</option>
                     <!-- Options will be loaded dynamically -->
                 </select>
-                <p class="mt-1 text-sm text-gray-500">{{ _('Select the device that is experiencing issues.') }}</p>
+                <p class="mt-1 text-sm text-gray-500">Sélectionnez l'appareil qui rencontre des problèmes.</p>
             </div>
 
             <!-- Ticket Title -->
             <div>
-                <label for="title" class="block text-sm font-medium text-gray-700">{{ _('Ticket Title') }}</label>
+                <label for="title" class="block text-sm font-medium text-gray-700">Titre du Ticket</label>
                 <input type="text" id="title" name="title" required maxlength="200"
                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                       placeholder="{{ _('Brief description of the issue') }}">
-                <p class="mt-1 text-sm text-gray-500">{{ _('Provide a clear, concise title for the issue.') }}</p>
+                       placeholder="Brève description du problème">
+                <p class="mt-1 text-sm text-gray-500">Fournissez un titre clair et concis pour le problème.</p>
             </div>
 
             <!-- Priority -->
             <div>
-                <label for="priority" class="block text-sm font-medium text-gray-700">{{ _('Priority') }}</label>
+                <label for="priority" class="block text-sm font-medium text-gray-700">Priorité</label>
                 <select id="priority" name="priority" required
                         class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                    <option value="">Select priority...</option>
-                    <option value="Low">Low - Minor issue, can wait</option>
-                    <option value="Medium">Medium - Standard issue</option>
-                    <option value="High">High - Urgent issue</option>
-                    <option value="Urgent">Urgent - Emergency, immediate attention needed</option>
+                    <option value="">Sélectionner une priorité...</option>
+                    <option value="Low">Faible - Problème mineur, peut attendre</option>
+                    <option value="Medium">Moyenne - Problème standard</option>
+                    <option value="High">Élevée - Problème urgent</option>
+                    <option value="Urgent">Urgent - Urgence, attention immédiate requise</option>
                 </select>
-                <p class="mt-1 text-sm text-gray-500">Select the appropriate priority level for this issue.</p>
+                <p class="mt-1 text-sm text-gray-500">Sélectionnez le niveau de priorité approprié pour ce problème.</p>
             </div>
 
             <!-- Description -->
@@ -64,24 +64,24 @@
                 <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
                 <textarea id="description" name="description" rows="6" required
                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                          placeholder="Provide detailed information about the issue, including:
-- What happened?
-- When did it start?
-- What steps were taken?
-- Any error messages?
-- Impact on operations"></textarea>
-                <p class="mt-1 text-sm text-gray-500">Provide as much detail as possible to help support resolve the issue quickly.</p>
+                          placeholder="Fournissez des informations détaillées sur le problème, y compris :
+- Que s'est-il passé ?
+- Quand cela a-t-il commencé ?
+- Quelles étapes ont été prises ?
+- Y a-t-il des messages d'erreur ?
+- Impact sur les opérations"></textarea>
+                <p class="mt-1 text-sm text-gray-500">Fournissez autant de détails que possible pour aider le support à résoudre le problème rapidement.</p>
             </div>
 
             <!-- Form Actions -->
             <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
                 <a href="/manager/tickets" 
                    class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                    Cancel
+                    Annuler
                 </a>
                 <button type="submit" 
                         class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                    <span id="submit-text">Create Ticket</span>
+                    <span id="submit-text">Créer le Ticket</span>
                     <svg id="submit-spinner" class="hidden animate-spin ml-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -100,7 +100,7 @@
                 </div>
                 <div class="ml-3">
                     <p class="text-sm text-green-700">
-                        Ticket created successfully! You will be redirected to your tickets page.
+                        Ticket créé avec succès ! Vous allez être redirigé vers votre page de tickets.
                     </p>
                 </div>
             </div>
@@ -136,25 +136,25 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const response = await fetch('/api/manager/selectable_phones');
             if (!response.ok) {
-                throw new Error('Failed to load devices');
+                throw new Error('Échec du chargement des appareils');
             }
             
             const phones = await response.json();
             const phoneSelect = document.getElementById('phone_id');
             
             // Clear existing options except the first one
-            phoneSelect.innerHTML = '<option value="">Choose a device...</option>';
+            phoneSelect.innerHTML = '<option value="">Choisissez un appareil...</option>';
             
             phones.forEach(phone => {
                 const option = document.createElement('option');
                 option.value = phone.id;
-                option.textContent = `${phone.asset_tag} - ${phone.manufacturer} ${phone.model} (${phone.worker_name || 'Unassigned'})`;
+                option.textContent = `${phone.asset_tag} - ${phone.manufacturer} ${phone.model} (${phone.worker_name || 'Non assigné'})`;
                 phoneSelect.appendChild(option);
             });
             
         } catch (error) {
             console.error('Error loading phones:', error);
-            showError('Failed to load device list. Please refresh the page.');
+            showError('Échec du chargement de la liste des appareils. Veuillez actualiser la page.');
         }
     }
 
@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Show loading state
         submitButton.disabled = true;
-        submitText.textContent = 'Creating...';
+        submitText.textContent = 'Création...';
         submitSpinner.classList.remove('hidden');
         
         // Hide previous messages
@@ -186,11 +186,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Validate required fields on client side
             if (!data.phone_id || isNaN(data.phone_id)) {
-                showError('Please select a device before submitting the ticket.');
+                showError('Veuillez sélectionner un appareil avant de soumettre le ticket.');
                 
                 // Reset button state
                 submitButton.disabled = false;
-                submitText.textContent = 'Create Ticket';
+                submitText.textContent = 'Créer le Ticket';
                 submitSpinner.classList.add('hidden');
                 return;
             }
@@ -205,7 +205,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to create ticket');
+                throw new Error(errorData.error || 'Échec de la création du ticket');
             }
             
             const result = await response.json();
@@ -224,7 +224,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Reset button state
             submitButton.disabled = false;
-            submitText.textContent = 'Create Ticket';
+            submitText.textContent = 'Créer le Ticket';
             submitSpinner.classList.add('hidden');
         }
     }

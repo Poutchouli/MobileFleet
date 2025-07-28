@@ -1,41 +1,41 @@
 {% extends "base.html" %}
-{% block title %}{{ _('Manager Dashboard') }}{% endblock %}
-{% block page_title %}{{ _('Team Dashboard') }}{% endblock %}
+{% block title %}Tableau de Bord Manager{% endblock %}
+{% block page_title %}Tableau de Bord Équipe{% endblock %}
 
 {% block content %}
 <!-- Filters Section -->
 <div class="custom-card mb-4">
     <div class="card-header">
-        <h3 class="text-lg font-medium">{{ _('Filters') }}</h3>
+        <h3 class="text-lg font-medium">Filtres</h3>
     </div>
     <div class="p-4">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="custom-form-group">
-                <label for="sector-filter" class="custom-label">{{ _('Filter by Sector') }}</label>
+                <label for="sector-filter" class="custom-label">Filtrer par Secteur</label>
                 <select id="sector-filter" class="custom-select">
-                    <option value="">{{ _('All Sectors') }}</option>
+                    <option value="">Tous les Secteurs</option>
                 </select>
             </div>
             <div class="custom-form-group">
-                <label for="worker-status-filter" class="custom-label">{{ _('Worker Status') }}</label>
+                <label for="worker-status-filter" class="custom-label">Statut du Travailleur</label>
                 <select id="worker-status-filter" class="custom-select">
-                    <option value="">{{ _('All Statuses') }}</option>
-                    <option value="Active">{{ _('Active') }}</option>
-                    <option value="Inactive">{{ _('Inactive') }}</option>
-                    <option value="Arrêt">{{ _('Arrêt') }}</option>
-                    <option value="Congés">{{ _('Congés') }}</option>
+                    <option value="">Tous les Statuts</option>
+                    <option value="Active">Actif</option>
+                    <option value="Inactive">Inactif</option>
+                    <option value="Arrêt">Arrêt</option>
+                    <option value="Congés">Congés</option>
                 </select>
             </div>
             <div class="custom-form-group">
-                <label for="worker-search" class="custom-label">{{ _('Search Worker') }}</label>
-                <input type="text" id="worker-search" class="custom-input" placeholder="{{ _('Search by name...') }}">
+                <label for="worker-search" class="custom-label">Rechercher un Travailleur</label>
+                <input type="text" id="worker-search" class="custom-input" placeholder="Rechercher par nom...">
             </div>
         </div>
     </div>
 </div>
 
 <div class="space-y-4" id="dashboard-sectors-container">
-    <div class="text-center py-8 text-gray-500">{{ _('Loading team data...') }}</div>
+    <div class="text-center py-8 text-gray-500">Chargement des données d'équipe...</div>
 </div>
 
 <!-- Create Ticket Modal -->
@@ -43,23 +43,23 @@
     <div class="custom-modal-backdrop"></div>
     <div class="custom-modal-content">
         <form id="ticket-form" class="custom-form">
-            <div class="custom-modal-header"><h3 class="custom-modal-title">{{ _('Create New Support Ticket') }}</h3></div>
+            <div class="custom-modal-header"><h3 class="custom-modal-title">Créer un Nouveau Ticket</h3></div>
             <div class="custom-modal-body">
                 <div class="custom-form-grid">
                     <div class="custom-form-group custom-form-group-full">
-                        <label for="phone_search" class="custom-label">{{ _('Search Worker / Phone') }}*</label>
-                        <input type="text" id="phone_search" class="custom-input" placeholder="{{ _('Start typing worker name or asset tag...') }}">
+                        <label for="phone_search" class="custom-label">Rechercher Travailleur / Téléphone*</label>
+                        <input type="text" id="phone_search" class="custom-input" placeholder="Commencez à taper le nom du travailleur ou le numéro d'actif...">
                         <div id="search-results" class="border border-gray-300 rounded-md mt-1 max-h-40 overflow-y-auto hidden"></div>
                         <input type="hidden" id="phone_id" name="phone_id">
                     </div>
-                    <div class="custom-form-group"><label for="title" class="custom-label">{{ _('Issue Title') }}*</label><input type="text" name="title" id="title" required class="custom-input"></div>
-                    <div class="custom-form-group"><label for="priority" class="custom-label">{{ _('Priority') }}*</label><select id="priority" name="priority" required class="custom-select"><option>{{ _('Low') }}</option><option>{{ _('Medium') }}</option><option>{{ _('High') }}</option><option>{{ _('Urgent') }}</option></select></div>
-                    <div class="custom-form-group custom-form-group-full"><label for="description" class="custom-label">{{ _('Full Description') }}*</label><textarea id="description" name="description" rows="4" required class="custom-textarea"></textarea></div>
+                    <div class="custom-form-group"><label for="title" class="custom-label">Titre du Problème*</label><input type="text" name="title" id="title" required class="custom-input"></div>
+                    <div class="custom-form-group"><label for="priority" class="custom-label">Priorité*</label><select id="priority" name="priority" required class="custom-select"><option></option><option>IMEI</option><option></option><option>Urgence</option></select></div>
+                    <div class="custom-form-group custom-form-group-full"><label for="description" class="custom-label">Description*</label><textarea id="description" name="description" rows="4" required class="custom-textarea"></textarea></div>
                 </div>
             </div>
             <div class="custom-modal-footer">
-                <button type="button" id="cancel-ticket-btn" class="btn btn-secondary">{{ _('Cancel') }}</button>
-                <button type="submit" class="btn btn-primary">{{ _('Submit Ticket') }}</button>
+                <button type="button" id="cancel-ticket-btn" class="btn btn-secondary">Annuler</button>
+                <button type="submit" class="btn btn-primary">Vos Tickets Soumis</button>
             </div>
         </form>
     </div>
@@ -104,7 +104,7 @@
         function populateFilters() {
             // Populate sector filter
             const sectors = Object.keys(originalTeamData).sort();
-            sectorFilter.innerHTML = '<option value="">{{ _("All Sectors") }}</option>';
+            sectorFilter.innerHTML = '<option value="">Tous les Secteurs</option>';
             sectors.forEach(sector => {
                 sectorFilter.innerHTML += `<option value="${sector}">${sector}</option>`;
             });
@@ -201,7 +201,7 @@
         async function fetchTeamData() {
             try {
                 const response = await fetch('/api/manager/team_by_sector');
-                if (!response.ok) throw new Error('{{ _("Failed to fetch team data.") }}');
+                if (!response.ok) throw new Error('Échec de récupération des données d\'équipe.');
                 const data = await response.json();
                 originalTeamData = data; // Store original data
                 populateFilters();
@@ -215,7 +215,7 @@
         function renderSectors(data) {
             sectorsContainer.innerHTML = ''; // Clear loading message
             if (Object.keys(data).length === 0) {
-                sectorsContainer.innerHTML = '<div class="text-center py-8 text-gray-500">{{ _("You are not assigned to manage any sectors.") }}</div>';
+                sectorsContainer.innerHTML = '<div class="text-center py-8 text-gray-500">Vous n\'êtes affecté à aucun secteur.</div>';
                 return;
             }
 
@@ -226,9 +226,9 @@
                 const accordionHtml = `
                     <div class="custom-card">
                         <div class="card-header cursor-pointer accordion-header" data-target="#accordion-${sectorId}">
-                            <h2 class="card-title">${sectorName} (${workers.length} {{ _('Workers') }})</h2>
+                            <h2 class="card-title">${sectorName} (${workers.length} Travailleurs)</h2>
                             <div class="flex items-center space-x-2">
-                                <button class="btn btn-primary btn-sm create-ticket-btn" data-sector="${sectorName}">{{ _('Create Ticket') }}</button>
+                                <button class="btn btn-primary btn-sm create-ticket-btn" data-sector="${sectorName}">Créer un Ticket</button>
                                 <svg class="w-6 h-6 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                 </svg>
@@ -245,7 +245,7 @@
 
         function renderWorkerCards(workers) {
             if (workers.length === 0) {
-                return '<div class="text-center py-8 text-gray-500">{{ _("No workers in this sector.") }}</div>';
+                return '<div class="text-center py-8 text-gray-500">Aucun travailleur dans ce secteur.</div>';
             }
             
             return `
@@ -288,9 +288,9 @@
                                                 const today = new Date();
                                                 const endDate = new Date(worker.contract_end_date);
                                                 const diffDays = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
-                                                if (diffDays < 0) return '{{ _("Contract expired!") }}';
-                                                if (diffDays <= 5) return `{{ _("Contract ends in") }} ${diffDays} {{ _("days") }}!`;
-                                                if (diffDays <= 10) return `{{ _("Contract ends in") }} ${diffDays} {{ _("days") }}`;
+                                                if (diffDays < 0) return 'Contrat expiré !';
+                                                if (diffDays <= 5) return `Contrat se termine dans ${diffDays} jours !`;
+                                                if (diffDays <= 10) return `Contrat se termine dans ${diffDays} jours`;
                                                 return '';
                                             })()}
                                         </span>
@@ -300,16 +300,16 @@
                             
                             <!-- Status Change Section -->
                             <div class="mb-3 p-2 bg-gray-50 rounded-md">
-                                <label class="block text-sm font-medium text-gray-600 mb-1">{{ _('Change Status') }}:</label>
+                                <label class="block text-sm font-medium text-gray-600 mb-1">Changer le Statut:</label>
                                 <div class="flex space-x-2">
                                     <select class="text-sm border border-gray-300 rounded-md px-2 py-1 flex-1 status-select" data-worker-id="${worker.worker_db_id}">
-                                        <option value="Active" ${worker.status === 'Active' ? 'selected' : ''}>{{ _('Active') }}</option>
-                                        <option value="Inactive" ${worker.status === 'Inactive' ? 'selected' : ''}>{{ _('Inactive') }}</option>
-                                        <option value="Arrêt" ${worker.status === 'Arrêt' ? 'selected' : ''}>{{ _('Arrêt') }}</option>
-                                        <option value="Congés" ${worker.status === 'Congés' ? 'selected' : ''}>{{ _('Congés') }}</option>
+                                        <option value="Active" ${worker.status === 'Active' ? 'selected' : ''}>Actif</option>
+                                        <option value="Inactive" ${worker.status === 'Inactive' ? 'selected' : ''}>Inactif</option>
+                                        <option value="Arrêt" ${worker.status === 'Arrêt' ? 'selected' : ''}>Arrêt</option>
+                                        <option value="Congés" ${worker.status === 'Congés' ? 'selected' : ''}>Congés</option>
                                     </select>
                                     <button class="px-3 py-1 bg-green-600 text-white text-xs rounded-md hover:bg-green-700 transition-colors save-status-btn" data-worker-id="${worker.worker_db_id}">
-                                        {{ _('Update') }}
+                                        Mettre à jour
                                     </button>
                                 </div>
                             </div>
@@ -317,55 +317,55 @@
                             <!-- Worker Details Grid -->
                             <div class="space-y-2 mb-4">
                                 <div class="flex justify-between">
-                                    <span class="text-sm font-medium text-gray-600">{{ _('Contract Type') }}:</span>
-                                    <span class="text-sm text-gray-900 font-medium ${worker.contract_type === 'CDI' ? 'text-blue-600' : 'text-green-600'}">${worker.contract_type || '{{ _("N/A") }}'}</span>
+                                    <span class="text-sm font-medium text-gray-600">Type de Contrat :</span>
+                                    <span class="text-sm text-gray-900 font-medium ${worker.contract_type === 'CDI' ? 'text-blue-600' : 'text-green-600'}">${worker.contract_type || ''}</span>
                                 </div>
                                 <div class="flex justify-between">
-                                    <span class="text-sm font-medium text-gray-600">{{ _('Contract End') }}:</span>
-                                    <span class="text-sm text-gray-900">${worker.contract_end_date ? new Date(worker.contract_end_date).toLocaleDateString() : '{{ _("N/A") }}'}</span>
+                                    <span class="text-sm font-medium text-gray-600">Fin de Contrat:</span>
+                                    <span class="text-sm text-gray-900">${worker.contract_end_date ? new Date(worker.contract_end_date).toLocaleDateString() : ''}</span>
                                 </div>
                                 
                                 <!-- ID Philia and MDP Philia Section -->
                                 <div class="border-t border-gray-200 pt-2 mt-2">
                                     <div class="flex justify-between">
-                                        <span class="text-sm font-medium text-gray-600">{{ _('ID Philia') }}:</span>
-                                        <span class="text-sm text-gray-900 font-mono bg-gray-100 px-2 py-1 rounded">${worker.id_philia || '{{ _("N/A") }}'}</span>
+                                        <span class="text-sm font-medium text-gray-600">ID Philia:</span>
+                                        <span class="text-sm text-gray-900 font-mono bg-gray-100 px-2 py-1 rounded">${worker.id_philia || ''}</span>
                                     </div>
                                     <div class="flex justify-between mt-1">
-                                        <span class="text-sm font-medium text-gray-600">{{ _('MDP Philia') }}:</span>
-                                        <span class="text-sm text-gray-900 font-mono bg-gray-100 px-2 py-1 rounded">${worker.mdp_philia || '{{ _("N/A") }}'}</span>
+                                        <span class="text-sm font-medium text-gray-600">MDP Philia :</span>
+                                        <span class="text-sm text-gray-900 font-mono bg-gray-100 px-2 py-1 rounded">${worker.mdp_philia || ''}</span>
                                     </div>
                                     <div class="flex justify-between mt-1">
-                                        <span class="text-sm font-medium text-gray-600">{{ _('Code PUK') }}:</span>
-                                        <span class="text-sm text-gray-900 font-mono bg-yellow-100 px-2 py-1 rounded border border-yellow-300">${worker.puk || '{{ _("N/A") }}'}</span>
+                                        <span class="text-sm font-medium text-gray-600">Code PUK :</span>
+                                        <span class="text-sm text-gray-900 font-mono bg-yellow-100 px-2 py-1 rounded border border-yellow-300">${worker.puk || ''}</span>
                                     </div>
                                 </div>
                                 
                                 <div class="flex justify-between">
-                                    <span class="text-sm font-medium text-gray-600">{{ _('Phone Model') }}:</span>
-                                    <span class="text-sm text-gray-900">${worker.model || '{{ _("N/A") }}'}</span>
+                                    <span class="text-sm font-medium text-gray-600">Modèle de Téléphone :</span>
+                                    <span class="text-sm text-gray-900">${worker.model || ''}</span>
                                 </div>
                                 <div class="flex justify-between">
-                                    <span class="text-sm font-medium text-gray-600">{{ _('Phone Number') }}:</span>
-                                    <span class="text-sm text-gray-900 font-mono">${worker.phone_number || '{{ _("N/A") }}'}</span>
+                                    <span class="text-sm font-medium text-gray-600">Numéros de Téléphone:</span>
+                                    <span class="text-sm text-gray-900 font-mono">${worker.phone_number || ''}</span>
                                 </div>
                                 <div class="flex justify-between">
-                                    <span class="text-sm font-medium text-gray-600">{{ _('Assigned On') }}:</span>
-                                    <span class="text-sm text-gray-900">${worker.assignment_date ? new Date(worker.assignment_date).toLocaleDateString() : '{{ _("N/A") }}'}</span>
+                                    <span class="text-sm font-medium text-gray-600">Assigné Le :</span>
+                                    <span class="text-sm text-gray-900">${worker.assignment_date ? new Date(worker.assignment_date).toLocaleDateString() : ''}</span>
                                 </div>
                             </div>
 
                             <!-- Notes Section -->
                             <div class="border-t pt-3">
-                                <label class="block text-sm font-medium text-gray-600 mb-2">{{ _('Manager Notes') }}:</label>
+                                <label class="block text-sm font-medium text-gray-600 mb-2">Notes du Manager:</label>
                                 <textarea 
                                     class="w-full text-sm p-2 border border-gray-300 rounded-md resize-none note-area" 
                                     data-worker-id="${worker.worker_db_id}" 
                                     rows="2" 
-                                    placeholder="{{ _('Add a note...') }}"
+                                    placeholder="Ajouter une note..."
                                 >${worker.notes || ''}</textarea>
                                 <button class="mt-2 px-3 py-1 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 transition-colors save-note-btn" data-worker-id="${worker.worker_db_id}">
-                                    {{ _('Save Note') }}
+                                    Enregistrer Note
                                 </button>
                             </div>
                         </div>
@@ -398,7 +398,7 @@
                     });
                     const result = await response.json();
                     if (!response.ok) throw new Error(result.error);
-                    showToast('{{ _("Note saved successfully!") }}');
+                    showToast('Note sauvegardée avec succès !');
                 } catch (error) {
                     showToast(error.message, true);
                 }
@@ -424,7 +424,7 @@
                         statusBadge.className = `status-badge ${newStatus.toLowerCase()}`;
                     }
                     
-                    showToast('{{ _("Status updated successfully!") }}');
+                    showToast('Statut mis à jour avec succès !');
                     
                     // Only check if the worker should still be visible with current filters
                     // without rebuilding the entire display
@@ -476,7 +476,7 @@
                             });
                             searchResultsDiv.classList.remove('hidden');
                         } else {
-                            searchResultsDiv.innerHTML = '<div class="p-2 text-gray-500">{{ _("No results found.") }}</div>';
+                            searchResultsDiv.innerHTML = '<div class="p-2 text-gray-500">Aucun résultat trouvé.</div>';
                             searchResultsDiv.classList.remove('hidden');
                         }
                     });
@@ -496,7 +496,7 @@
             const formData = new FormData(ticketForm);
             const ticketData = Object.fromEntries(formData.entries());
             if (!ticketData.phone_id) {
-                showToast('{{ _("Please select a worker/phone from the search results.") }}', true);
+                showToast('Veuillez sélectionner un travailleur/téléphone dans les résultats de recherche.', true);
                 return;
             }
             try {
@@ -507,7 +507,7 @@
                 });
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.error);
-                showToast('{{ _("Ticket created successfully!") }}');
+                showToast('Ticket créé avec succès!');
                 closeTicketModal();
                 fetchTeamData(); // Refresh data
             } catch (error) {

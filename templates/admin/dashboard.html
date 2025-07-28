@@ -1,26 +1,26 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Admin Dashboard') }}{% endblock %}
+{% block title %}Tableau de Bord Équipe{% endblock %}
 
-{% block page_title %}{{ _('Admin Dashboard') }}{% endblock %}
+{% block page_title %}Tableau de Bord Équipe{% endblock %}
 
 {% block content %}
 <!-- KPI Stats Cards -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
     <div class="custom-card text-center">
-        <h3 class="text-lg font-semibold text-gray-500">{{ _('Active Workers') }}</h3>
+        <h3 class="text-lg font-semibold text-gray-500">Travailleurs</h3>
         <p id="stat-active-workers" class="text-4xl font-bold text-gradient mt-2">...</p>
     </div>
     <div class="custom-card text-center">
-        <h3 class="text-lg font-semibold text-gray-500">{{ _('Phones In Use') }}</h3>
+        <h3 class="text-lg font-semibold text-gray-500">Numéros de Téléphone</h3>
         <p id="stat-phones-in-use" class="text-4xl font-bold text-gradient mt-2">...</p>
     </div>
     <div class="custom-card text-center">
-        <h3 class="text-lg font-semibold text-gray-500">{{ _('Phones In Stock') }}</h3>
+        <h3 class="text-lg font-semibold text-gray-500">Téléphones En Stock</h3>
         <p id="stat-phones-in-stock" class="text-4xl font-bold text-gradient mt-2">...</p>
     </div>
     <div class="custom-card text-center">
-        <h3 class="text-lg font-semibold text-gray-500">{{ _('Open Tickets') }}</h3>
+        <h3 class="text-lg font-semibold text-gray-500">Mes Tickets</h3>
         <p id="stat-open-tickets" class="text-4xl font-bold text-gradient mt-2">...</p>
     </div>
 </div>
@@ -30,7 +30,7 @@
     <!-- Phones by Status Chart -->
     <div class="custom-card">
         <div class="card-header">
-            <h3 class="card-title">{{ _('Phones by Status') }}</h3>
+            <h3 class="card-title">Statut du Téléphone</h3>
         </div>
         <div class="p-4">
             <canvas id="phonesStatusChart" width="400" height="300"></canvas>
@@ -40,7 +40,7 @@
     <!-- Tickets by Priority Chart -->
     <div class="custom-card">
         <div class="card-header">
-            <h3 class="card-title">{{ _('Open Tickets by Priority') }}</h3>
+            <h3 class="card-title">Tickets Ouverts par Priorité</h3>
         </div>
         <div class="p-4">
             <canvas id="ticketsPriorityChart" width="400" height="300"></canvas>
@@ -50,7 +50,7 @@
     <!-- SIM Cards by Carrier Chart -->
     <div class="custom-card">
         <div class="card-header">
-            <h3 class="card-title">{{ _('SIM Cards by Carrier') }}</h3>
+            <h3 class="card-title">Cartes SIM</h3>
         </div>
         <div class="p-4">
             <canvas id="simCarrierChart" width="400" height="300"></canvas>
@@ -60,7 +60,7 @@
     <!-- Workers by Sector Chart -->
     <div class="custom-card">
         <div class="card-header">
-            <h3 class="card-title">{{ _('Workers by Sector') }}</h3>
+            <h3 class="card-title">Travailleurs par Secteur</h3>
         </div>
         <div class="p-4">
             <canvas id="workersSectorChart" width="400" height="300"></canvas>
@@ -71,7 +71,7 @@
 <!-- Assignment Trends Chart -->
 <div class="custom-card mb-8">
     <div class="card-header">
-        <h3 class="card-title">{{ _('Assignment Trends (Last 6 Months)') }}</h3>
+        <h3 class="card-title">Tendances d'Attribution (6 Derniers Mois)</h3>
     </div>
     <div class="p-4">
         <canvas id="assignmentTrendsChart" width="800" height="300"></canvas>
@@ -81,7 +81,7 @@
 <!-- Ticket Resolution Time Chart -->
 <div class="custom-card mb-8">
     <div class="card-header">
-        <h3 class="card-title">{{ _('Average Ticket Resolution Time by Priority') }}</h3>
+        <h3 class="card-title">Temps Moyen de Résolution des Tickets par Priorité</h3>
     </div>
     <div class="p-4">
         <canvas id="ticketResolutionChart" width="800" height="300"></canvas>

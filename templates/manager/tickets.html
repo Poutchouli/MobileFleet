@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('My Tickets') }}{% endblock %}
+{% block title %}Mes Tickets{% endblock %}
 
-{% block page_title %}{{ _('My Tickets') }}{% endblock %}
+{% block page_title %}Mes Tickets{% endblock %}
 
 {% block content %}
 <div class="space-y-6">
@@ -13,7 +13,7 @@
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
             </svg>
-            {{ _('Create New Ticket') }}
+            Créer un Nouveau Ticket
         </button>
     </div>
     </div>
@@ -21,7 +21,7 @@
     <!-- Loading State -->
     <div id="loading" class="text-center py-12">
         <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-        <p class="mt-4 text-gray-600">{{ _('Loading your tickets...') }}</p>
+        <p class="mt-4 text-gray-600">Chargement...</p>
     </div>
 
     <!-- Error State -->
@@ -33,7 +33,7 @@
                 </svg>
             </div>
             <div class="ml-3">
-                <h3 class="text-sm font-medium text-red-800">{{ _('Error Loading Tickets') }}</h3>
+                <h3 class="text-sm font-medium text-red-800">Erreur lors du Chargement des Tickets</h3>
                 <p id="error-message" class="mt-1 text-sm text-red-700"></p>
             </div>
         </div>
@@ -47,45 +47,45 @@
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <!-- Filters -->
                     <div>
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">{{ _('Filter by Status') }}</h3>
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Filtrer par Statut</h3>
                         <div class="flex flex-wrap gap-2">
-                            <button type="button" class="filter-btn active px-4 py-2 text-sm font-medium rounded-md border border-indigo-600 bg-indigo-600 text-white hover:bg-indigo-700" data-filter="all">{{ _('All') }}</button>
-                            <button type="button" class="filter-btn px-4 py-2 text-sm font-medium rounded-md border border-blue-600 text-blue-600 bg-white hover:bg-blue-50" data-filter="New">{{ _('New') }}</button>
-                            <button type="button" class="filter-btn px-4 py-2 text-sm font-medium rounded-md border border-green-600 text-green-600 bg-white hover:bg-green-50" data-filter="Open">{{ _('Open') }}</button>
-                            <button type="button" class="filter-btn px-4 py-2 text-sm font-medium rounded-md border border-yellow-600 text-yellow-600 bg-white hover:bg-yellow-50" data-filter="Pending">{{ _('Pending') }}</button>
-                            <button type="button" class="filter-btn px-4 py-2 text-sm font-medium rounded-md border border-orange-600 text-orange-600 bg-white hover:bg-orange-50" data-filter="On-Hold">{{ _('On-Hold') }}</button>
-                            <button type="button" class="filter-btn px-4 py-2 text-sm font-medium rounded-md border border-emerald-600 text-emerald-600 bg-white hover:bg-emerald-50" data-filter="Solved">{{ _('Solved') }}</button>
-                            <button type="button" class="filter-btn px-4 py-2 text-sm font-medium rounded-md border border-gray-600 text-gray-600 bg-white hover:bg-gray-50" data-filter="Closed">{{ _('Closed') }}</button>
+                            <button type="button" class="filter-btn active px-4 py-2 text-sm font-medium rounded-md border border-indigo-600 bg-indigo-600 text-white hover:bg-indigo-700" data-filter="all">Tous</button>
+                            <button type="button" class="filter-btn px-4 py-2 text-sm font-medium rounded-md border border-blue-600 text-blue-600 bg-white hover:bg-blue-50" data-filter="New">Nouveau</button>
+                            <button type="button" class="filter-btn px-4 py-2 text-sm font-medium rounded-md border border-green-600 text-green-600 bg-white hover:bg-green-50" data-filter="Open">Ouvert</button>
+                            <button type="button" class="filter-btn px-4 py-2 text-sm font-medium rounded-md border border-yellow-600 text-yellow-600 bg-white hover:bg-yellow-50" data-filter="Pending">En Attente</button>
+                            <button type="button" class="filter-btn px-4 py-2 text-sm font-medium rounded-md border border-orange-600 text-orange-600 bg-white hover:bg-orange-50" data-filter="On-Hold">En Pause</button>
+                            <button type="button" class="filter-btn px-4 py-2 text-sm font-medium rounded-md border border-emerald-600 text-emerald-600 bg-white hover:bg-emerald-50" data-filter="Solved">Résolu</button>
+                            <button type="button" class="filter-btn px-4 py-2 text-sm font-medium rounded-md border border-gray-600 text-gray-600 bg-white hover:bg-gray-50" data-filter="Closed">Fermé</button>
                         </div>
                     </div>
                     
                     <!-- Statistics -->
                     <div>
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">{{ _('Statistics') }}</h3>
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Statistiques</h3>
                         <div class="grid grid-cols-3 gap-4">
                             <div class="text-center">
                                 <div class="text-2xl font-bold text-gray-900" id="total-count">0</div>
-                                <div class="text-sm text-gray-500">{{ _('Total') }}</div>
+                                <div class="text-sm text-gray-500">Total</div>
                             </div>
                             <div class="text-center">
                                 <div class="text-2xl font-bold text-blue-600" id="new-count">0</div>
-                                <div class="text-sm text-gray-500">{{ _('New') }}</div>
+                                <div class="text-sm text-gray-500">Nouveau</div>
                             </div>
                             <div class="text-center">
                                 <div class="text-2xl font-bold text-green-600" id="open-count">0</div>
-                                <div class="text-sm text-gray-500">{{ _('Open') }}</div>
+                                <div class="text-sm text-gray-500">Ouvert</div>
                             </div>
                             <div class="text-center">
                                 <div class="text-2xl font-bold text-yellow-600" id="pending-count">0</div>
-                                <div class="text-sm text-gray-500">{{ _('Pending') }}</div>
+                                <div class="text-sm text-gray-500">En Attente</div>
                             </div>
                             <div class="text-center">
                                 <div class="text-2xl font-bold text-emerald-600" id="solved-count">0</div>
-                                <div class="text-sm text-gray-500">{{ _('Solved') }}</div>
+                                <div class="text-sm text-gray-500">Résolu</div>
                             </div>
                             <div class="text-center">
                                 <div class="text-2xl font-bold text-gray-600" id="closed-count">0</div>
-                                <div class="text-sm text-gray-500">{{ _('Closed') }}</div>
+                                <div class="text-sm text-gray-500">Fermé</div>
                             </div>
                         </div>
                     </div>
@@ -96,20 +96,20 @@
         <!-- Tickets Table -->
         <div class="bg-white shadow rounded-lg">
             <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900">{{ _('Your Submitted Tickets') }}</h3>
+                <h3 class="text-lg font-medium text-gray-900">Vos Tickets Soumis</h3>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Ticket #') }}</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Title') }}</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Device') }}</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Worker') }}</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Status') }}</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Priority') }}</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Created') }}</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Actions') }}</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ticket #</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Titre</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Appareil</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Travailleur</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priorité</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Créé</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="tickets-table-body" class="bg-white divide-y divide-gray-200">
@@ -123,12 +123,12 @@
                 <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
-                <h3 class="mt-2 text-sm font-medium text-gray-900">{{ _('No tickets found') }}</h3>
-                <p class="mt-1 text-sm text-gray-500">{{ _('You haven\'t submitted any tickets yet, or no tickets match the current filter.') }}</p>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">Aucun Ticket Trouvé</h3>
+                <p class="mt-1 text-sm text-gray-500">Vous n'avez encore soumis aucun ticket, ou aucun ticket ne correspond au filtre actuel.</p>
                 <div class="mt-6">
                     <button onclick="window.location.href='/manager/create_ticket'" 
                             class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
-                        {{ _('Create Your First Ticket') }}
+                        Créer Votre Premier Ticket
                     </button>
                 </div>
             </div>

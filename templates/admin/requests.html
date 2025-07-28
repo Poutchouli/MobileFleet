@@ -1,22 +1,22 @@
 {% extends "base.html" %}
-{% block title %}{{ _('Manage Phone Requests') }}{% endblock %}
-{% block page_title %}{{ _('Manage Phone Requests') }}{% endblock %}
+{% block title %}Numéros de Téléphone{% endblock %}
+{% block page_title %}Numéros de Téléphone{% endblock %}
 
 {% block content %}
 <div class="custom-card">
     <div class="card-header">
-        <h2 class="card-title">{{ _('Incoming Phone Requests') }}</h2>
+        <h2 class="card-title">Statut du Téléphone</h2>
     </div>
     <div class="overflow-x-auto">
         <table class="custom-table">
             <thead>
                 <tr>
-                    <th>{{ _('Worker') }}</th>
-                    <th>{{ _('Sector') }}</th>
-                    <th>{{ _('Date Required') }}</th>
-                    <th>{{ _('Requested By') }}</th>
-                    <th>{{ _('Status') }}</th>
-                    <th class="text-right">{{ _('Actions') }}</th>
+                    <th>Travailleurs</th>
+                    <th>Secteur</th>
+                    <th>Requis</th>
+                    <th>Nouvelle Demande</th>
+                    <th>Statut du Téléphone</th>
+                    <th class="text-right">Actions</th>
                 </tr>
             </thead>
             <tbody id="requests-table-body"></tbody>
@@ -29,14 +29,14 @@
 <script>
     // Translation variables for JavaScript
     const translations = {
-        noRequestsFound: "{{ _('No phone requests found.') }}",
-        noActionsAvailable: "{{ _('No actions available') }}",
-        approve: "{{ _('Approve') }}",
-        deny: "{{ _('Deny') }}",
-        fulfillViaProvisioning: "{{ _('Fulfill via Provisioning') }}",
-        confirmApprove: "{{ _('Are you sure you want to approve this request?') }}",
-        confirmDeny: "{{ _('Are you sure you want to deny this request?') }}",
-        errorPrefix: "{{ _('Error:') }}"
+        noRequestsFound: "Numéros de Téléphone",
+        noActionsAvailable: "Aucune action disponible",
+        approve: "Approuver",
+        deny: "Refuser",
+        fulfillViaProvisioning: "Réaliser via l'Approvisionnement",
+        confirmApprove: "Êtes-vous sûr de vouloir approuver cette demande ?",
+        confirmDeny: "Êtes-vous sûr de vouloir refuser cette demande ?",
+        errorPrefix: "Erreur :"
     };
 
     document.addEventListener('DOMContentLoaded', function() {

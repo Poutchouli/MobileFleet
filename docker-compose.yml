@@ -1,5 +1,7 @@
 # docker-compose.yml
-# This file defines and configures the multi-container application services.
+# DEVELOPMENT CONFIGURATION - RESETS DATABASE ON EACH RUN
+# This file defines and configures the multi-container application services for development.
+# WARNING: This will erase and recreate the database on each startup!
 
 services:
   # --- The Flask Web Application Service ---
@@ -50,8 +52,9 @@ services:
       - DATABASE_URL=dbname=fleet_db user=postgres password=password host=db
       # SQLAlchemy compatible URL
       - SQLALCHEMY_DATABASE_URI=postgresql://postgres:password@db:5432/fleet_db
-      # Flask environment settings.
+      # Flask environment settings for development.
       - FLASK_ENV=development
+      - FLASK_DEBUG=True
     # This service depends on the 'db' service. Docker Compose will start the 'db'
     # service before it starts the 'web' service.
     depends_on:
@@ -78,6 +81,8 @@ services:
     # This avoids conflicts if you have another PostgreSQL instance running locally.
     ports:
       - "5433:5432"
+    # Restart policy for development
+    restart: unless-stopped
 
 # --- Named Volumes ---
 # Define the named volume for persistent database storage.

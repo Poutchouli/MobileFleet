@@ -1,61 +1,61 @@
 {% extends "integration/base.html" %}
-{% block title %}{{ _('New Phone Request') }}{% endblock %}
-{% block page_title %}{{ _('New Phone Request') }}{% endblock %}
+{% block title %}Numéros de Téléphone{% endblock %}
+{% block page_title %}Numéros de Téléphone{% endblock %}
 
 {% block content %}
 <div class="custom-card max-w-2xl mx-auto">
     <div class="card-header">
-        <h2 class="card-title">{{ _('Request a Phone for an Employee') }}</h2>
+        <h2 class="card-title">Demander un Téléphone pour un Employé</h2>
     </div>
     <form id="request-form" class="p-4">
         <div class="space-y-4">
             <div class="custom-form-group">
-                <label for="employee-name" class="custom-label">{{ _('Employee Full Name') }}*</label>
-                <input type="text" id="employee-name" name="employee_name" required class="custom-input" placeholder="{{ _('Enter employee\'s full name') }}">
+                <label for="employee-name" class="custom-label">Nom Complet de l'Employé*</label>
+                <input type="text" id="employee-name" name="employee_name" required class="custom-input" placeholder="Entrez le nom complet de l'employé">
             </div>
             
             <div class="custom-form-group">
-                <label for="department" class="custom-label">{{ _('Department') }}*</label>
-                <input type="text" id="department" name="department" required class="custom-input" placeholder="{{ _('e.g., Sales, Engineering, Operations') }}">
+                <label for="department" class="custom-label">Département*</label>
+                <input type="text" id="department" name="department" required class="custom-input" placeholder="ex: Ventes, Ingénierie, Opérations">
             </div>
             
             <div class="custom-form-group">
-                <label for="position" class="custom-label">{{ _('Position/Role') }}*</label>
-                <input type="text" id="position" name="position" required class="custom-input" placeholder="{{ _('e.g., Sales Representative, Software Developer') }}">
+                <label for="position" class="custom-label">Poste/Rôle*</label>
+                <input type="text" id="position" name="position" required class="custom-input" placeholder="ex: Représentant des Ventes, Développeur de Logiciels">
             </div>
             
             <div class="custom-form-group">
-                <label for="request-reason" class="custom-label">{{ _('Reason for Request') }}*</label>
-                <textarea id="request-reason" name="request_reason" required rows="3" class="custom-textarea" placeholder="{{ _('Please explain why this employee needs a phone (e.g., new hire, replacement, upgrade)') }}"></textarea>
+                <label for="request-reason" class="custom-label">Raison de la Demande*</label>
+                <textarea id="request-reason" name="request_reason" required rows="3" class="custom-textarea" placeholder="Veuillez expliquer pourquoi cet employé a besoin d'un téléphone (ex: nouvel employé, remplacement, mise à niveau)"></textarea>
             </div>
             
             <div class="custom-form-group">
-                <label for="phone-type" class="custom-label">{{ _('Phone Type Preference') }}</label>
+                <label for="phone-type" class="custom-label">Préférence de Type de Téléphone</label>
                 <select id="phone-type" name="phone_type_preference" class="custom-select">
-                    <option value="">{{ _('No preference') }}</option>
+                    <option value="">Aucune préférence</option>
                     <option value="iPhone">iPhone</option>
                     <option value="Samsung Galaxy">Samsung Galaxy</option>
                     <option value="Google Pixel">Google Pixel</option>
-                    <option value="Any Android">{{ _('Any Android device') }}</option>
-                    <option value="Basic Phone">{{ _('Basic phone') }}</option>
+                    <option value="Any Android">N'importe quel appareil Android</option>
+                    <option value="Basic Phone">Téléphone Assigné</option>
                 </select>
             </div>
             
             <div class="custom-form-group">
-                <label for="urgency-level" class="custom-label">{{ _('Urgency Level') }}*</label>
+                <label for="urgency-level" class="custom-label">Niveau d'Urgence*</label>
                 <select id="urgency-level" name="urgency_level" required class="custom-select">
-                    <option value="">{{ _('Select urgency level...') }}</option>
-                    <option value="Low">{{ _('Low - Can wait 2+ weeks') }}</option>
-                    <option value="Medium">{{ _('Medium - Needed within 1-2 weeks') }}</option>
-                    <option value="High">{{ _('High - Needed within a few days') }}</option>
-                    <option value="Critical">{{ _('Critical - Needed immediately') }}</option>
+                    <option value="">Sélectionnez le niveau d'urgence...</option>
+                    <option value="Low">Faible - Peut attendre 2+ semaines</option>
+                    <option value="Medium">Moyen - Nécessaire dans 1-2 semaines</option>
+                    <option value="High">Élevé - Nécessaire dans quelques jours</option>
+                    <option value="Critical">Critique - Nécessaire immédiatement</option>
                 </select>
             </div>
         </div>
         
         <div class="custom-modal-footer">
-            <button type="button" onclick="window.location.href='{{ url_for('integration_dashboard') }}'" class="btn btn-secondary">{{ _('Cancel') }}</button>
-            <button type="submit" class="btn btn-primary">{{ _('Submit Request') }}</button>
+            <button type="button" onclick="window.location.href='{{ url_for('integration_dashboard') }}'" class="btn btn-secondary">Annuler</button>
+            <button type="submit" class="btn btn-primary">Soumettre la Demande</button>
         </div>
     </form>
 </div>

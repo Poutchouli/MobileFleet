@@ -3,43 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ _('Admin Dashboard') }}</title>
+    <title>Tableau de Bord Équipe</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100">
     <div class="min-h-screen flex">
         <!-- Sidebar -->
         <div class="bg-gray-800 text-white w-64 space-y-6 py-7 px-2">
-            <a href="#" class="text-white text-2xl font-extrabold px-4">{{ _('FleetAdmin') }}</a>
+            <a href="#" class="text-white text-2xl font-extrabold px-4">Administration Flotte</a>
             <nav>
-                <a href="{{ url_for('admin_dashboard') }}" class="block py-2.5 px-4 rounded transition duration-200 bg-gray-700">{{ _('Dashboard') }}</a>
-                <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">{{ _('Phones') }}</a>
-                <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">{{ _('SIM Cards') }}</a>
-                <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">{{ _('Workers') }}</a>
-                <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">{{ _('Users') }}</a>
+                <a href="{{ url_for('admin_dashboard') }}" class="block py-2.5 px-4 rounded transition duration-200 bg-gray-700">Tableau de Bord</a>
+                <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Téléphones</a>
+                <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Cartes SIM</a>
+                <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Travailleurs</a>
+                <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Utilisateurs</a>
             </nav>
         </div>
 
         <!-- Main Content -->
         <div class="flex-1 p-10">
             <div class="flex justify-between items-center mb-8">
-                <h1 class="text-3xl font-bold">{{ _('Admin Dashboard') }}</h1>
+                <h1 class="text-3xl font-bold">Tableau de Bord Équipe</h1>
                 <div>
-                    <span>{{ _('Welcome') }}, {{ session.username }}</span>
-                    <a href="{{ url_for('logout') }}" class="ml-4 text-indigo-600 hover:text-indigo-900">{{ _('Logout') }}</a>
+                    <span>Bienvenue, {{ session.username }}</span>
+                    <a href="{{ url_for('logout') }}" class="ml-4 text-indigo-600 hover:text-indigo-900">Déconnexion</a>
                 </div>
             </div>
 
             <!-- Content goes here -->
             <div class="bg-white p-6 rounded-lg shadow">
-                <h2 class="text-xl font-semibold mb-4">{{ _('Phone Inventory') }}</h2>
+                <h2 class="text-xl font-semibold mb-4">Numéros de Téléphone</h2>
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Asset Tag') }}</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Model') }}</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('IMEI') }}</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Status') }}</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Étiquette d'Actif</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Modèle</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IMEI</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut du Téléphone</th>
                         </tr>
                     </thead>
                     <tbody id="phones-table-body" class="bg-white divide-y divide-gray-200">
