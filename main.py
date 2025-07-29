@@ -1331,7 +1331,106 @@ def get_manager_team_status():
     team_status = cursor.fetchall()
     cursor.close()
     
-    return jsonify(team_status)
+    # Convert tuples to dictionaries with named keys
+    team_status_list = []
+    for member in team_status:
+        member_dict = {
+            'worker_id': member[0],
+            'worker_name': member[1],
+            'phone_id': member[2],
+            'asset_tag': member[3],
+            'manufacturer': member[4],
+            'model': member[5],
+            'phone_status': member[6],
+            'open_ticket_count': member[7],
+            'pending_swaps': member[8],
+            'latest_swap_initiated': member[9],
+            'swap_ticket_id': member[10]
+        }
+        team_status_list.append(member_dict)
+    
+    return jsonify(team_status_list)
+
+@app.route('/api/manager/team_by_sector', methods=['GET'])
+@login_required
+@role_required('Manager')
+def get_team_by_sector():
+    """
+    Gets all workers and their asset details for a manager, structured by sector.
+    """
+    manager_id = session.get('user_id')
+    db = get_db()
+    cursor = db.cursor(cursor_factory=RealDictCursor)
+
+    # First, get the sectors managed by this manager
+    cursor.execute("SELECT id, secteur_name FROM secteurs WHERE manager_id = %s ORDER BY secteur_name", (manager_id,))
+    sectors = cursor.fetchall()
+    
+    # Then, get all workers with their detailed info for those sectors
+    query = """
+        SELECT 
+            w.id as worker_db_id, w.worker_id, w.full_name, w.status, w.secteur_id,
+            rh.id_philia, rh.mdp_philia, rh.contract_type, rh.contract_end_date,
+            p.model, p.asset_tag, p.manufacturer,
+            pn.phone_number,
+            sc.puk,
+            a.assignment_date
+        FROM workers w
+        LEFT JOIN rh_data rh ON w.id = rh.worker_id
+        LEFT JOIN assignments a ON w.id = a.worker_id AND a.return_date IS NULL
+        LEFT JOIN phones p ON a.phone_id = p.id
+        LEFT JOIN sim_cards sc ON a.sim_card_id = sc.id
+        LEFT JOIN phone_numbers pn ON sc.id = pn.sim_card_id
+        WHERE w.secteur_id IN (SELECT id FROM secteurs WHERE manager_id = %s)
+        ORDER BY w.full_name;
+    """
+    cursor.execute(query, (manager_id,))
+    workers = cursor.fetchall()
+    cursor.close()
+
+    # Process the data in Python to group workers by sector
+    sectors_list = []
+    for sector in sectors:
+        sector_dict = {
+            'id': sector['id'],
+            'secteur_name': sector['secteur_name']
+        }
+        sectors_list.append(sector_dict)
+    
+    workers_list = []
+    for worker in workers:
+        worker_dict = {
+            'worker_db_id': worker['worker_db_id'],
+            'worker_id': worker['worker_id'],
+            'full_name': worker['full_name'],
+            'status': worker['status'],
+            'secteur_id': worker['secteur_id'],
+            'id_philia': worker['id_philia'],
+            'mdp_philia': worker['mdp_philia'],
+            'contract_type': worker['contract_type'],
+            'contract_end_date': worker['contract_end_date'],
+            'model': worker['model'],
+            'asset_tag': worker['asset_tag'],
+            'manufacturer': worker['manufacturer'],
+            'phone_number': worker['phone_number'],
+            'puk': worker['puk'],
+            'assignment_date': worker['assignment_date']
+        }
+        # Format dates for JSON
+        if worker_dict.get('contract_end_date'):
+            worker_dict['contract_end_date'] = worker_dict['contract_end_date'].isoformat()
+        if worker_dict.get('assignment_date'):
+            worker_dict['assignment_date'] = worker_dict['assignment_date'].isoformat()
+        workers_list.append(worker_dict)
+    
+    data_by_sector = {sector['secteur_name']: [] for sector in sectors_list}
+    for worker in workers_list:
+        for sector in sectors_list:
+            if worker['secteur_id'] == sector['id']:
+                data_by_sector[sector['secteur_name']].append(worker)
+                break
+                
+    return jsonify(data_by_sector)
 
 @app.route('/api/admin/all_workers_status', methods=['GET'])
 @login_required
@@ -1378,7 +1477,7 @@ def get_admin_all_workers_status():
         LEFT JOIN sim_cards sc ON a.sim_card_id = sc.id
         LEFT JOIN phone_numbers pn ON sc.id = pn.sim_card_id
         LEFT JOIN secteurs s ON w.secteur_id = s.id
-        LEFT JOIN rh_data rh ON w.worker_id = rh.worker_id
+        LEFT JOIN rh_data rh ON w.id = rh.worker_id
         LEFT JOIN (
             SELECT 
                 t.phone_id,
