@@ -414,63 +414,81 @@ def update_worker_details(worker_db_id):
     cursor = db.cursor()
     
     try:
+        # --- Update workers table ---
         worker_fields = ['worker_id', 'full_name', 'status', 'secteur_id']
-        update_fields = []
-        values = []
+        worker_update_fields = []
+        worker_values = []
         for field in worker_fields:
             if field in data:
-                update_fields.append(f"{field} = %s")
-                values.append(data[field])
+                worker_update_fields.append(f"{field} = %s")
+                worker_values.append(data[field])
         
-        if update_fields:
-            values.append(worker_db_id)
-            cursor.execute(f"UPDATE workers SET {', '.join(update_fields)} WHERE id = %s", values)
+        if worker_update_fields:
+            worker_values.append(worker_db_id)
+            cursor.execute(f"UPDATE workers SET {', '.join(worker_update_fields)} WHERE id = %s", worker_values)
         
+        # --- Handle rh_data table update/insert ---
         rh_fields = ['contract_type', 'contract_end_date', 'id_philia', 'mdp_philia']
         rh_data = {k: v for k, v in data.items() if k in rh_fields}
         
         if rh_data:
-            cursor.execute("SELECT worker_id FROM workers WHERE id = %s", (worker_db_id,))
-            worker_result = cursor.fetchone()
-            if worker_result:
-                worker_id = worker_result['worker_id']
-                
-                rh_update_fields = [f"{field} = %s" for field in rh_data.keys()]
-                rh_values = list(rh_data.values())
-                
-                if rh_update_fields:
+            # FIXED: Convert empty string for date to None (SQL NULL)
+            if 'contract_end_date' in rh_data and rh_data['contract_end_date'] == '':
+                rh_data['contract_end_date'] = None
+
+            # Filter out password field if it's empty
+            if 'mdp_philia' in rh_data and not rh_data['mdp_philia']:
+                del rh_data['mdp_philia']
+
+            if rh_data: # Proceed only if there's data left to update
+                cursor.execute("SELECT worker_id FROM workers WHERE id = %s", (worker_db_id,))
+                worker_result = cursor.fetchone()
+
+                if worker_result:
+                    worker_id = worker_result['worker_id']
+                    
+                    rh_update_fields = [f"{field} = %s" for field in rh_data.keys()]
+                    rh_values = list(rh_data.values())
                     rh_values.append(worker_id)
-                    # Use ::text to ensure the WHERE clause works correctly
-                    cursor.execute(f"UPDATE rh_data SET {', '.join(rh_update_fields)} WHERE worker_id::text = %s", rh_values)
+                    
+                    cursor.execute(
+                        f"UPDATE rh_data SET {', '.join(rh_update_fields)} WHERE worker_id::text = %s", 
+                        rh_values
+                    )
                     
                     if cursor.rowcount == 0:
+                        # If no record was updated, insert a new one
                         columns = ['worker_id'] + list(rh_data.keys())
                         placeholders = ', '.join(['%s'] * len(columns))
-                        column_names = ', '.join(columns)
                         insert_values = [worker_id] + list(rh_data.values())
-                        
-                        cursor.execute(f"INSERT INTO rh_data ({column_names}) VALUES ({placeholders})", insert_values)
+                        cursor.execute(f"INSERT INTO rh_data ({', '.join(columns)}) VALUES ({placeholders})", insert_values)
         
         db.commit()
         
-        # After committing, fetch the newly updated full record to send back to the client
-        # This ensures the client-side has the most up-to-date data without a full refresh
-        cursor.execute("""
+        # --- Fetch and return the fully updated worker data ---
+        query = """
             SELECT
-                w.id AS worker_db_id, w.worker_id, w.full_name AS worker_name, w.status,
-                s.id AS secteur_id, s.secteur_name,
-                rh.contract_type, rh.contract_end_date, rh.id_philia, rh.mdp_philia
+                w.id AS worker_db_id,
+                w.worker_id,
+                w.full_name AS worker_name,
+                w.status,
+                COALESCE(rh.contract_type, 'CDI') AS contract_type,
+                rh.contract_end_date,
+                rh.id_philia,
+                rh.mdp_philia,
+                s.secteur_name,
+                s.id AS secteur_id
             FROM workers w
             LEFT JOIN secteurs s ON w.secteur_id = s.id
             LEFT JOIN rh_data rh ON w.worker_id = rh.worker_id::text
-            WHERE w.id = %s
-        """, (worker_db_id,))
+            WHERE w.id = %s;
+        """
+        cursor.execute(query, (worker_db_id,))
         updated_worker_data = cursor.fetchone()
         
         cursor.close()
         
-        # The frontend expects a 'message' and the updated object
-        return jsonify({"message": "Worker updated successfully", "worker": updated_worker_data}), 200
+        return jsonify(updated_worker_data), 200
         
     except Exception as e:
         db.rollback()
