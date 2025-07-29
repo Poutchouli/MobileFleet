@@ -1423,22 +1423,6 @@ def get_admin_all_workers_status():
     
     return jsonify(all_workers_status)
 
-@app.route('/api/sectors', methods=['GET'])
-@login_required
-@role_required('Admin')
-def get_all_sectors():
-    """
-    Retourne une liste de tous les secteurs pour peupler les listes déroulantes.
-    """
-    db = get_db()
-    cursor = db.cursor()
-    
-    cursor.execute("SELECT id, secteur_name as name FROM secteurs ORDER BY secteur_name;")
-    sectors = cursor.fetchall()
-    cursor.close()
-    
-    return jsonify(sectors)
-
 @app.route('/api/admin/worker/<int:worker_db_id>', methods=['PUT'])
 @login_required
 @role_required('Admin')

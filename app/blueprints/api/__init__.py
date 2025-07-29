@@ -9,3 +9,4 @@ from . import auth_routes
 from . import admin_routes  
 from . import manager_routes
 from . import general_routes
+from . import reports_routes

@@ -54,6 +54,22 @@ def manage_roles():
             current_app.logger.error("Unexpected error creating role %s: %s", role_name, e, exc_info=True)
             return jsonify({'error': str(e)}), 500
 
+# NEW! Endpoint to fetch all sectors for filtering.
+@api_bp.route('/sectors', methods=['GET'])
+@login_required
+def get_all_sectors():
+    """API endpoint to get a list of all sectors."""
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute("SELECT id, secteur_name AS name FROM secteurs ORDER BY name")
+        sectors = cursor.fetchall()
+        cursor.close()
+        return jsonify(sectors)
+    except Exception as e:
+        current_app.logger.error("Failed to fetch sectors: %s", e, exc_info=True)
+        return jsonify({"error": "Failed to retrieve sectors"}), 500
+
 @api_bp.route('/users', methods=['GET'])
 @login_required
 @role_required('Administrator')
@@ -98,7 +114,6 @@ def create_user():
         new_user_id = cursor.fetchone()['id']
         db.commit()
         
-        # Fetch the full new user data for the response
         cursor.execute("""
             SELECT u.id, u.username, u.full_name, u.email, r.role_name
             FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = %s
@@ -128,7 +143,6 @@ def update_user(user_id):
     db = get_db()
     cursor = db.cursor()
     
-    # Build update query dynamically based on provided fields
     update_fields = []
     values = []
     
@@ -193,7 +207,6 @@ def manage_role(role_id):
                 cursor.execute(f"UPDATE roles SET {', '.join(update_fields)} WHERE id = %s", values)
                 db.commit()
                 
-                # Return updated role
                 cursor.execute("SELECT id, role_name, description FROM roles WHERE id = %s", (role_id,))
                 updated_role = cursor.fetchone()
                 cursor.close()
@@ -218,22 +231,18 @@ def import_csv():
     import csv
     import io
     
-    # Check if file is present in request
     if 'csv_file' not in request.files:
         current_app.logger.warning("CSV import attempt without file by user %s", session.get('username'))
         return jsonify({"error": "No file part"}), 400
     
     file = request.files['csv_file']
     
-    # Check if file has a name
     if file.filename == '':
         current_app.logger.warning("CSV import attempt with empty filename by user %s", session.get('username'))
         return jsonify({"error": "No selected file"}), 400
     
-    # Get target table name from form data
     target_table = request.form.get('target_table')
     
-    # Whitelist of allowed target tables
     allowed_tables = ['phones', 'sim_cards', 'workers']
     if target_table not in allowed_tables:
         current_app.logger.warning("CSV import attempt with invalid table '%s' by user %s", target_table, session.get('username'))
@@ -243,78 +252,49 @@ def import_csv():
                    target_table, file.filename, session.get('username'))
     
     try:
-        # Read file content as string
         file_content = file.stream.read().decode("utf-8")
-        
-        # Parse CSV using DictReader
         csv_reader = csv.DictReader(io.StringIO(file_content))
-        
-        # Connect to database
         db = get_db()
         cursor = db.cursor()
         
-        # Begin transaction
         row_count = 0
         
-        # Process each row
         for row in csv_reader:
-            # Filter out empty values and prepare data
             clean_row = {k: v for k, v in row.items() if v is not None and v.strip() != ''}
-            
             if not clean_row:
                 continue
-                
-            # Build upsert query based on target table
+            
             if target_table == 'phones':
-                # Primary unique key: asset_tag
                 columns = list(clean_row.keys())
                 placeholders = ', '.join(['%s'] * len(columns))
                 column_names = ', '.join(columns)
-                
-                # Build SET clause for ON CONFLICT DO UPDATE
                 set_clause = ', '.join([f"{col} = EXCLUDED.{col}" for col in columns if col != 'asset_tag'])
-                
                 upsert_query = f"""
-                    INSERT INTO phones ({column_names})
-                    VALUES ({placeholders})
+                    INSERT INTO phones ({column_names}) VALUES ({placeholders})
                     ON CONFLICT (asset_tag) DO UPDATE SET {set_clause}
                 """
-                
             elif target_table == 'sim_cards':
-                # Primary unique key: iccid
                 columns = list(clean_row.keys())
                 placeholders = ', '.join(['%s'] * len(columns))
                 column_names = ', '.join(columns)
-                
-                # Build SET clause for ON CONFLICT DO UPDATE
                 set_clause = ', '.join([f"{col} = EXCLUDED.{col}" for col in columns if col != 'iccid'])
-                
                 upsert_query = f"""
-                    INSERT INTO sim_cards ({column_names})
-                    VALUES ({placeholders})
+                    INSERT INTO sim_cards ({column_names}) VALUES ({placeholders})
                     ON CONFLICT (iccid) DO UPDATE SET {set_clause}
                 """
-                
             elif target_table == 'workers':
-                # Primary unique key: worker_id
                 columns = list(clean_row.keys())
                 placeholders = ', '.join(['%s'] * len(columns))
                 column_names = ', '.join(columns)
-                
-                # Build SET clause for ON CONFLICT DO UPDATE
                 set_clause = ', '.join([f"{col} = EXCLUDED.{col}" for col in columns if col != 'worker_id'])
-                
                 upsert_query = f"""
-                    INSERT INTO workers ({column_names})
-                    VALUES ({placeholders})
+                    INSERT INTO workers ({column_names}) VALUES ({placeholders})
                     ON CONFLICT (worker_id) DO UPDATE SET {set_clause}
                 """
             
-            # Execute upsert statement
             cursor.execute(upsert_query, list(clean_row.values()))
             row_count += 1
         
-        # Commit transaction
         db.commit()
         cursor.close()
         
@@ -323,7 +303,6 @@ def import_csv():
         return jsonify({"message": f"Successfully processed {row_count} rows."}), 200
         
     except Exception as e:
-        # Rollback transaction on error
         if 'db' in locals():
             db.rollback()
         if 'cursor' in locals():
@@ -337,15 +316,13 @@ def import_csv():
 @role_required('Administrator')
 def get_admin_all_workers_status():
     """
-    API endpoint to get the status of ALL workers and their assigned assets
-    for administrators (no sector limitation).
+    API endpoint to get the status of ALL workers and their assigned assets.
     """
     db = get_db()
     cursor = db.cursor()
     
-    # This query fetches ALL workers regardless of sector.
-    # It also gets details of their currently assigned phone, a count of any open tickets,
-    # and information about pending phone swaps, plus id_philia, mdp_philia, total tickets and total phones.
+    # FIXED QUERY: Added ::text to rh.worker_id to cast it to text for the JOIN.
+    # This resolves the "operator does not exist" error.
     query = """
         SELECT
             w.id AS worker_db_id,
@@ -377,7 +354,7 @@ def get_admin_all_workers_status():
         LEFT JOIN sim_cards sc ON a.sim_card_id = sc.id
         LEFT JOIN phone_numbers pn ON sc.id = pn.sim_card_id
         LEFT JOIN secteurs s ON w.secteur_id = s.id
-        LEFT JOIN rh_data rh ON w.worker_id = rh.worker_id
+        LEFT JOIN rh_data rh ON w.worker_id = rh.worker_id::text
         LEFT JOIN (
             SELECT 
                 t.phone_id,
@@ -437,12 +414,9 @@ def update_worker_details(worker_db_id):
     cursor = db.cursor()
     
     try:
-        # Build update query dynamically based on provided fields
+        worker_fields = ['worker_id', 'full_name', 'status', 'secteur_id']
         update_fields = []
         values = []
-        
-        # Worker table fields
-        worker_fields = ['worker_id', 'full_name', 'status', 'secteur_id']
         for field in worker_fields:
             if field in data:
                 update_fields.append(f"{field} = %s")
@@ -452,30 +426,23 @@ def update_worker_details(worker_db_id):
             values.append(worker_db_id)
             cursor.execute(f"UPDATE workers SET {', '.join(update_fields)} WHERE id = %s", values)
         
-        # Handle RH data update/insert
         rh_fields = ['contract_type', 'contract_end_date', 'id_philia', 'mdp_philia']
         rh_data = {k: v for k, v in data.items() if k in rh_fields}
         
         if rh_data:
-            # Get worker_id for RH table
             cursor.execute("SELECT worker_id FROM workers WHERE id = %s", (worker_db_id,))
             worker_result = cursor.fetchone()
             if worker_result:
                 worker_id = worker_result['worker_id']
                 
-                # Try to update existing RH record
-                rh_update_fields = []
-                rh_values = []
-                for field in rh_fields:
-                    if field in rh_data:
-                        rh_update_fields.append(f"{field} = %s")
-                        rh_values.append(rh_data[field])
+                rh_update_fields = [f"{field} = %s" for field in rh_data.keys()]
+                rh_values = list(rh_data.values())
                 
                 if rh_update_fields:
                     rh_values.append(worker_id)
-                    cursor.execute(f"UPDATE rh_data SET {', '.join(rh_update_fields)} WHERE worker_id = %s", rh_values)
+                    # Use ::text to ensure the WHERE clause works correctly
+                    cursor.execute(f"UPDATE rh_data SET {', '.join(rh_update_fields)} WHERE worker_id::text = %s", rh_values)
                     
-                    # If no rows were updated, insert new record
                     if cursor.rowcount == 0:
                         columns = ['worker_id'] + list(rh_data.keys())
                         placeholders = ', '.join(['%s'] * len(columns))
@@ -485,9 +452,25 @@ def update_worker_details(worker_db_id):
                         cursor.execute(f"INSERT INTO rh_data ({column_names}) VALUES ({placeholders})", insert_values)
         
         db.commit()
+        
+        # After committing, fetch the newly updated full record to send back to the client
+        # This ensures the client-side has the most up-to-date data without a full refresh
+        cursor.execute("""
+            SELECT
+                w.id AS worker_db_id, w.worker_id, w.full_name AS worker_name, w.status,
+                s.id AS secteur_id, s.secteur_name,
+                rh.contract_type, rh.contract_end_date, rh.id_philia, rh.mdp_philia
+            FROM workers w
+            LEFT JOIN secteurs s ON w.secteur_id = s.id
+            LEFT JOIN rh_data rh ON w.worker_id = rh.worker_id::text
+            WHERE w.id = %s
+        """, (worker_db_id,))
+        updated_worker_data = cursor.fetchone()
+        
         cursor.close()
         
-        return jsonify({"message": "Worker updated successfully"}), 200
+        # The frontend expects a 'message' and the updated object
+        return jsonify({"message": "Worker updated successfully", "worker": updated_worker_data}), 200
         
     except Exception as e:
         db.rollback()
